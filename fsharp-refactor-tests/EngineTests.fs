@@ -9,6 +9,5 @@ open FSharpRefactor.Engine
 type ASTFetcherModule() =
     [<Test>]
     member this.RunsWithoutErrors() =
-        let result = ASTFetcher.untypedParse
-
+        let result = ASTFetcher.parseTree
         ()
