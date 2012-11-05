@@ -1,3 +1,6 @@
 *~
 #*#
 TAGS
+*.dll
+*.sigdata
+*.optdata
