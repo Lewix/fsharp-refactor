@@ -12,3 +12,5 @@ module ASTFetcher =
     let parseTree = untypedParseInfo.ParseTree
     
     let Parse source = checker.UntypedParse(filename, source, options).ParseTree
+
+    let Height tree = 0
