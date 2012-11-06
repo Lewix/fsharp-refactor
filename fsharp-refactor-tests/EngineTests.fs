@@ -21,7 +21,7 @@ type ASTFetcherModule() =
 
     [<Test>]
     member this.``Can calculate the height of a parse tree``() =
-        let tree = ASTFetcher.Parse "let a = 1"
+        let tree = (ASTFetcher.Parse "let a = 1").Value
         // Module + let + binding + max(1 (for a), 1 (for 1)) = 4
         let expected = 4
         Assert.AreEqual(expected, ASTFetcher.Height tree)
