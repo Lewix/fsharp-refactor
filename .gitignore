@@ -4,3 +4,5 @@ TAGS
 *.dll
 *.sigdata
 *.optdata
+TestResult.xml
+FSharp.Refactor.Tests.dll.VisualState.xml
