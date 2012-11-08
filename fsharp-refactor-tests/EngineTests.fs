@@ -1,5 +1,6 @@
 namespace FSharpRefactor.Tests.EngineTests
 
+open System
 open NUnit.Framework
 open Microsoft.FSharp.Compiler.Ast
 
@@ -21,3 +22,18 @@ type ASTFetcherModule() =
         // Module + let + binding + max(1 (for a), 1 (for 1)) = 4
         let expected = 4
         Assert.AreEqual(expected, ASTFetcher.Height tree)
+
+    [<Test>]
+    member this.``Can deduce the text corresponding to some range in the source``() =
+        let source = "let a = 1"
+        let tree = (ASTFetcher.Parse source).Value
+        let range =
+            match tree with
+                | ParsedInput.ImplFile(ParsedImplFileInput(_,_,_,_,_,namespaces,_)) ->
+                    match Seq.head(namespaces) with
+                        | SynModuleOrNamespace(_,_,
+                                               SynModuleDecl.Let(_,binding::_,_)::_,
+                                               _,_,_,_) -> binding.RangeOfBindingAndRhs
+                        | _ -> raise (new Exception("Something is wrong with Parse"))
+                | _ -> raise (new Exception("Something is wrong with Parse"))
+        Assert.AreEqual("a = 1", ASTFetcher.TextOfRange source range)

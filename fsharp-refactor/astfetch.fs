@@ -46,3 +46,5 @@ module ASTFetcher =
             | _ -> raise (new NotImplementedException("Use an impl file instead"))
 
     
+    let TextOfRange source range = ""
+        
