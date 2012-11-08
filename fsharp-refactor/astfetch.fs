@@ -8,8 +8,8 @@ module ASTFetcher =
     let checker = InteractiveChecker.Create(NotifyFileTypeCheckStateIsDirty(fun _ -> ()))
     let filename = "/home/lewis/test.fs"
     let options source = checker.GetCheckOptionsFromScriptRoot(filename, source, DateTime.Now, [| |])
-    
     let Parse source = checker.UntypedParse(filename, source, options source).ParseTree
+
 
     let maxOfList ns = Seq.fold max 0 ns
 
