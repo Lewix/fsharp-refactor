@@ -3,6 +3,7 @@ namespace FSharpRefactor.Engine
 open System 
 open Microsoft.FSharp.Compiler.SourceCodeServices
 open Microsoft.FSharp.Compiler.Ast
+open Microsoft.FSharp.Compiler.Range
 
 module ASTFetcher =
     let checker = InteractiveChecker.Create(NotifyFileTypeCheckStateIsDirty(fun _ -> ()))
@@ -46,5 +47,16 @@ module ASTFetcher =
             | _ -> raise (new NotImplementedException("Use an impl file instead"))
 
     
-    let TextOfRange source range = ""
+    let TextOfRange (source : string) (range : range) =
+        let lines = source.Split('\n')
+        let startLine = lines.[range.StartLine-1].[range.StartColumn..]
+        let endLine = lines.[range.EndLine-1].[range.StartColumn..]
+        let rec getLines line =
+            if line < range.EndLine-1 then lines.[line]::(getLines (line+1))
+            else if line = range.EndLine-1 then [endLine]
+            else [] // StartLine and EndLine are equal
+
+        startLine::(getLines range.StartLine)
+        |> Seq.fold (+) ""
+
         

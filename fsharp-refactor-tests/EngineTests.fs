@@ -24,7 +24,7 @@ type ASTFetcherModule() =
         Assert.AreEqual(expected, ASTFetcher.Height tree)
 
     [<Test>]
-    member this.``Can deduce the text corresponding to some range in the source``() =
+    member this.``Can deduce the text corresponding to some range in a let statement``() =
         let source = "let a = 1"
         let tree = (ASTFetcher.Parse source).Value
         let range =
