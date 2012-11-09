@@ -60,3 +60,21 @@ type ASTFetcherModule() =
                 | _ -> None
                 
         Assert.AreEqual(expected, children)
+
+[<TestFixture>]
+type AstModule() =
+    [<Test>]
+    member this.``Can instantiate a AstNode from the result of parsing source code``() =
+        let source = "let a = 1"
+        let rootNode = Ast.MakeAstNode (ASTFetcher.Parse source)
+        let expectNamespace node =
+            match node with
+                | Some(Ast.AstNode.ModuleOrNamespace(_)) -> true
+                | _ -> false
+        Assert.IsTrue(expectNamespace rootNode)
+
+        let expectLet (node : Ast.AstNode option) =
+            match Ast.GetChildren(node.Value) with
+                | Some(Ast.AstNode.Binding(_)) -> true
+                | _ -> false
+        Assert.IsTrue(expectLet rootNode)
