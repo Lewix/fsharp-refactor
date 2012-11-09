@@ -5,6 +5,7 @@ open NUnit.Framework
 open Microsoft.FSharp.Compiler.Ast
 
 open FSharpRefactor.Engine
+open FSharpRefactor.Engine.Ast
 
 [<TestFixture>]
 type ASTFetcherModule() =
@@ -33,7 +34,29 @@ type ASTFetcherModule() =
                     match Seq.head(namespaces) with
                         | SynModuleOrNamespace(_,_,
                                                SynModuleDecl.Let(_,binding::_,_)::_,
-                                               _,_,_,_) -> binding.RangeOfBindingAndRhs
-                        | _ -> raise (new Exception("Something is wrong with Parse"))
-                | _ -> raise (new Exception("Something is wrong with Parse"))
-        Assert.AreEqual("a = 1", ASTFetcher.TextOfRange source range)
+                                               _,_,_,_) -> Some(binding.RangeOfBindingAndRhs)
+                        | _ -> None
+                | _ -> None
+        Assert.IsTrue(range.IsSome, "Did not get the expected tree from parse")
+        Assert.AreEqual("a = 1", ASTFetcher.TextOfRange source range.Value)
+
+    [<Test>]
+    member this.``Active patterns can be used to get the children of some nodes``() =
+        let source = "let a = 1"
+        let tree =
+            match ASTFetcher.Parse source with
+                | Some(ParsedInput.ImplFile(t)) -> Some(t)
+                | _ -> None
+        Assert.IsTrue(tree.IsSome, "Did not get the expected tree from parse")
+        let ns =
+            match tree.Value with
+                | ParsedImplFileInput(_,_,_,_,_,ns,_) -> Seq.head(ns)
+        let expected =
+            match ns with
+                | SynModuleOrNamespace(_,_,lets,_,_,_,_) -> Some(lets)
+        let children =
+            match ns with
+                | Ast.ModuleOrNamespaceChildren(c) -> Some(c)
+                | _ -> None
+                
+        Assert.AreEqual(expected, children)
