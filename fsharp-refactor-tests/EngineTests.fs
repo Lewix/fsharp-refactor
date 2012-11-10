@@ -69,12 +69,14 @@ type AstModule() =
         let rootNode = Ast.MakeAstNode (ASTFetcher.Parse source)
         let expectNamespace node =
             match node with
-                | Some(Ast.AstNode.ModuleOrNamespace(_)) -> true
+                | Some(Ast.AstNode.File(_)) -> true
                 | _ -> false
-        Assert.IsTrue(expectNamespace rootNode)
+        Assert.IsTrue(expectNamespace rootNode, "Should get a namespace or module from MakeAstNode")
 
-        let expectLet (node : Ast.AstNode option) =
-            match Ast.GetChildren(node.Value) with
-                | Some(Ast.AstNode.Binding(_)) -> true
+        let binding (node : Ast.AstNode option) =
+            Ast.GetChildren(List.head(Ast.GetChildren(node.Value).Value))
+        let expectModule (node : Ast.AstNode option) =
+            match binding node with
+                | Some(Ast.AstNode.Module(_)::_) -> true
                 | _ -> false
-        Assert.IsTrue(expectLet rootNode)
+        Assert.IsTrue(expectModule rootNode)
