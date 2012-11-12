@@ -5,6 +5,7 @@ open Microsoft.FSharp.Compiler.SourceCodeServices
 open Microsoft.FSharp.Compiler.Ast
 open Microsoft.FSharp.Compiler.Range
 
+//TODO: change name to AstFetcherxo
 module ASTFetcher =
     let checker = InteractiveChecker.Create(NotifyFileTypeCheckStateIsDirty(fun _ -> ()))
     let filename = "/home/lewis/test.fs"
