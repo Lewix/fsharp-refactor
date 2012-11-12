@@ -2,10 +2,14 @@ namespace FSharpRefactor.Engine.Ast
 
 open System
 open Microsoft.FSharp.Compiler.Ast
+open Microsoft.FSharp.Compiler.Range
 
 module Ast =
+//TODO: Make my own range so I don't need to use the compiler one
+    
     type AstNode =
-        | Expr of SynExpr
+        | Expression of SynExpr
+        | Pattern of SynPat
         | ModuleOrNamespace of SynModuleOrNamespace
         | Module of SynModuleDecl
         | Binding of SynBinding
@@ -27,7 +31,7 @@ module Ast =
         match expression with
             | SynExpr.Paren(e1,_,_,_) -> Some([e1])
             | SynExpr.Quote(e1,_,e2,_,_) -> Some([e1;e2])
-            | _ -> raise (new NotImplementedException("Add a new entry to the active pattern for SynExpr children"))
+            | _ -> raise (new NotImplementedException("Add a new entry to the active pattern for SynExpr children:" + (string expression)))
 
     let (|Children|_|) (node : AstNode) =
         match node with
@@ -36,9 +40,21 @@ module Ast =
                 match ns with
                     | ModuleOrNamespaceChildren(modules) -> Some(List.map AstNode.Module modules)
                     | _ -> None
-            | _ -> raise (new NotImplementedException("Add a new entry to the active pattern for Children"))
+            | Module(m) ->
+                match m with
+                    | SynModuleDecl.Let(_,bs,_) -> Some(List.map AstNode.Binding bs)
+                    | _ -> raise (new NotImplementedException("Add a new entry to pattern for Module: " + (string m)))
+            | Binding(b) ->
+                match b with
+                    | SynBinding.Binding(_,_,_,_,_,_,_,p,_,e,_,_) -> Some([AstNode.Pattern p; AstNode.Expression e])
+            | _ -> raise (new NotImplementedException("Add a new entry to the active pattern for Children:" + (string node)))
 
-    let (|Range|_|) (node : AstNode) = raise (new NotImplementedException())
+    let (|Range|_|) (node : AstNode) =
+        match node with
+            | File _ -> None
+            | Pattern p -> Some(p.Range)
+            | ModuleOrNamespace ns -> Some(ns.Range)
+            | _ -> raise (new NotImplementedException("Add a new entry to the active pattern for Range:" + (string node)))
 
     // Utility functions to avoid having to match patterns to get children or range
     let GetChildren (node : AstNode) =
@@ -48,5 +64,7 @@ module Ast =
 
     let GetRange (node : AstNode) =
         match node with
-            | Range(r) -> r
+            | Range(r) -> Some(r)
             | _ -> None
+
+            
