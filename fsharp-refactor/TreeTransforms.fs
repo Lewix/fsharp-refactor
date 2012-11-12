@@ -12,7 +12,15 @@ module TreeTransforms =
             let range = Ast.GetRange node
             if range.IsSome then range.Value
             else raise InvalidRange
-                
+
+        let joinLines s1 s2 =
+            match (s1,s2) with
+                | ("",s2) -> s2
+                | (s1,"") -> s1
+                | (s1,s2) -> s1 + "\n" + s2
+
+        let addNewLine i s = if i = 0 then s else "\n" + s
+                                
         let sortFunction (node1, _) (node2, _) =
             -rangeOrder.Compare(getRange node1, getRange node2)
             
@@ -27,15 +35,17 @@ module TreeTransforms =
             let endLine = range.EndLine
             let lines = source.Split('\n')
             
-            Seq.fold (+) "" (Seq.skip endLine lines)
-            |> (+) lines.[endLine-1].[endColumn..]
-            |> (+) replacementText
-            |> (+) lines.[startLine-1].[0..startColumn-1]
-            |> (+) (Seq.fold (+) "" (Seq.take (startLine-1) lines))
+            let before = Seq.fold joinLines "" (Seq.take (startLine-1) lines)
+            let after = Seq.fold joinLines "" (Seq.skip endLine lines)
+            let replacement = lines.[startLine-1].[0..startColumn-1]
+                              |> (fun s -> s + replacementText)
+                              |> (fun s -> s + lines.[endLine-1].[endColumn..])
+
+            Seq.fold joinLines "" [before; replacement; after]
 
         let rec processPairs modifiedSource remainingNodeTextPairs =
             match remainingNodeTextPairs with
                 | [] -> modifiedSource
                 | p::ps -> processPairs (replaceOne modifiedSource p) ps
 
-        processPairs source nodeTextPairsToChange
+        processPairs source sortedPairs
