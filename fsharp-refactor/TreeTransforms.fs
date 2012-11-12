@@ -1,5 +1,6 @@
 namespace FSharpRefactor.Engine.TreeTransforms
 
+open System
 open Microsoft.FSharp.Compiler.Range
 open FSharpRefactor.Engine.Ast
 
@@ -13,36 +14,30 @@ module TreeTransforms =
             if range.IsSome then range.Value
             else raise InvalidRange
 
-        let joinLines s1 s2 =
-            match (s1,s2) with
-                | ("",s2) -> s2
-                | (s1,"") -> s1
-                | (s1,s2) -> s1 + "\n" + s2
-
-        let addNewLine i s = if i = 0 then s else "\n" + s
-                                
-        let sortFunction (node1, _) (node2, _) =
-            -rangeOrder.Compare(getRange node1, getRange node2)
-            
         let sortedPairs =
+            let sortFunction (node1, _) (node2, _) =
+                -rangeOrder.Compare(getRange node1, getRange node2)
+
             List.sortWith sortFunction nodeTextPairsToChange
 
         let replaceOne (source : string) (node, replacementText) =
+            let notLineSep = fun c -> c <> '\n'
+            let rec takeAroundPos before after (line, column) =
+                // Lines are indexed from 1, columns from 0
+                match (line, column) with
+                    | 1,c -> (Seq.append before (Seq.take column after), Seq.skip column after)
+                    | n,_ ->
+                        takeAroundPos (Seq.concat [before; (Seq.takeWhile notLineSep after); seq['\n']])
+                                      (Seq.skip 1 (Seq.skipWhile notLineSep after))
+                                      (line-1, column)
+                                        
             let range = getRange node
-            let startColumn = range.StartColumn
-            let endColumn = range.EndColumn
-            let startLine = range.StartLine
-            let endLine = range.EndLine
-            let lines = source.Split('\n')
+            let before, _ = takeAroundPos "" source (range.StartLine, range.StartColumn)
+            let _, after = takeAroundPos "" source (range.EndLine, range.EndColumn)
+
+            (Seq.fold (+) "" (Seq.map string before)) + replacementText + (Seq.fold (+) "" (Seq.map string after))
+
             
-            let before = Seq.fold joinLines "" (Seq.take (startLine-1) lines)
-            let after = Seq.fold joinLines "" (Seq.skip endLine lines)
-            let replacement = lines.[startLine-1].[0..startColumn-1]
-                              |> (fun s -> s + replacementText)
-                              |> (fun s -> s + lines.[endLine-1].[endColumn..])
-
-            Seq.fold joinLines "" [before; replacement; after]
-
         let rec processPairs modifiedSource remainingNodeTextPairs =
             match remainingNodeTextPairs with
                 | [] -> modifiedSource

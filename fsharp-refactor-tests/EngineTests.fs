@@ -86,19 +86,20 @@ type AstModule() =
 type TreeTransformsModule() =
     [<Test>]
     member this.``Can change the text corresponding to an ast node``() =
-        let source = "let a = 1"
+        let source = "let a = 1\n\n"
         let tree = Ast.MakeAstNode(ASTFetcher.Parse source).Value
         let a = Ast.GetChildren(Ast.GetChildren(Ast.GetChildren(Ast.GetChildren(tree).Value.Head).Value.Head).Value.Head).Value.Head
-        let expected = "let b = 1"
+        let expected = "let b = 1\n\n"
 
         Assert.AreEqual(expected, TreeTransforms.ChangeTextOf source [(a,"b")])
 
     [<Test>]
     member this.``Can change the text for two ast nodes``() =
-        let source = "let a = 1\nlet b = 2"
+        let source = "\nlet a = 1\nlet b = 2"
         let tree = Ast.MakeAstNode(ASTFetcher.Parse source).Value
         let a = Ast.GetChildren(Ast.GetChildren(Ast.GetChildren(Ast.GetChildren(tree).Value.Head).Value.Head).Value.Head).Value.Head
         let b = Ast.GetChildren(Ast.GetChildren(Ast.GetChildren(Ast.GetChildren(tree).Value.Head).Value.[1]).Value.Head).Value.Head
-        let expected = "let b = 1\nlet a2 = 2"
+        let expected = "\nlet b = 1\nlet a2 = 2"
 
         Assert.AreEqual(expected, TreeTransforms.ChangeTextOf source [(a,"b");(b,"a2")])
+
