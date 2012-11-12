@@ -6,6 +6,7 @@ open Microsoft.FSharp.Compiler.Ast
 
 open FSharpRefactor.Engine
 open FSharpRefactor.Engine.Ast
+open FSharpRefactor.Engine.TreeTransforms
 
 [<TestFixture>]
 type ASTFetcherModule() =
@@ -80,3 +81,14 @@ type AstModule() =
                 | Some(Ast.AstNode.Module(_)::_) -> true
                 | _ -> false
         Assert.IsTrue(expectModule rootNode)
+
+[<TestFixture>]
+type TreeTransformsModule() =
+    [<Test>]
+    member this.``Can change the text corresponding to an ast node``() =
+        let source = "let a = 1"
+        let tree = Ast.MakeAstNode(ASTFetcher.Parse source).Value
+        let a = Ast.GetChildren(Ast.GetChildren(Ast.GetChildren(Ast.GetChildren(tree).Value.Head).Value.Head).Value.Head).Value.Head
+        let expected = "let b = 1"
+
+        Assert.AreEqual(expected, TreeTransforms.ChangeTextOf source [(a,"b")])
