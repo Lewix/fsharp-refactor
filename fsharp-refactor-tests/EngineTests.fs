@@ -103,3 +103,11 @@ type TreeTransformsModule() =
 
         Assert.AreEqual(expected, TreeTransforms.ChangeTextOf source [(a,"b");(b,"a2")])
 
+    [<Test>]
+    member this.``Can add a child to a node``() =
+        let source = "\nlet a = \n  let b = 2\n  3"
+        let tree = Ast.MakeAstNode(ASTFetcher.Parse source).Value
+        let letNode = Ast.GetChildren(Ast.GetChildren(tree).Value.Head).Value.Head
+        let expected = "\nlet a = \n  let b = 2\n  let c = 3\n  3"
+        let actual = TreeTransforms.AddChild source letNode "let b = 2" ("\n  ", "\n")
+        Assert.AreEqual(expected, actual)

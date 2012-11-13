@@ -44,3 +44,7 @@ module TreeTransforms =
                 | p::ps -> processPairs (replaceOne modifiedSource p) ps
 
         processPairs source sortedPairs
+
+
+    let AddChild (source : string) (node : Ast.AstNode) (childText : string) separator =
+        source
