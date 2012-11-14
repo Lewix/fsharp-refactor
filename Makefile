@@ -1,8 +1,7 @@
 REFS=-r:/mnt/media/git/university/personalproj/fsharp-refactor/FSharp.Compiler.dll \
 	-r:nunit.framework.dll
 OPTS=--target:library --nologo
-SOURCES=fsharp-refactor/astfetch.fs \
-	fsharp-refactor/Ast.fs \
+SOURCES=fsharp-refactor/Ast.fs \
 	fsharp-refactor/TreeTransforms.fs
 TESTS=fsharp-refactor-tests/EngineTests.fs
 

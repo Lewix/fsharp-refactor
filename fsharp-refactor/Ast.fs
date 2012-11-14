@@ -1,6 +1,7 @@
 namespace FSharpRefactor.Engine.Ast
 
 open System
+open Microsoft.FSharp.Compiler.SourceCodeServices
 open Microsoft.FSharp.Compiler.Ast
 open Microsoft.FSharp.Compiler.Range
 
@@ -19,6 +20,12 @@ module Ast =
         match tree with
             | Some(ParsedInput.ImplFile(f)) -> Some(AstNode.File(f))
             | _ -> raise (new NotImplementedException("Use an impl file instead of a sig file"))
+
+
+    let Parse (source : string) =
+            let checker = InteractiveChecker.Create(NotifyFileTypeCheckStateIsDirty(fun _ -> ()))
+            let options = checker.GetCheckOptionsFromScriptRoot("/home/lewis/test.fs", source, DateTime.Now, [| |])
+            MakeAstNode(checker.UntypedParse("/home/lewis/test.fs", source, options).ParseTree)
 
 
     // Active patterns to make dealing with the syntax tree more convenient

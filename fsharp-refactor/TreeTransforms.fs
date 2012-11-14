@@ -55,3 +55,16 @@ module TreeTransforms =
             else getRange(children.[index]).StartRange
 
         replaceRange source (range, childText)
+
+    
+    let TextOfRange (source : string) (range : range) =
+        let lines = source.Split('\n')
+        let startLine = lines.[range.StartLine-1].[range.StartColumn..]
+        let endLine = lines.[range.EndLine-1].[range.StartColumn..]
+        let rec getLines line =
+            if line < range.EndLine-1 then lines.[line]::(getLines (line+1))
+            else if line = range.EndLine-1 then [endLine]
+            else [] // StartLine and EndLine are equal
+
+        startLine::(getLines range.StartLine)
+        |> Seq.fold (+) ""
