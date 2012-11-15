@@ -1,10 +1,10 @@
-namespace FSharpRefactor.Engine.TreeTransforms
+namespace FSharpRefactor.Engine.CodeTransforms
 
 open System
 open Microsoft.FSharp.Compiler.Range
 open FSharpRefactor.Engine.Ast
 
-module TreeTransforms =
+module CodeTransforms =
     exception InvalidRange
     exception InvalidNode
 

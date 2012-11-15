@@ -6,7 +6,7 @@ open Microsoft.FSharp.Compiler.Ast
 
 open FSharpRefactor.Engine
 open FSharpRefactor.Engine.Ast
-open FSharpRefactor.Engine.TreeTransforms
+open FSharpRefactor.Engine.CodeTransforms
 
 
 [<TestFixture>]
@@ -30,7 +30,7 @@ type AstModule() =
         Assert.IsTrue(expectModule rootNode)
 
 [<TestFixture>]
-type TreeTransformsModule() =
+type CodeTransformsModule() =
     [<Test>]
     member this.``Can change the text corresponding to an ast node``() =
         let source = "let a = 1\n\n"
@@ -38,7 +38,7 @@ type TreeTransformsModule() =
         let a = Ast.GetChildren(Ast.GetChildren(Ast.GetChildren(Ast.GetChildren(tree).Value.Head).Value.Head).Value.Head).Value.Head
         let expected = "let b = 1\n\n"
 
-        Assert.AreEqual(expected, TreeTransforms.ChangeTextOf source [(a,"b")])
+        Assert.AreEqual(expected, CodeTransforms.ChangeTextOf source [(a,"b")])
 
     [<Test>]
     member this.``Can change the text for two ast nodes``() =
@@ -48,7 +48,7 @@ type TreeTransformsModule() =
         let b = Ast.GetChildren(Ast.GetChildren(Ast.GetChildren(Ast.GetChildren(tree).Value.Head).Value.[1]).Value.Head).Value.Head
         let expected = "\nlet b = 1\nlet a2 = 2"
 
-        Assert.AreEqual(expected, TreeTransforms.ChangeTextOf source [(a,"b");(b,"a2")])
+        Assert.AreEqual(expected, CodeTransforms.ChangeTextOf source [(a,"b");(b,"a2")])
 
     [<Test>]
     member this.``Can add a child to a node``() =
@@ -56,7 +56,7 @@ type TreeTransformsModule() =
         let tree = (Ast.Parse source).Value
         let letNode = Ast.GetChildren(Ast.GetChildren(Ast.GetChildren(tree).Value.Head).Value.Head).Value.Head
         let expected = "\nlet a = \n  let b = 2\n  let c = 3\n  3"
-        let actual = TreeTransforms.AddChild source letNode 1 "let b = 2\n  "
+        let actual = CodeTransforms.AddChild source letNode 1 "let b = 2\n  "
         Assert.AreEqual(expected, actual)
 
 //TODO: test TextOfRange
