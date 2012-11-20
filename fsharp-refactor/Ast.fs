@@ -21,12 +21,13 @@ module Ast =
             | Some(ParsedInput.ImplFile(f)) -> Some(AstNode.File(f))
             | _ -> raise (new NotImplementedException("Use an impl file instead of a sig file"))
 
-
-    let Parse (source : string) =
-            let checker = InteractiveChecker.Create(NotifyFileTypeCheckStateIsDirty(fun _ -> ()))
-            let options = checker.GetCheckOptionsFromScriptRoot("/home/lewis/test.fs", source, DateTime.Now, [| |])
-            MakeAstNode(checker.UntypedParse("/home/lewis/test.fs", source, options).ParseTree)
-
+    let getParseTree source = 
+        let checker = InteractiveChecker.Create(NotifyFileTypeCheckStateIsDirty(fun _ -> ()))
+        let filename = "/home/lewis/test.fs"
+        let options source = checker.GetCheckOptionsFromScriptRoot(filename, source, DateTime.Now, [| |])
+        checker.UntypedParse(filename, source, options source).ParseTree
+        
+    let Parse source = MakeAstNode (getParseTree source)
 
     // Active patterns to make dealing with the syntax tree more convenient
     let (|ModuleOrNamespaceChildren|_|) (expression : SynModuleOrNamespace) =
