@@ -44,6 +44,11 @@ module Ast =
     let (|Children|_|) (node : AstNode) =
         match node with
             | File(ParsedImplFileInput(_,_,_,_,_,ns,_)) -> Some(List.map AstNode.ModuleOrNamespace ns)
+            | Pattern(p) ->
+                match p with
+                    | SynPat.Named(p2,_,_,_,_) -> Some [Pattern(p2)]
+                    | SynPat.Wild(_) -> None
+                    | _ -> raise (new NotImplementedException("Add a new entry to pattern for Pattern: " + (string p)))
             | ModuleOrNamespace(ns) ->
                 match ns with
                     | ModuleOrNamespaceChildren(modules) -> Some(List.map AstNode.Module modules)
@@ -59,6 +64,7 @@ module Ast =
             | Expression(e) ->
                 match e with
                     | SynExpr.LetOrUse(_,_,bs,e,_) ->  Some(List.append (List.map AstNode.Binding bs) [AstNode.Expression e])
+                    | SynExpr.Const(_,_) -> None
                     | _ -> raise (new NotImplementedException("Add a new entry to pattern for Expression: " + (string e)))
                     
             | _ -> raise (new NotImplementedException("Add a new entry to the active pattern for Children:" + (string node)))
