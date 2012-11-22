@@ -7,6 +7,7 @@ open Microsoft.FSharp.Compiler.Ast
 open FSharpRefactor.Engine
 open FSharpRefactor.Engine.Ast
 open FSharpRefactor.Engine.CodeTransforms
+open FSharpRefactor.Engine.CodeAnalysis
 
 
 [<TestFixture>]
@@ -60,3 +61,13 @@ type CodeTransformsModule() =
         Assert.AreEqual(expected, actual)
 
 //TODO: test TextOfRange
+
+[<TestFixture>]
+type CodeAnalysisModule() =
+    [<Test>]
+    member this.``Can count value declarations``() =
+        let source = "let a = 1\n  let b = 2\nlet c = 3"
+        let tree = (Ast.Parse source).Value
+        let expected = 3
+        let actual = CodeAnalysis.CountDeclarations tree
+        Assert.AreEqual(expected, actual)
