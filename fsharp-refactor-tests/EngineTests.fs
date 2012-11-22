@@ -64,10 +64,20 @@ type CodeTransformsModule() =
 
 [<TestFixture>]
 type CodeAnalysisModule() =
+    member this.parseAndRun source f =
+        let tree = (Ast.Parse source).Value
+        f tree
+
     [<Test>]
     member this.``Can count value declarations``() =
         let source = "let a = 1\n  let b = 2\nlet c = 3"
-        let tree = (Ast.Parse source).Value
         let expected = 3
-        let actual = CodeAnalysis.CountDeclarations tree
+        let actual = this.parseAndRun source CodeAnalysis.CountDeclarations
+        Assert.AreEqual(expected, actual)
+
+    [<Test>]
+    member this.``Can count value usages``() =
+        let source = "let a = 1\n  let b = 2\na+b\nlet c = 3"
+        let expected = 2
+        let actual = this.parseAndRun source CodeAnalysis.CountUsages
         Assert.AreEqual(expected, actual)
