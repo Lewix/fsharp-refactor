@@ -81,3 +81,9 @@ type CodeAnalysisModule() =
         let expected = 2
         let actual = this.parseAndRun source CodeAnalysis.CountUsages
         Assert.AreEqual(expected, actual)
+
+    [<Test>]
+    member this.``Can count value declarations and usages for slightly more complicated code``() =
+        let source = "let CountDeclarations t = match t with \n  | (0,a) -> a\n  | (a,b) -> a+b"
+        Assert.AreEqual(4, this.parseAndRun source CodeAnalysis.CountUsages, "Counting usages")
+        Assert.AreEqual(4, this.parseAndRun source CodeAnalysis.CountDeclarations, "Counting declarations")

@@ -15,6 +15,8 @@ module Ast =
         | Module of SynModuleDecl
         | Binding of SynBinding
         | File of ParsedImplFileInput
+        | Ident of Ident
+        | MatchClause of SynMatchClause
 
     let MakeAstNode (tree : ParsedInput option) =
         match tree with
@@ -48,6 +50,10 @@ module Ast =
                 match p with
                     | SynPat.Named(p2,_,_,_,_) -> Some [Pattern(p2)]
                     | SynPat.Wild(_) -> None
+                    | SynPat.LongIdent(LongIdentWithDots(is,_),_,_,ps,_,_) -> Some(List.append (List.map AstNode.Ident is) (List.map AstNode.Pattern ps))
+                    | SynPat.Paren(p,_) -> Some([AstNode.Pattern p])
+                    | SynPat.Tuple(ps,_) -> Some(List.map AstNode.Pattern ps)
+                    | SynPat.Const(_,_) -> None
                     | _ -> raise (new NotImplementedException("Add a new entry to pattern for Pattern: " + (string p)))
             | ModuleOrNamespace(ns) ->
                 match ns with
@@ -64,8 +70,13 @@ module Ast =
             | Expression(e) ->
                 match e with
                     | SynExpr.LetOrUse(_,_,bs,e,_) ->  Some(List.append (List.map AstNode.Binding bs) [AstNode.Expression e])
+                    | SynExpr.Match(_,e,cs,_,_) -> Some((AstNode.Expression e)::(List.map AstNode.MatchClause cs))
                     | SynExpr.Const(_,_) -> None
+                    | SynExpr.Ident _ -> None
+                    | SynExpr.App(_,_,e1,e2,_) -> Some([AstNode.Expression e1;AstNode.Expression e2])
                     | _ -> raise (new NotImplementedException("Add a new entry to pattern for Expression: " + (string e)))
+            | Ident(i) -> None
+            | MatchClause(Clause(p,_,e,_,_)) -> Some([AstNode.Pattern p; AstNode.Expression e])
                     
             | _ -> raise (new NotImplementedException("Add a new entry to the active pattern for Children:" + (string node)))
 
