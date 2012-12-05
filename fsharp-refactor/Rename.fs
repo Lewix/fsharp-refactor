@@ -9,7 +9,11 @@ type ScopeTree =
     | Declaration of (string * range) list * ScopeTree list
     | Usage of string * range
 
-let GetDeclarations p = ["a", mkRange "" (mkPos 1 1) (mkPos 1 1)]
+let rec getDeclarations p =
+    match p with
+        | CodeAnalysis.Declaration(text, range) -> [(text, range)]
+        | Ast.Children cs -> List.concat (Seq.map getDeclarations cs)
+        | _ -> []
 
 //TODO: mutually recursive functions with and
 let rec makeScopeTree (tree : Ast.AstNode) =
@@ -18,7 +22,8 @@ let rec makeScopeTree (tree : Ast.AstNode) =
             let l1,v =
                 match b with
                     | SynBinding.Binding(_,_,_,_,_,_,_,p,_,e,_,_) ->
-                        (makeScopeTree (Ast.AstNode.Expression e), GetDeclarations p)
+                        (makeScopeTree (Ast.AstNode.Expression e),
+                         getDeclarations (Ast.AstNode.Pattern p))
             let l2 = makeScopeTree (Ast.AstNode.Expression e)
             Declaration(v,l2)::l1
         | Ast.Children(cs) -> List.concat (Seq.map makeScopeTree cs)
