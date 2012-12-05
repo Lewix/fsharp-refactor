@@ -14,5 +14,5 @@ type ScopeTreeModule() =
         let scopeTree = makeScopeTree (rootNode.Value)
 
         match scopeTree with
-            | ScopeTree.Declaration("a",_,[ScopeTree.Usage("a",_)]) -> ()
-            | _ -> Assert.Fail("The scope tree for 'let a = 1 in a' was incorrect")
+            | [ScopeTree.Declaration(["a",_],[ScopeTree.Usage("a",_)])] -> ()
+            | _ -> Assert.Fail("The scope tree for 'let a = 1 in a' was incorrect: " + (sprintf "%A" scopeTree))
