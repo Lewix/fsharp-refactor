@@ -19,4 +19,8 @@ module CodeAnalysis =
             | Ast.Pattern(SynPat.LongIdent(_,_,_,_,_,_)) -> 1
             | Ast.Children c -> List.sum (List.map CountDeclarations c)
             | _ -> 0
-                             
+
+    let (|Usage|_|) (node : Ast.AstNode) =
+        match node with
+            | Ast.AstNode.Expression(SynExpr.Ident(i)) -> Some(i.idText, i.idRange)
+            | _ -> None
