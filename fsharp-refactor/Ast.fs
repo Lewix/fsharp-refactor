@@ -62,6 +62,7 @@ module Ast =
             | Module(m) ->
                 match m with
                     | SynModuleDecl.Let(_,bs,_) -> Some(List.map AstNode.Binding bs)
+                    | SynModuleDecl.DoExpr(_,e,_) -> Some([AstNode.Expression e])
                     | _ -> raise (new NotImplementedException("Add a new entry to pattern for Module: " + (string m)))
             | Binding(b) ->
                 match b with
