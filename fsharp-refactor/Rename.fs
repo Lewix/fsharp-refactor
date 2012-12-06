@@ -39,13 +39,17 @@ let CanRename (tree : Ast.AstNode) (name : string, declarationRange : range) (ne
                 let isDeclaration = (fun (n,r) -> n = name && rangeContainsRange r declarationRange)
                 if List.exists isDeclaration vs then Some(Declaration(vs, ts))
                 else findDeclarationInScopeTrees ds
-        
-    let rec walkScopeTree tree =
+
+    // Check if targetName is free in tree
+    // Call onDeclarationFun if declaration of targetName encountered
+    let rec isFree (onDeclarationFun : ScopeTree -> bool) targetName tree =
         match tree with
-            | Usage(n,_) -> n <> newName
+            | Usage(n,_) -> n <> targetName
             | Declaration(vs, ts) ->
-                if List.exists (fun (n,_) -> n = newName) vs then true //TODO: check name is not free
-                else List.fold (fun state t -> state && walkScopeTree t) true ts
+                if List.exists (fun (n,_) -> n = targetName) vs
+                then onDeclarationFun (Declaration(vs, ts))
+                else List.fold (fun state t -> state && isFree onDeclarationFun targetName t) true ts
 
     let declarationScope = findDeclarationInScopeTrees (makeScopeTree tree)
-    if Option.isSome declarationScope then walkScopeTree declarationScope.Value else false
+    if Option.isSome declarationScope
+    then isFree (isFree (fun _ -> true) name) newName declarationScope.Value else false
