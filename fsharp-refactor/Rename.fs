@@ -31,11 +31,21 @@ let rec makeScopeTree (tree : Ast.AstNode) =
         | _ -> []
 
 let CanRename (tree : Ast.AstNode) (name : string, declarationRange : range) (newName : string) =
-    let scopeTree = makeScopeTree tree
+    let rec findDeclarationInScopeTrees trees =
+        match trees with
+            | [] -> None
+            | Usage(_,_)::ds -> findDeclarationInScopeTrees ds
+            | Declaration(vs, ts)::ds ->
+                let isDeclaration = (fun (n,r) -> n = name && rangeContainsRange r declarationRange)
+                if List.exists isDeclaration vs then Some(Declaration(vs, ts))
+                else findDeclarationInScopeTrees ds
+        
     let rec walkScopeTree tree =
         match tree with
             | Usage(n,_) -> n <> newName
             | Declaration(vs, ts) ->
                 if List.exists (fun (n,_) -> n = newName) vs then true //TODO: check name is not free
                 else List.fold (fun state t -> state && walkScopeTree t) true ts
-    walkScopeTree scopeTree.[0]
+
+    let declarationScope = findDeclarationInScopeTrees (makeScopeTree tree)
+    if Option.isSome declarationScope then walkScopeTree declarationScope.Value else false
