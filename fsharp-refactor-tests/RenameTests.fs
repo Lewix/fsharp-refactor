@@ -41,3 +41,14 @@ type RenameAnalysisModule() =
                       "Should be able to rename a to b")
         Assert.IsFalse(CanRename (Ast.Parse badSource).Value ("a", declarationRange) "b",
                        "Shouldn't be able to rename a to b")
+
+    [<Test>]
+    member this.``Renaming analysis with nested declaration is correct``() =
+        let goodSource = "let a = 1 in let b = 2 in b"
+        let badSource = "let a = 1 in let b = 2 in a"
+        let declarationRange = mkRange "/home/lewis/test.fs" (mkPos 1 5) (mkPos 1 5)
+ 
+        Assert.IsTrue(CanRename (Ast.Parse goodSource).Value ("a", declarationRange) "b",
+                      "Should be able to rename a to b")
+        Assert.IsFalse(CanRename (Ast.Parse badSource).Value ("a", declarationRange) "b",
+                       "Shouldn't be able to rename a to b")
