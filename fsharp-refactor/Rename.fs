@@ -38,16 +38,16 @@ let rec makeScopeTree (tree : Ast.AstNode) =
         | CodeAnalysis.Usage(text, range) -> [Usage(text, range)]
         | _ -> []
 
-let CanRename (tree : Ast.AstNode) (name : string, declarationRange : range) (newName : string) =
-    let rec findDeclarationInScopeTrees trees =
-        match trees with
-            | [] -> None
-            | Usage(_,_)::ds -> findDeclarationInScopeTrees ds
-            | Declaration(is, ts)::ds ->
-                let isDeclaration = (fun (n,r) -> n = name && rangeContainsRange r declarationRange)
-                if List.exists isDeclaration is then Some(Declaration(is, ts))
-                else findDeclarationInScopeTrees ds
+let rec findDeclarationInScopeTrees trees name declarationRange =
+    match trees with
+        | [] -> None
+        | Usage(_,_)::ds -> findDeclarationInScopeTrees ds name declarationRange
+        | Declaration(is, ts)::ds ->
+            let isDeclaration = (fun (n,r) -> n = name && rangeContainsRange r declarationRange)
+            if List.exists isDeclaration is then Some(Declaration(is, ts))
+            else findDeclarationInScopeTrees ds name declarationRange
 
+let CanRename (tree : Ast.AstNode) (name : string, declarationRange : range) (newName : string) =
     // Check if targetName is free in tree
     // Call onDeclarationFun if declaration of targetName encountered
     let rec isFree (onDeclarationFun : ScopeTree -> bool) targetName tree =
@@ -58,11 +58,11 @@ let CanRename (tree : Ast.AstNode) (name : string, declarationRange : range) (ne
                 then onDeclarationFun (Declaration(is, ts))
                 else List.fold (fun state t -> state && isFree onDeclarationFun targetName t) true ts
 
-    let declarationScope = findDeclarationInScopeTrees (makeScopeTree tree)
+    let declarationScope = findDeclarationInScopeTrees (makeScopeTree tree) name declarationRange
     if Option.isSome declarationScope
     then isFree (isFree (fun _ -> true) name) newName declarationScope.Value else false
 
-//TODO: make some generic tree walking function which can be used for most of this
+//TODO: make some generic tree walking function which can be used for most of this?
 let DoRename source (tree: Ast.AstNode) (name : string, declarationRange : range) (newName : string) =
     let isNestedDeclaration idents =
         List.exists (fun (n,r) -> n = name && not (rangeContainsRange r declarationRange)) idents
@@ -77,6 +77,12 @@ let DoRename source (tree: Ast.AstNode) (name : string, declarationRange : range
                     if Option.isSome declarationRange then declarationRange.Value::remainingRanges
                     else remainingRanges
 
-    let ranges = List.concat (Seq.map rangesToReplace (makeScopeTree tree))
-    CodeTransforms.ChangeTextOf source (List.zip ranges (List.map (fun _ -> newName) [1..(ranges.Length)]))
+    //TODO: Only replace in trees which contain the declarationRange
+    let declarationScope = findDeclarationInScopeTrees (makeScopeTree tree) name declarationRange
+    if Option.isNone declarationScope
+    then source
+    else
+        let ranges = rangesToReplace declarationScope.Value
+        CodeTransforms.ChangeTextOf source
+                                    (List.zip ranges (List.map (fun _ -> newName) [1..(ranges.Length)]))
    
