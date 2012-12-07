@@ -34,6 +34,9 @@ let rec makeScopeTree (tree : Ast.AstNode) =
                          getDeclarations (Ast.AstNode.Pattern p))
             let l2 = makeScopeTree (Ast.AstNode.Expression e)
             Declaration(v,l2)::l1
+        | Ast.AstNode.MatchClause(Clause(p,we,e,_,_)) ->
+            [Declaration(getDeclarations (Ast.AstNode.Pattern p),
+                         makeScopeTree (Ast.AstNode.Expression e))]
         | Ast.Children(cs) -> List.concat (Seq.map makeScopeTree cs)
         | CodeAnalysis.Usage(text, range) -> [Usage(text, range)]
         | _ -> []
