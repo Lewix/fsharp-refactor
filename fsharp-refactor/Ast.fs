@@ -79,7 +79,10 @@ module Ast =
                     | SynExpr.ArbitraryAfterError(_,_) -> None
                     | _ -> raise (new NotImplementedException("Add a new entry to pattern for Expression: " + (string e)))
             | Ident(i) -> None
-            | MatchClause(Clause(p,_,e,_,_)) -> Some([AstNode.Pattern p; AstNode.Expression e])
+            | MatchClause(Clause(p,we,e,_,_)) ->
+                if Option.isSome we
+                then Some([AstNode.Pattern p; AstNode.Expression we.Value; AstNode.Expression e])
+                else Some([AstNode.Pattern p; AstNode.Expression e])
                     
             | _ -> raise (new NotImplementedException("Add a new entry to the active pattern for Children:" + (string node)))
 
