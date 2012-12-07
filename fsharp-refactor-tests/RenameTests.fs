@@ -17,7 +17,8 @@ type ScopeTreeModule() =
 
         match scopeTree with
             | [ScopeTree.Declaration(["a",_],[ScopeTree.Usage("a",_)])] -> ()
-            | _ -> Assert.Fail("The scope tree for 'let a = 1 in a' was incorrect:\n" + (sprintf "%A" scopeTree))
+            | _ -> Assert.Fail("The scope tree for 'let a = 1 in a' was incorrect:\n" +
+                               (sprintf "%A" scopeTree))
 
     [<Test>]
     member this.``Creates a scope tree for a more elaborate sequence of let statements``() =
@@ -27,7 +28,21 @@ type ScopeTreeModule() =
 
         match scopeTree with
             | [ScopeTree.Declaration(["a",_],[ScopeTree.Usage("a",_)])] -> ()
-            | _ -> Assert.Fail("The scope tree for 'let a = 1 in a' was incorrect:\n" + (sprintf "%A" scopeTree))
+            | _ -> Assert.Fail("The scope tree for 'let a = 1 in a' was incorrect:\n" +
+                               (sprintf "%A" scopeTree))
+
+    [<Test>]
+    member this.``Can create a scope tree for a match clause``() =
+        let source = "match a with (a,b) -> a"
+        let rootNode = Ast.Parse source
+        let scopeTree = makeScopeTree (rootNode.Value)
+
+        match scopeTree with
+            | [ScopeTree.Usage("a",_);
+               ScopeTree.Declaration([("a",_);("b",_)],
+                                     [ScopeTree.Usage("a",_)])] -> ()
+            | _ -> Assert.Fail("The scope tree for 'match a with (a,b) -> a' was incorrect:\n" +
+                               (sprintf "%A" scopeTree))
 
 [<TestFixture>]
 type RenameAnalysisModule() =
