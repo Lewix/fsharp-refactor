@@ -80,7 +80,6 @@ let DoRename source (tree: Ast.AstNode) (name : string, declarationRange : range
                     if Option.isSome declarationRange then declarationRange.Value::remainingRanges
                     else remainingRanges
 
-    //TODO: Only replace in trees which contain the declarationRange
     let declarationScope = findDeclarationInScopeTrees (makeScopeTree tree) name declarationRange
     if Option.isNone declarationScope
     then source
