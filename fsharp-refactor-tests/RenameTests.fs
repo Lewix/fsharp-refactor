@@ -77,7 +77,7 @@ type RenameTransformModule() =
         let declarationRange = mkRange "/home/lewis/test.fs" (mkPos 1 5) (mkPos 1 5)
 
         Assert.AreEqual(expected, DoRename source (Ast.Parse source).Value ("a", declarationRange) "c")
-
+ 
     [<Test>]
     member this.``Can carry out another renaming transformation``() =
         let source = "let a = a in let b = 3*a + a"
@@ -85,3 +85,14 @@ type RenameTransformModule() =
         let declarationRange = mkRange "/home/lewis/test.fs" (mkPos 1 5) (mkPos 1 5)
 
         Assert.AreEqual(expected, DoRename source (Ast.Parse source).Value ("a", declarationRange) "c")
+
+        
+    [<Test>]
+    member this.``Can carry out rename on a match expression``() =
+        let source = "match a with (a,b) -> a"
+        let expected = "match a with (c,b) -> c"
+        let declarationRange = mkRange "/home/lewis/test.fs" (mkPos 1 15) (mkPos 1 15)
+
+        Assert.AreEqual(expected, DoRename source (Ast.Parse source).Value ("a", declarationRange) "c")
+
+        
