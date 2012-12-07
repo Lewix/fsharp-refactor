@@ -52,3 +52,13 @@ type RenameAnalysisModule() =
                       "Should be able to rename a to b")
         Assert.IsFalse(CanRename (Ast.Parse badSource).Value ("a", declarationRange) "b",
                        "Shouldn't be able to rename a to b")
+
+[<TestFixture>]
+type RenameTransformModule() =
+    [<Test>]
+    member this.``Can carry out renaming transformation``() =
+        let source = "let a = 1 in let b = 2 in a + b + (let a = 3 in a)"
+        let expected = "let c = 1 in let b = 2 in c + b + (let a = 3 in a)"
+        let declarationRange = mkRange "/home/lewis/test.fs" (mkPos 1 5) (mkPos 1 5)
+
+        Assert.AreEqual(expected, DoRename source (Ast.Parse source).Value ("a", declarationRange) "c")
