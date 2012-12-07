@@ -28,7 +28,7 @@ type ScopeTreeModule() =
 
         match scopeTree with
             | [ScopeTree.Declaration(["a",_],[ScopeTree.Usage("a",_)])] -> ()
-            | _ -> Assert.Fail("The scope tree for 'let a = 1 in a' was incorrect:\n" +
+            | _ -> Assert.Fail("The scope tree for elaborate let expression was incorrect:\n" +
                                (sprintf "%A" scopeTree))
 
     [<Test>]
