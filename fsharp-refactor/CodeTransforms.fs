@@ -31,18 +31,18 @@ module CodeTransforms =
         else raise InvalidRange
 
 
-    let ChangeTextOf (source : string) (nodeTextPairsToChange : (Ast.AstNode * string) list) =
+    let ChangeTextOf (source : string) (rangeTextPairsToChange : (range * string) list) =
         let sortedPairs =
-            let sortFunction (node1, _) (node2, _) =
-                -rangeOrder.Compare(getRange node1, getRange node2)
+            let sortFunction (range1, _) (range2, _) =
+                -rangeOrder.Compare(range1, range2)
 
-            List.sortWith sortFunction nodeTextPairsToChange
+            List.sortWith sortFunction rangeTextPairsToChange
 
 
-        let rec processPairs modifiedSource remainingNodeTextPairs =
-            match remainingNodeTextPairs with
+        let rec processPairs modifiedSource remainingRangeTextPairs =
+            match remainingRangeTextPairs with
                 | [] -> modifiedSource
-                | (n,t)::ps -> processPairs (replaceRange modifiedSource (getRange n, t)) ps
+                | (r,t)::ps -> processPairs (replaceRange modifiedSource (r, t)) ps
 
         processPairs source sortedPairs
 

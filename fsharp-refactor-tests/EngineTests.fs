@@ -39,7 +39,7 @@ type CodeTransformsModule() =
         let a = Ast.GetChildren(Ast.GetChildren(Ast.GetChildren(Ast.GetChildren(tree).Value.Head).Value.Head).Value.Head).Value.Head
         let expected = "let b = 1\n\n"
 
-        Assert.AreEqual(expected, CodeTransforms.ChangeTextOf source [(a,"b")])
+        Assert.AreEqual(expected, CodeTransforms.ChangeTextOf source [((Ast.GetRange a).Value,"b")])
 
     [<Test>]
     member this.``Can change the text for two ast nodes``() =
@@ -49,7 +49,7 @@ type CodeTransformsModule() =
         let b = Ast.GetChildren(Ast.GetChildren(Ast.GetChildren(Ast.GetChildren(tree).Value.Head).Value.[1]).Value.Head).Value.Head
         let expected = "\nlet b = 1\nlet a2 = 2"
 
-        Assert.AreEqual(expected, CodeTransforms.ChangeTextOf source [(a,"b");(b,"a2")])
+        Assert.AreEqual(expected, CodeTransforms.ChangeTextOf source [((Ast.GetRange a).Value,"b");((Ast.GetRange b).Value,"a2")])
 
     [<Test>]
     member this.``Can add a child to a node``() =
