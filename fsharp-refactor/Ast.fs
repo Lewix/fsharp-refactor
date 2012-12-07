@@ -75,6 +75,8 @@ module Ast =
                     | SynExpr.Const(_,_) -> None
                     | SynExpr.Ident _ -> None
                     | SynExpr.App(_,_,e1,e2,_) -> Some([AstNode.Expression e1;AstNode.Expression e2])
+                    | SynExpr.Paren(e,_,_,_) -> Some([AstNode.Expression e])
+                    | SynExpr.ArbitraryAfterError(_,_) -> None
                     | _ -> raise (new NotImplementedException("Add a new entry to pattern for Expression: " + (string e)))
             | Ident(i) -> None
             | MatchClause(Clause(p,_,e,_,_)) -> Some([AstNode.Pattern p; AstNode.Expression e])
