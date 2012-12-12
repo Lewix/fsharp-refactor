@@ -12,7 +12,7 @@ module ScopeAnalysis =
         | Declaration of Identifier list * ScopeTree list
         | Usage of Identifier
 
-    //TODO: Add patterns for long ident
+    //TODO: Consider LongIdent and LongIdentWithDots
     let (|UsedIdent|_|) (node : Ast.AstNode) =
         match node with
             | Ast.AstNode.Expression(SynExpr.Ident(i)) -> Some(i.idText, i.idRange)
