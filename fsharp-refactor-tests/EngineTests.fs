@@ -61,29 +61,3 @@ type CodeTransformsModule() =
         Assert.AreEqual(expected, actual)
 
 //TODO: test TextOfRange
-
-[<TestFixture>]
-type CodeAnalysisModule() =
-    member this.parseAndRun source f =
-        let tree = (Ast.Parse source).Value
-        f tree
-
-    [<Test>]
-    member this.``Can count value declarations``() =
-        let source = "let a = 1\n  let b = 2\nlet c = 3"
-        let expected = 3
-        let actual = this.parseAndRun source CodeAnalysis.CountDeclarations
-        Assert.AreEqual(expected, actual)
-
-    [<Test>]
-    member this.``Can count value usages``() =
-        let source = "let a = 1\n  let b = 2\na+b\nlet c = 3"
-        let expected = 2
-        let actual = this.parseAndRun source CodeAnalysis.CountUsages
-        Assert.AreEqual(expected, actual)
-
-    [<Test>]
-    member this.``Can count value declarations and usages for slightly more complicated code``() =
-        let source = "let CountDeclarations t = match t with \n  | (0,a) -> a\n  | (a,b) -> a+b"
-        Assert.AreEqual(4, this.parseAndRun source CodeAnalysis.CountUsages, "Counting usages")
-        Assert.AreEqual(4, this.parseAndRun source CodeAnalysis.CountDeclarations, "Counting declarations")
