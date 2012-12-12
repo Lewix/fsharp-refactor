@@ -27,7 +27,21 @@ type ScopeTreeModule() =
         let scopeTree = makeScopeTree (rootNode.Value)
 
         match scopeTree with
-            | [ScopeTree.Declaration(["a",_],[ScopeTree.Usage("a",_)])] -> ()
+            | [ScopeTree.Declaration(["a",_],
+                                     [ScopeTree.Declaration(["b",_],[]);
+                                      ScopeTree.Usage("op_Addition",_);
+                                      ScopeTree.Usage("a",_)]);
+               ScopeTree.Declaration(["b",_],
+                                     [ScopeTree.Declaration(["c",_],
+                                                            [ScopeTree.Declaration(["d",_],
+                                                                                   [ScopeTree.Usage("op_Addition",_);
+                                                                                    ScopeTree.Usage("b",_);
+                                                                                    ScopeTree.Usage("c",_)])]);
+                                      ScopeTree.Usage("op_Addition",_);
+                                      ScopeTree.Usage("op_Addition",_);
+                                      ScopeTree.Usage("b",_);
+                                      ScopeTree.Usage("b",_)])] -> ()
+            
             | _ -> Assert.Fail("The scope tree for elaborate let expression was incorrect:\n" +
                                (sprintf "%A" scopeTree))
 
