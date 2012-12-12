@@ -50,8 +50,8 @@ let rec makeScopeTree (tree : Ast.AstNode) =
         
     match tree with
         | Ast.ModuleOrNamespace(SynModuleOrNamespace.SynModuleOrNamespace(_,_,ds,_,_,_,_)) ->
-            makeNestedScopeTrees (List.map Ast.AstNode.Module ds)
-        | Ast.AstNode.Module(SynModuleDecl.Let(_,[b],_)) ->
+            makeNestedScopeTrees (List.map Ast.AstNode.ModuleDeclaration ds)
+        | Ast.AstNode.ModuleDeclaration(SynModuleDecl.Let(_,[b],_)) ->
             Declaration(identifiersFromBinding b, [])::(scopeTreesFromBinding b)
         | Ast.AstNode.Expression(SynExpr.LetOrUse(_,_,[b],e,_)) ->
             let is = identifiersFromBinding b

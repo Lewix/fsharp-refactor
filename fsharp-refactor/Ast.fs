@@ -12,7 +12,7 @@ module Ast =
         | Expression of SynExpr
         | Pattern of SynPat
         | ModuleOrNamespace of SynModuleOrNamespace
-        | Module of SynModuleDecl
+        | ModuleDeclaration of SynModuleDecl
         | Binding of SynBinding
         | File of ParsedImplFileInput
         | Ident of Ident
@@ -57,13 +57,13 @@ module Ast =
                     | _ -> raise (new NotImplementedException("Add a new entry to pattern for Pattern: " + (string p)))
             | ModuleOrNamespace(ns) ->
                 match ns with
-                    | ModuleOrNamespaceChildren(modules) -> Some(List.map AstNode.Module modules)
+                    | ModuleOrNamespaceChildren(modules) -> Some(List.map AstNode.ModuleDeclaration modules)
                     | _ -> None
-            | Module(m) ->
+            | ModuleDeclaration(m) ->
                 match m with
                     | SynModuleDecl.Let(_,bs,_) -> Some(List.map AstNode.Binding bs)
                     | SynModuleDecl.DoExpr(_,e,_) -> Some([AstNode.Expression e])
-                    | _ -> raise (new NotImplementedException("Add a new entry to pattern for Module: " + (string m)))
+                    | _ -> raise (new NotImplementedException("Add a new entry to pattern for ModuleDeclaration: " + (string m)))
             | Binding(b) ->
                 match b with
                     | SynBinding.Binding(_,_,_,_,_,_,_,p,_,e,_,_) -> Some([AstNode.Pattern p; AstNode.Expression e])
@@ -91,7 +91,7 @@ module Ast =
             | File _ -> None
             | Pattern p -> Some(p.Range)
             | ModuleOrNamespace ns -> Some(ns.Range)
-            | Module m -> Some(m.Range)
+            | ModuleDeclaration m -> Some(m.Range)
             | Binding b -> Some(b.RangeOfBindingAndRhs)
             | Expression e -> Some(e.Range)
             | _ -> raise (new NotImplementedException("Add a new entry to the active pattern for Range:" + (string node)))

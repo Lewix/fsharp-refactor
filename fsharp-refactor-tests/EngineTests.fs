@@ -26,7 +26,7 @@ type AstModule() =
             Ast.GetChildren(List.head(Ast.GetChildren(node.Value).Value))
         let expectModule (node : Ast.AstNode option) =
             match binding node with
-                | Some(Ast.AstNode.Module(_)::_) -> true
+                | Some(Ast.AstNode.ModuleDeclaration(_)::_) -> true
                 | _ -> false
         Assert.IsTrue(expectModule rootNode)
 
