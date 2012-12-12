@@ -23,17 +23,41 @@ let rec getDeclarations p =
         | Ast.Children cs -> List.concat (Seq.map getDeclarations cs)
         | _ -> []
 
-//TODO: mutually recursive functions with "and"
-let rec makeScopeTree (tree : Ast.AstNode) =
+let addChildren (tree : ScopeTree) (children : ScopeTree list) =
+    if List.isEmpty children then tree else
     match tree with
+        | Usage(text,range) -> Declaration([text,range],children)
+        | Declaration(is, cs) -> Declaration(is, List.append cs children)
+
+//TODO: mutually recursive functions with "and" (multiple bindings per let)
+//TODO: rename makeScopeTree to makeScopeTrees
+let rec makeScopeTree (tree : Ast.AstNode) =
+    let identifiersFromBinding binding =
+        match binding with
+            | SynBinding.Binding(_,_,_,_,_,_,_,p,_,_,_,_) ->
+                getDeclarations (Ast.AstNode.Pattern p)
+    let scopeTreesFromBinding binding =
+        match binding with
+            | SynBinding.Binding(_,_,_,_,_,_,_,_,_,e,_,_) ->
+                makeScopeTree (Ast.AstNode.Expression e)
+    let rec makeNestedScopeTrees ds =
+        match ds with
+            | [] -> []
+            | d::ds ->
+                let headScopeTree = makeScopeTree d
+                let tailScopeTree = makeNestedScopeTrees ds
+                (addChildren (List.head headScopeTree) tailScopeTree)::(List.tail headScopeTree)
+        
+    match tree with
+        | Ast.ModuleOrNamespace(SynModuleOrNamespace.SynModuleOrNamespace(_,_,ds,_,_,_,_)) ->
+            makeNestedScopeTrees (List.map Ast.AstNode.Module ds)
+        | Ast.AstNode.Module(SynModuleDecl.Let(_,[b],_)) ->
+            Declaration(identifiersFromBinding b, [])::(scopeTreesFromBinding b)
         | Ast.AstNode.Expression(SynExpr.LetOrUse(_,_,[b],e,_)) ->
-            let l1,v =
-                match b with
-                    | SynBinding.Binding(_,_,_,_,_,_,_,p,_,e,_,_) ->
-                        (makeScopeTree (Ast.AstNode.Expression e),
-                         getDeclarations (Ast.AstNode.Pattern p))
+            let is = identifiersFromBinding b
+            let l1 = scopeTreesFromBinding b
             let l2 = makeScopeTree (Ast.AstNode.Expression e)
-            Declaration(v,l2)::l1
+            Declaration(is,l2)::l1
         | Ast.AstNode.MatchClause(Clause(p,we,e,_,_)) ->
             [Declaration(getDeclarations (Ast.AstNode.Pattern p),
                          makeScopeTree (Ast.AstNode.Expression e))]
