@@ -5,6 +5,7 @@ open NUnit.Framework
 open Microsoft.FSharp.Compiler.Range
 
 open FSharpRefactor.Engine.Ast
+open FSharpRefactor.Engine.CodeAnalysis
 open FSharpRefactor.Refactorings.Rename
 
 [<TestFixture>]
@@ -13,10 +14,10 @@ type ScopeTreeModule() =
     member this.``Creates a scope tree for a simple let statement``() =
         let source = "let a = 1 in a"
         let rootNode = Ast.Parse source
-        let scopeTree = makeScopeTree (rootNode.Value)
+        let scopeTree = ScopeAnalysis.makeScopeTrees (rootNode.Value)
 
         match scopeTree with
-            | [ScopeTree.Declaration(["a",_],[ScopeTree.Usage("a",_)])] -> ()
+            | [ScopeAnalysis.Declaration(["a",_],[ScopeAnalysis.Usage("a",_)])] -> ()
             | _ -> Assert.Fail("The scope tree for 'let a = 1 in a' was incorrect:\n" +
                                (sprintf "%A" scopeTree))
 
@@ -24,23 +25,23 @@ type ScopeTreeModule() =
     member this.``Creates a scope tree for a more elaborate sequence of let statements``() =
         let source = "let a =\n  let b = 1\n  let c = 2 + b + b\n  let d = 1\n  b+c\nlet b = 3+a"
         let rootNode = Ast.Parse source
-        let scopeTree = makeScopeTree (rootNode.Value)
+        let scopeTree = ScopeAnalysis.makeScopeTrees (rootNode.Value)
 
         match scopeTree with
-            | [ScopeTree.Declaration(["a",_],
-                                     [ScopeTree.Declaration(["b",_],[]);
-                                      ScopeTree.Usage("op_Addition",_);
-                                      ScopeTree.Usage("a",_)]);
-               ScopeTree.Declaration(["b",_],
-                                     [ScopeTree.Declaration(["c",_],
-                                                            [ScopeTree.Declaration(["d",_],
-                                                                                   [ScopeTree.Usage("op_Addition",_);
-                                                                                    ScopeTree.Usage("b",_);
-                                                                                    ScopeTree.Usage("c",_)])]);
-                                      ScopeTree.Usage("op_Addition",_);
-                                      ScopeTree.Usage("op_Addition",_);
-                                      ScopeTree.Usage("b",_);
-                                      ScopeTree.Usage("b",_)])] -> ()
+            | [ScopeAnalysis.Declaration(["a",_],
+                                     [ScopeAnalysis.Declaration(["b",_],[]);
+                                      ScopeAnalysis.Usage("op_Addition",_);
+                                      ScopeAnalysis.Usage("a",_)]);
+               ScopeAnalysis.Declaration(["b",_],
+                                     [ScopeAnalysis.Declaration(["c",_],
+                                                            [ScopeAnalysis.Declaration(["d",_],
+                                                                                   [ScopeAnalysis.Usage("op_Addition",_);
+                                                                                    ScopeAnalysis.Usage("b",_);
+                                                                                    ScopeAnalysis.Usage("c",_)])]);
+                                      ScopeAnalysis.Usage("op_Addition",_);
+                                      ScopeAnalysis.Usage("op_Addition",_);
+                                      ScopeAnalysis.Usage("b",_);
+                                      ScopeAnalysis.Usage("b",_)])] -> ()
             
             | _ -> Assert.Fail("The scope tree for elaborate let expression was incorrect:\n" +
                                (sprintf "%A" scopeTree))
@@ -49,12 +50,12 @@ type ScopeTreeModule() =
     member this.``Can create a scope tree for a match clause``() =
         let source = "match a with (a,b) -> a"
         let rootNode = Ast.Parse source
-        let scopeTree = makeScopeTree (rootNode.Value)
+        let scopeTree = ScopeAnalysis.makeScopeTrees (rootNode.Value)
 
         match scopeTree with
-            | [ScopeTree.Usage("a",_);
-               ScopeTree.Declaration([("a",_);("b",_)],
-                                     [ScopeTree.Usage("a",_)])] -> ()
+            | [ScopeAnalysis.Usage("a",_);
+               ScopeAnalysis.Declaration([("a",_);("b",_)],
+                                     [ScopeAnalysis.Usage("a",_)])] -> ()
             | _ -> Assert.Fail("The scope tree for 'match a with (a,b) -> a' was incorrect:\n" +
                                (sprintf "%A" scopeTree))
 
