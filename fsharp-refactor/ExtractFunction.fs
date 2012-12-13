@@ -3,6 +3,7 @@ module FSharpRefactor.Refactorings.ExtractFunction
 open Microsoft.FSharp.Compiler.Range
 open Microsoft.FSharp.Compiler.Ast
 open FSharpRefactor.Engine.Ast
+open FSharpRefactor.Engine.CodeTransforms
 
 let rec findNodesWithRange range (tree : Ast.AstNode) =
     let nodeRange = Ast.GetRange(tree)
@@ -22,8 +23,13 @@ let findExpressionAtRange range (tree : Ast.AstNode)  =
             | _ -> false
     List.find isExpression nodesWithRange
 
-let CreateFunction source (inScopeTree : Ast.AstNode) (functionName : string) (arguments : string list) (body : string) (isRecusive : bool) =
-    source
+let CreateFunction source (inScopeTree : Ast.AstNode) (functionName : string) (arguments : string list) (body : string) (isRecursive : bool) =
+    let letString = if isRecursive then "let rec" else "let"
+    let functionStrings = List.concat (seq [[letString; functionName]; arguments; ["="; body; "in "]])
+    let functionString = String.concat " " functionStrings
+    let range = (Ast.GetRange inScopeTree).Value.StartRange
+
+    CodeTransforms.ChangeTextOf source [range,functionString]
     
 
 let CanExtractFunction (tree : Ast.AstNode) (expressionRange : range) (functionName : string) = true
