@@ -23,7 +23,7 @@ module ScopeAnalysis =
             | Ast.Pattern(SynPat.Named(_,i,_,_,_)) -> Some(i.idText, i.idRange)
             | _ -> None
 
-    let GetFreeIdentifiers (source : string) (trees : ScopeTree list) (declared : Set<string>) =
+    let GetFreeIdentifiers (trees : ScopeTree list) (declared : Set<string>) =
         let rec freeIdentifiersInSingleTree foundFree declared tree =
             match tree with
                 | Usage(n,_) ->

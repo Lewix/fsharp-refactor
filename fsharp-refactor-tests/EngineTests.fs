@@ -64,6 +64,8 @@ type CodeTransformsModule() =
 
 [<TestFixture>]
 type ScopeAnalysisModule() =
+    let getTrees source = ScopeAnalysis.makeScopeTrees (Ast.Parse source).Value
+    
     [<Test>]
     member this.``Can get all the free identifiers names in a ScopeTree``() =
         let source1 = "let a = b in f(c + a + b)"
@@ -71,8 +73,8 @@ type ScopeAnalysisModule() =
         let expected1 = Set(["b"; "c"; "f"])
         let expected2 = Set(["b"])
         let assertFun (source, expected) =
-            let tree = ScopeAnalysis.makeScopeTrees (Ast.Parse source).Value
-            let actual = ScopeAnalysis.GetFreeIdentifiers source tree (Set ["op_Addition"])
+            let tree = getTrees source
+            let actual = ScopeAnalysis.GetFreeIdentifiers tree (Set ["op_Addition"])
             Assert.AreEqual(expected, actual, sprintf "%A" actual)
 
         assertFun (source1,expected1)
