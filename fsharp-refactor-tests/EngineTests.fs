@@ -61,3 +61,17 @@ type CodeTransformsModule() =
         Assert.AreEqual(expected, actual)
 
 //TODO: test TextOfRange
+
+[<TestFixture>]
+type ScopeAnalysisModule() =
+    [<Test>]
+    member this.``Can get all the free identifiers names in a ScopeTree``() =
+        let source1 = "let a = b in f(c + a + b)"
+        let source2 = "let a = b in let b = 1"
+        let expected1 = Set(["b"; "c"; "f"])
+        let expected2 = Set(["b"])
+        let tree1 = ScopeAnalysis.makeScopeTrees (Ast.Parse source1).Value
+        let tree2 = ScopeAnalysis.makeScopeTrees (Ast.Parse source2).Value
+
+        Assert.AreEqual(expected1, Set(ScopeAnalysis.GetFreeIdentifiers source1 tree1))
+        Assert.AreEqual(expected2, Set(ScopeAnalysis.GetFreeIdentifiers source2 tree2))

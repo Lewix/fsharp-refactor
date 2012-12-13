@@ -23,6 +23,8 @@ module ScopeAnalysis =
             | Ast.Pattern(SynPat.Named(_,i,_,_,_)) -> Some(i.idText, i.idRange)
             | _ -> None
 
+    let GetFreeIdentifiers (source : string) (trees : ScopeTree list) = []
+
     let rec getDeclarations p =
         match p with
             | DeclaredIdent(text, range) -> [(text, range)]
