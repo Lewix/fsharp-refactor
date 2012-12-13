@@ -70,8 +70,10 @@ type ScopeAnalysisModule() =
         let source2 = "let a = b in let b = 1"
         let expected1 = Set(["b"; "c"; "f"])
         let expected2 = Set(["b"])
-        let tree1 = ScopeAnalysis.makeScopeTrees (Ast.Parse source1).Value
-        let tree2 = ScopeAnalysis.makeScopeTrees (Ast.Parse source2).Value
+        let assertFun (source, expected) =
+            let tree = ScopeAnalysis.makeScopeTrees (Ast.Parse source).Value
+            let actual = ScopeAnalysis.GetFreeIdentifiers source tree
+            Assert.AreEqual(expected, actual, sprintf "%A" actual)
 
-        Assert.AreEqual(expected1, ScopeAnalysis.GetFreeIdentifiers source1 tree1)
-        Assert.AreEqual(expected2, ScopeAnalysis.GetFreeIdentifiers source2 tree2)
+        assertFun (source1,expected1)
+        assertFun (source2,expected2)
