@@ -23,7 +23,17 @@ module ScopeAnalysis =
             | Ast.Pattern(SynPat.Named(_,i,_,_,_)) -> Some(i.idText, i.idRange)
             | _ -> None
 
-    let GetFreeIdentifiers (source : string) (trees : ScopeTree list) = []
+    let GetFreeIdentifiers (source : string) (trees : ScopeTree list) (declared : Set<string>) =
+        let rec freeIdentifiersInSingleTree foundFree declared tree =
+            match tree with
+                | Usage(n,_) ->
+                    if Set.contains n declared then foundFree
+                    else Set.add n foundFree
+                | Declaration(is, ts) ->
+                    let updatedDeclared = Set.union declared (Set(List.map fst is))
+                    Set.unionMany (Seq.map (freeIdentifiersInSingleTree foundFree updatedDeclared) ts)
+                    
+        Set.unionMany (Seq.map (freeIdentifiersInSingleTree (Set []) declared) trees)
 
     let rec getDeclarations p =
         match p with
