@@ -79,3 +79,11 @@ type ScopeAnalysisModule() =
 
         assertFun (source1,expected1)
         assertFun (source2,expected2)
+
+    [<Test>]
+    member this.``Can get all the declared names in a ScopeTree``() =
+        let source = "let a = let b = c + 1 in let c = 3 in a"
+        let expected = Set ["a";"b";"c"]
+        let tree = getTrees source
+
+        Assert.AreEqual(expected, ScopeAnalysis.GetDeclarations tree)

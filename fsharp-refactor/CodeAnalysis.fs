@@ -35,6 +35,8 @@ module ScopeAnalysis =
                     
         Set.unionMany (Seq.map (freeIdentifiersInSingleTree (Set []) declared) trees)
 
+    let GetDeclarations (trees : ScopeTree list) = Set []
+
     let rec getDeclarations p =
         match p with
             | DeclaredIdent(text, range) -> [(text, range)]
