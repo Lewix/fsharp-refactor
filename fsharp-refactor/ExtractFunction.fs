@@ -22,6 +22,10 @@ let findExpressionAtRange range (tree : Ast.AstNode)  =
             | _ -> false
     List.find isExpression nodesWithRange
 
+let CreateFunction source (inScopeTree : Ast.AstNode) (functionName : string) (arguments : string list) (body : string) (isRecusive : bool) =
+    source
+    
+
 let CanExtractFunction (tree : Ast.AstNode) (expressionRange : range) (functionName : string) = true
 
 let DoExtractFunction source (tree : Ast.AstNode) (expressionRange : range) (functionName : string) =
