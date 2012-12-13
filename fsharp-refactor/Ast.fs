@@ -6,8 +6,6 @@ open Microsoft.FSharp.Compiler.Ast
 open Microsoft.FSharp.Compiler.Range
 
 module Ast =
-//TODO: Make my own range so I don't need to use the compiler one
-    
     type AstNode =
         | Expression of SynExpr
         | Pattern of SynPat
