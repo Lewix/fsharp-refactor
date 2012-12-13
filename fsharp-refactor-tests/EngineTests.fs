@@ -73,5 +73,5 @@ type ScopeAnalysisModule() =
         let tree1 = ScopeAnalysis.makeScopeTrees (Ast.Parse source1).Value
         let tree2 = ScopeAnalysis.makeScopeTrees (Ast.Parse source2).Value
 
-        Assert.AreEqual(expected1, Set(ScopeAnalysis.GetFreeIdentifiers source1 tree1))
-        Assert.AreEqual(expected2, Set(ScopeAnalysis.GetFreeIdentifiers source2 tree2))
+        Assert.AreEqual(expected1, ScopeAnalysis.GetFreeIdentifiers source1 tree1)
+        Assert.AreEqual(expected2, ScopeAnalysis.GetFreeIdentifiers source2 tree2)
