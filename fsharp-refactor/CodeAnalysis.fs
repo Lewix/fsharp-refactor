@@ -35,7 +35,16 @@ module ScopeAnalysis =
                     
         Set.unionMany (Seq.map (freeIdentifiersInSingleTree (Set []) declared) trees)
 
-    let GetDeclarations (trees : ScopeTree list) = Set []
+    let GetDeclarations (trees : ScopeTree list) =
+        let rec declarationsInSingleTree tree =
+            match tree with
+                | Usage(n,_) -> Set []
+                | Declaration(is, ts) ->
+                    let declarationsInChildren =
+                        Set.unionMany (Seq.map declarationsInSingleTree ts)
+                    Set.union declarationsInChildren (Set(List.map fst is))
+
+        Set.unionMany (Seq.map declarationsInSingleTree trees)
 
     let rec getDeclarations p =
         match p with
