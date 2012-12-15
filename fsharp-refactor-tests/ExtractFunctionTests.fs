@@ -19,6 +19,17 @@ type ExtractFunctionTransformModule() =
             | Ast.AstNode.Expression(SynExpr.Paren(SynExpr.App(_,_,SynExpr.App(_,_,_,SynExpr.Const(_,_),_),SynExpr.Const(_,_),_),_,_,_)) -> ()
             | _ -> Assert.Fail("The AstNode was not the one for (2+3): " + (sprintf "%A" expression))
 
+    [<Test>]
+    member this.``Can extract an expression into a function``() =
+        let source = "let a b = 1+(b+3)+4"
+        let expected = "let f b = b+3 in let a b = 1+(f b)+4"
+        let tree = (Ast.Parse source).Value
+        let letTree =
+            List.head (findNodesWithRange (mkRange "/home/lewis/test.fs" (mkPos 1 0) (mkPos 1 19)) tree)
+        let expressionRange = mkRange "/home/lewis/test.fs" (mkPos 1 12) (mkPos 1 17)
+
+        Assert.AreEqual(expected, DoExtractFunction source letTree expressionRange "f")
+        
 
 [<TestFixture>]
 type CreateFunctionModule() =
