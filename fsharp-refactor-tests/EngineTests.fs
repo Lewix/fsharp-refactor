@@ -3,6 +3,7 @@ namespace FSharpRefactor.Tests.EngineTests
 open System
 open NUnit.Framework
 open Microsoft.FSharp.Compiler.Ast
+open Microsoft.FSharp.Compiler.Range
 
 open FSharpRefactor.Engine
 open FSharpRefactor.Engine.Ast
@@ -60,7 +61,14 @@ type CodeTransformsModule() =
         let actual = CodeTransforms.AddChild source letNode 1 "let b = 2\n  "
         Assert.AreEqual(expected, actual)
 
-//TODO: test TextOfRange
+    [<Test>]
+    member this.``Can get text at a given range``() =
+        let source = "let a = 1+(2+3)+4"
+        let expected = "(2+3)"
+        let range = mkRange "/home/lewis/test.fs" (mkPos 1 10) (mkPos 1 15)
+        
+        Assert.AreEqual(expected, CodeTransforms.TextOfRange source range)
+
 
 [<TestFixture>]
 type ScopeAnalysisModule() =
