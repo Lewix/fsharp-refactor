@@ -21,12 +21,12 @@ type ExtractFunctionTransformModule() =
 
     [<Test>]
     member this.``Can extract an expression into a function``() =
-        let source = "let a b = 1+(b+3)+4"
-        let expected = "let f b = b+3 in let a b = 1+(f b)+4"
+        let source = "let c = 1 in let a b = 1+(b+c)+4"
+        let expected = "let c = 1 in let f b = b+c in let a b = 1+(f b)+4"
         let tree = (Ast.Parse source).Value
         let letTree =
-            List.head (findNodesWithRange (mkRange "/home/lewis/test.fs" (mkPos 1 0) (mkPos 1 19)) tree)
-        let expressionRange = mkRange "/home/lewis/test.fs" (mkPos 1 12) (mkPos 1 17)
+            List.head (findNodesWithRange (mkRange "/home/lewis/test.fs" (mkPos 1 13) (mkPos 1 32)) tree)
+        let expressionRange = mkRange "/home/lewis/test.fs" (mkPos 1 25) (mkPos 1 30)
 
         Assert.AreEqual(expected, DoExtractFunction source letTree expressionRange "f")
         
