@@ -4,7 +4,7 @@ open System
 open Microsoft.FSharp.Compiler.Ast
 open Microsoft.FSharp.Compiler.Range
 open FSharpRefactor.Engine.Ast
-                          
+
 module ScopeAnalysis =
     type Identifier = string * range
     
@@ -22,6 +22,8 @@ module ScopeAnalysis =
         match node with
             | Ast.Pattern(SynPat.Named(_,i,_,_,_)) -> Some(i.idText, i.idRange)
             | _ -> None
+
+    let DefaultDeclared = Set ["op_Addition"]
 
     let GetFreeIdentifiers (trees : ScopeTree list) (declared : Set<string>) =
         let rec freeIdentifiersInSingleTree foundFree declared tree =
