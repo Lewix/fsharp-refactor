@@ -60,6 +60,13 @@ type CodeTransformsModule() =
         
         Assert.AreEqual(expected, CodeTransforms.TextOfRange source range)
 
+        let source = "let a = 1+(2\n+3)+4"
+        let expected = "(2\n+3)"
+        let range = mkRange "/home/lewis/test.fs" (mkPos 1 10) (mkPos 1 16)
+
+        Assert.AreEqual(expected, CodeTransforms.TextOfRange source range)
+
+
 
 [<TestFixture>]
 type ScopeAnalysisModule() =
