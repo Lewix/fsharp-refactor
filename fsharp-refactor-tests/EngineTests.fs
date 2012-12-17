@@ -76,8 +76,10 @@ type ScopeAnalysisModule() =
     member this.``Can get all the free identifiers names in a ScopeTree``() =
         let source1 = "let a = b in f(c + a + b)"
         let source2 = "let a = b in let b = 1"
+        let source3 = "let a b = b in f(c + (a 1) + d)"
         let expected1 = Set(["b"; "c"; "f"])
         let expected2 = Set(["b"])
+        let expected3 = Set(["c"; "d"; "f"])
         let assertFun (source, expected) =
             let tree = getTrees source
             let actual = ScopeAnalysis.GetFreeIdentifiers tree (Set ["op_Addition"])
@@ -85,6 +87,7 @@ type ScopeAnalysisModule() =
 
         assertFun (source1,expected1)
         assertFun (source2,expected2)
+        assertFun (source3,expected3)        
 
     [<Test>]
     member this.``Can get all the declared names in a ScopeTree``() =
