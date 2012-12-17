@@ -45,17 +45,6 @@ module CodeTransforms =
                 | (r,t)::ps -> processPairs (replaceRange modifiedSource (r, t)) ps
 
         processPairs source sortedPairs
-
-
-    let AddChild (source : string) (node : Ast.AstNode) (index : int) (childText : string) =
-        let childrenOption = Ast.GetChildren node
-        let children = if childrenOption.IsSome then childrenOption.Value else raise InvalidNode
-        let range =
-            if index >= children.Length then getRange(children.[children.Length-1]).EndRange
-            else getRange(children.[index]).StartRange
-
-        replaceRange source (range, childText)
-
     
     let TextOfRange (source : string) (range : range) =
         let lines = source.Split('\n')

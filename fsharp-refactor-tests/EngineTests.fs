@@ -53,15 +53,6 @@ type CodeTransformsModule() =
         Assert.AreEqual(expected, CodeTransforms.ChangeTextOf source [((Ast.GetRange a).Value,"b");((Ast.GetRange b).Value,"a2")])
 
     [<Test>]
-    member this.``Can add a child to a node``() =
-        let source = "\nlet a = \n  let c = 3\n  3"
-        let tree = (Ast.Parse source).Value
-        let letNode = Ast.GetChildren(Ast.GetChildren(Ast.GetChildren(tree).Value.Head).Value.Head).Value.Head
-        let expected = "\nlet a = \n  let b = 2\n  let c = 3\n  3"
-        let actual = CodeTransforms.AddChild source letNode 1 "let b = 2\n  "
-        Assert.AreEqual(expected, actual)
-
-    [<Test>]
     member this.``Can get text at a given range``() =
         let source = "let a = 1+(2+3)+4"
         let expected = "(2+3)"
