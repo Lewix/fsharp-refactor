@@ -147,3 +147,15 @@ type ScopeTreeModule() =
                                      [ScopeAnalysis.Usage("a",_)])] -> ()
             | _ -> Assert.Fail("The scope tree for 'match a with (a,b) -> a' was incorrect:\n" +
                                (sprintf "%A" scopeTree))
+
+    [<Test>]
+    member this.``Can create a scope tree for a function declaration``() =
+        let source = "let f a b c = a in f 1"
+        let rootNode = Ast.Parse source
+        let scopeTrees = ScopeAnalysis.makeScopeTrees (rootNode.Value)
+
+        match scopeTrees with
+            | [ScopeAnalysis.Declaration([("a",_);("b",_);("c",_)],[ScopeAnalysis.Usage("a",_)]);
+               ScopeAnalysis.Declaration([("f",_)],[ScopeAnalysis.Usage("f",_)])] -> ()
+            | _ -> Assert.Fail("The sopce tree for 'let f a b c = a in f 1' was incorrect:\n" +
+                               (sprintf "%A" scopeTrees))
