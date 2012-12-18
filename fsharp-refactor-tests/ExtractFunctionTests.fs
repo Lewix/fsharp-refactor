@@ -20,7 +20,7 @@ type ExtractFunctionTransformModule() =
             | _ -> Assert.Fail("The AstNode was not the one for (2+3): " + (sprintf "%A" expression))
 
     [<Test>]
-    member this.``Can extract an expression into a function``() =
+    member this.``Can extract an expression into a function around a LetOrUse expression``() =
         let source = "let c = 1 in let a b = 1+(b+c)+4"
         let expected = "let c = 1 in let f b = b+c in let a b = 1+(f b)+4"
         let tree = (Ast.Parse source).Value
@@ -29,6 +29,17 @@ type ExtractFunctionTransformModule() =
         let expressionRange = mkRange "/home/lewis/test.fs" (mkPos 1 25) (mkPos 1 30)
 
         Assert.AreEqual(expected, DoExtractFunction source letTree expressionRange "f")
+        
+    [<Test>]
+    member this.``Can extract an expression into a function aroud a Let expression``() =
+        let source = "let a b = b+b"
+        let expected = "let double b = b+b in let a b = double b"
+        let tree = (Ast.Parse source).Value
+        let letTree =
+            List.head (findNodesWithRange (mkRange "/home/lewis/test.fs" (mkPos 1 0) (mkPos 1 13)) tree)
+        let expressionRange = mkRange "/home/lewis/test.fs" (mkPos 1 10) (mkPos 1 13)
+
+        Assert.AreEqual(expected, DoExtractFunction source letTree expressionRange "double")
         
 
 [<TestFixture>]

@@ -29,6 +29,7 @@ let rec stripBrackets (body : string) =
     then stripBrackets (body.[1..(String.length body)-2])
     else body
 
+//TODO: make a workflow for code transformations with ChangeTextOf (do all the transformations at the end)
 let CreateFunction source (inScopeTree : Ast.AstNode) (functionName : string) (arguments : string list) (body : string) (isRecursive : bool) =
     let letString = if isRecursive then "let rec" else "let"
     let functionStrings = List.concat (seq [[letString; functionName]; arguments; ["="; stripBrackets body; "in "]])
@@ -39,6 +40,7 @@ let CreateFunction source (inScopeTree : Ast.AstNode) (functionName : string) (a
     
 let CallFunction source (functionName : string) (arguments : string list) (range : range) =
     let argumentString = String.concat " " arguments
+    //TODO: don't always put brackets around function body
     let callString = "(" + functionName + " " + argumentString + ")"
     
     [range,callString]
