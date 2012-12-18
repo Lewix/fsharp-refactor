@@ -65,15 +65,6 @@ module ScopeAnalysis =
 
     //TODO: mutually recursive functions with "and" (multiple bindings per let)
     let rec makeScopeTrees (tree : Ast.AstNode) =
-        let identifiersFromBinding binding =
-            match binding with
-                | SynBinding.Binding(_,_,_,_,_,_,_,p,_,_,_,_) ->
-                    getDeclarations (Ast.AstNode.Pattern p)
-        let scopeTreesFromBinding binding =
-            match binding with
-                | SynBinding.Binding(_,_,_,_,_,_,_,_,_,e,_,_) ->
-                    makeScopeTrees (Ast.AstNode.Expression e)
-
         let rec makeNestedScopeTrees declarations =
             match declarations with
                 | [] -> []
@@ -82,32 +73,29 @@ module ScopeAnalysis =
                     let tailScopeTree = makeNestedScopeTrees ds
                     (addChildren (List.head headScopeTree) tailScopeTree)::(List.tail headScopeTree)
 
-        let makeScopeTreesFromBinding binding =
-            let pattern, expression =
-                match binding with
-                    | SynBinding.Binding(_,_,_,_,_,_,_,pattern,_,expression,_,_) -> pattern, expression
-            let idsDeclaredInBinding = identifiersFromBinding binding
-            let scopeTreesFromBinding = scopeTreesFromBinding binding
-            match pattern with
-                | SynPat.LongIdent(functionIdent,_,_,arguments,_,_) ->
-                    let idsFromArgument a = getDeclarations (Ast.AstNode.Pattern a)
-                    let idsFromArguments = List.concat (Seq.map idsFromArgument arguments)
-                    [Declaration(idsDeclaredInBinding, []);
-                     Declaration(idsFromArguments, makeScopeTrees (Ast.AstNode.Expression expression))]
-                | _ -> Declaration(idsDeclaredInBinding, [])::scopeTreesFromBinding
-                    
         match tree with
             | Ast.ModuleOrNamespace(SynModuleOrNamespace.SynModuleOrNamespace(_,_,ds,_,_,_,_)) ->
                 makeNestedScopeTrees (List.map Ast.AstNode.ModuleDeclaration ds)
             | Ast.AstNode.ModuleDeclaration(SynModuleDecl.Let(_,[b],_)) ->
-                makeScopeTreesFromBinding b
+                makeScopeTrees (Ast.AstNode.Binding b)
             | Ast.AstNode.Expression(SynExpr.LetOrUse(_,_,[b],e,_)) ->
-                let bindingScopeTrees = makeScopeTreesFromBinding b
+                let bindingScopeTrees = makeScopeTrees (Ast.AstNode.Binding b)
                 let expressionScopeTrees = makeScopeTrees (Ast.AstNode.Expression e)
                 (addChildren (List.head bindingScopeTrees) expressionScopeTrees)::(List.tail bindingScopeTrees)
             | Ast.AstNode.MatchClause(Clause(p,we,e,_,_)) ->
                 [Declaration(getDeclarations (Ast.AstNode.Pattern p),
                              makeScopeTrees (Ast.AstNode.Expression e))]
+            | Ast.AstNode.Binding(SynBinding.Binding(_,_,_,_,_,_,_,pattern,_,expression,_,_)) ->
+                let idsDeclaredInBinding = getDeclarations (Ast.AstNode.Pattern pattern)
+                let scopeTreesFromBinding = makeScopeTrees (Ast.AstNode.Expression expression)
+                match pattern with
+                    //TODO: make it more clear that LongIdent case is a function?
+                    | SynPat.LongIdent(functionIdent,_,_,arguments,_,_) ->
+                        let idsFromArgument a = getDeclarations (Ast.AstNode.Pattern a)
+                        let idsFromArguments = List.concat (Seq.map idsFromArgument arguments)
+                        [Declaration(idsDeclaredInBinding, []);
+                         Declaration(idsFromArguments, makeScopeTrees (Ast.AstNode.Expression expression))]
+                    | _ -> Declaration(idsDeclaredInBinding, [])::scopeTreesFromBinding
             | Ast.Children(cs) -> List.concat (Seq.map makeScopeTrees cs)
             | UsedIdent(text, range) -> [Usage(text, range)]
             | _ -> []
