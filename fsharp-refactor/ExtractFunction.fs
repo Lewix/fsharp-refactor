@@ -4,6 +4,7 @@ open Microsoft.FSharp.Compiler.Range
 open Microsoft.FSharp.Compiler.Ast
 open FSharpRefactor.Engine.Ast
 open FSharpRefactor.Engine.CodeTransforms
+open FSharpRefactor.Engine.CodeAnalysis.ScopeAnalysis
 
 let rec findNodesWithRange range (tree : Ast.AstNode) =
     let nodeRange = Ast.GetRange(tree)
@@ -34,10 +35,24 @@ let CreateFunction source (inScopeTree : Ast.AstNode) (functionName : string) (a
     let functionString = String.concat " " functionStrings
     let range = (Ast.GetRange inScopeTree).Value.StartRange
 
-    CodeTransforms.ChangeTextOf source [range,functionString]
+    [range,functionString]
     
+let CallFunction source (functionName : string) (arguments : string list) (range : range) =
+    let argumentString = String.concat " " arguments
+    let callString = "(" + functionName + " " + argumentString + ")"
+    
+    [range,callString]
 
 let CanExtractFunction (tree : Ast.AstNode) (expressionRange : range) (functionName : string) = true
 
-let DoExtractFunction source (tree : Ast.AstNode) (expressionRange : range) (functionName : string) =
-    source
+let DoExtractFunction source (inScopeTree : Ast.AstNode) (expressionRange : range) (functionName : string) =
+    let body = CodeTransforms.TextOfRange source expressionRange
+    let bodyExpression = findExpressionAtRange expressionRange inScopeTree
+    let arguments =
+        GetFreeIdentifiers (makeScopeTrees inScopeTree) DefaultDeclared
+        |> Set.difference (GetFreeIdentifiers (makeScopeTrees bodyExpression) DefaultDeclared)
+        |> Set.toList
+
+    CreateFunction source inScopeTree functionName arguments body false
+    |> List.append (CallFunction source functionName arguments expressionRange)
+    |> CodeTransforms.ChangeTextOf source
