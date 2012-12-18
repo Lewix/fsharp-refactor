@@ -23,9 +23,14 @@ let findExpressionAtRange range (tree : Ast.AstNode)  =
             | _ -> false
     List.find isExpression nodesWithRange
 
+let rec stripBrackets (body : string) =
+    if body.[0] = '(' && body.[(String.length body)-1] = ')'
+    then stripBrackets (body.[1..(String.length body)-2])
+    else body
+
 let CreateFunction source (inScopeTree : Ast.AstNode) (functionName : string) (arguments : string list) (body : string) (isRecursive : bool) =
     let letString = if isRecursive then "let rec" else "let"
-    let functionStrings = List.concat (seq [[letString; functionName]; arguments; ["="; body; "in "]])
+    let functionStrings = List.concat (seq [[letString; functionName]; arguments; ["="; stripBrackets body; "in "]])
     let functionString = String.concat " " functionStrings
     let range = (Ast.GetRange inScopeTree).Value.StartRange
 
