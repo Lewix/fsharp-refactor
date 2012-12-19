@@ -6,6 +6,7 @@ open FSharpRefactor.Engine.Ast
 open FSharpRefactor.Engine.CodeTransforms
 open FSharpRefactor.Engine.CodeAnalysis.ScopeAnalysis
 open FSharpRefactor.Engine.RefactoringWorkflow
+open FSharpRefactor.Engine.CodeTemplates
 
 let rec findNodesWithRange range (tree : Ast.AstNode) =
     let nodeRange = Ast.GetRange(tree)
@@ -30,29 +31,19 @@ let rec stripBrackets (body : string) =
     then stripBrackets (body.[1..(String.length body)-2])
     else body
 
-//TODO: make a workflow for code transformations with ChangeTextOf (do all the transformations at the end)
 let CreateFunction source (inScopeTree : Ast.AstNode) (functionName : string) (arguments : string list) (body : string) (isRecursive : bool) =
-    //TODO: extract template and ranges
-    let recRange = mkRange "/home/lewis/test.fs" (mkPos 1 3) (mkPos 1 3)
-    let nameRange = mkRange "/home/lewis/test.fs" (mkPos 1 4) (mkPos 1 16)
-    let parameterRange = mkRange "/home/lewis/test.fs" (mkPos 1 17) (mkPos 1 27)
-    let bodyRange = mkRange "/home/lewis/test.fs" (mkPos 1 30) (mkPos 1 34)
-
-    refactoring "let functionName parameters = body in " {
-        if isRecursive then yield (recRange, " rec")
-        yield (nameRange, functionName)
-        yield (parameterRange, String.concat " " arguments)
-        yield (bodyRange, stripBrackets body)
+    refactoring FunctionDefinition.Template {
+        if isRecursive then yield (FunctionDefinition.RecRange, FunctionDefinition.RecTemplate)
+        yield (FunctionDefinition.NameRange, functionName)
+        yield (FunctionDefinition.ParameterRange, String.concat " " arguments)
+        yield (FunctionDefinition.BodyRange, stripBrackets body)
     }
     
 let CallFunction source (functionName : string) (arguments : string list) =
     //TODO: don't always put brackets around function body
-    let nameRange = mkRange "/home/lewis/test.fs" (mkPos 1 1) (mkPos 1 13)
-    let parameterRange = mkRange "/home/lewis/test.fs" (mkPos 1 14) (mkPos 1 24)
-
-    refactoring "(functionName parameters)" {
-        yield (nameRange, functionName)
-        yield (parameterRange, String.concat " " arguments)
+    refactoring FunctionCall.Template {
+        yield (FunctionCall.NameRange, functionName)
+        yield (FunctionCall.ParameterRange, String.concat " " arguments)
     }
 
 let CanExtractFunction (tree : Ast.AstNode) (expressionRange : range) (functionName : string) = true
