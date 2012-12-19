@@ -4,6 +4,7 @@ OPTS=--target:library --nologo
 SOURCES=fsharp-refactor/Ast.fs \
 	fsharp-refactor/CodeTransforms.fs \
 	fsharp-refactor/CodeAnalysis.fs \
+	fsharp-refactor/RefactoringWorkflow.fs \
         fsharp-refactor/Rename.fs \
 	fsharp-refactor/ExtractFunction.fs
 TESTS=fsharp-refactor-tests/EngineTests.fs \
