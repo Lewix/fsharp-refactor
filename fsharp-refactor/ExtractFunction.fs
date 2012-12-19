@@ -5,6 +5,7 @@ open Microsoft.FSharp.Compiler.Ast
 open FSharpRefactor.Engine.Ast
 open FSharpRefactor.Engine.CodeTransforms
 open FSharpRefactor.Engine.CodeAnalysis.ScopeAnalysis
+open FSharpRefactor.Engine.RefactoringWorkflow
 
 let rec findNodesWithRange range (tree : Ast.AstNode) =
     let nodeRange = Ast.GetRange(tree)
@@ -31,30 +32,35 @@ let rec stripBrackets (body : string) =
 
 //TODO: make a workflow for code transformations with ChangeTextOf (do all the transformations at the end)
 let CreateFunction source (inScopeTree : Ast.AstNode) (functionName : string) (arguments : string list) (body : string) (isRecursive : bool) =
-    let letString = if isRecursive then "let rec" else "let"
-    let functionStrings = List.concat (seq [[letString; functionName]; arguments; ["="; stripBrackets body; "in "]])
-    let functionString = String.concat " " functionStrings
-    let range = (Ast.GetRange inScopeTree).Value.StartRange
+    //TODO: extract template and ranges
+    let recRange = mkRange "/home/lewis/test.fs" (mkPos 1 3) (mkPos 1 3)
+    let nameRange = mkRange "/home/lewis/test.fs" (mkPos 1 4) (mkPos 1 16)
+    let parameterRange = mkRange "/home/lewis/test.fs" (mkPos 1 17) (mkPos 1 27)
+    let bodyRange = mkRange "/home/lewis/test.fs" (mkPos 1 30) (mkPos 1 34)
 
-    [range,functionString]
+    refactoring "let functionName parameters = body in " {
+        if isRecursive then yield (recRange, " rec")
+        yield (nameRange, functionName)
+        yield (parameterRange, String.concat " " arguments)
+        yield (bodyRange, stripBrackets body)
+    }
     
-let CallFunction source (functionName : string) (arguments : string list) (range : range) =
+let CallFunction source (functionName : string) (arguments : string list) =
     let argumentString = String.concat " " arguments
     //TODO: don't always put brackets around function body
-    let callString = "(" + functionName + " " + argumentString + ")"
-    
-    [range,callString]
+    "(" + functionName + " " + argumentString + ")"
 
 let CanExtractFunction (tree : Ast.AstNode) (expressionRange : range) (functionName : string) = true
 
 let DoExtractFunction source (inScopeTree : Ast.AstNode) (expressionRange : range) (functionName : string) =
-    let body = CodeTransforms.TextOfRange source expressionRange
-    let bodyExpression = findExpressionAtRange expressionRange inScopeTree
-    let arguments =
-        GetFreeIdentifiers (makeScopeTrees inScopeTree) DefaultDeclared
-        |> Set.difference (GetFreeIdentifiers (makeScopeTrees bodyExpression) DefaultDeclared)
-        |> Set.toList
+    refactoring source {
+        let body = CodeTransforms.TextOfRange source expressionRange
+        let bodyExpression = findExpressionAtRange expressionRange inScopeTree
+        let arguments =
+            GetFreeIdentifiers (makeScopeTrees inScopeTree) DefaultDeclared
+            |> Set.difference (GetFreeIdentifiers (makeScopeTrees bodyExpression) DefaultDeclared)
+            |> Set.toList
 
-    CreateFunction source inScopeTree functionName arguments body false
-    |> List.append (CallFunction source functionName arguments expressionRange)
-    |> CodeTransforms.ChangeTextOf source
+        yield ((Ast.GetRange inScopeTree).Value.StartRange, CreateFunction source inScopeTree functionName arguments body false)
+        yield (expressionRange, CallFunction source functionName arguments)
+    }

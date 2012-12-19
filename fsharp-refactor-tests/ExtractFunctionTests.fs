@@ -47,7 +47,7 @@ type CreateFunctionModule() =
     [<Test>]
     member this.``Can add a function to an expression``() =
         let source = "let a = 1"
-        let expected = [(mkRange "/home/lewis/test.fs" (mkPos 1 8) (mkPos 1 8)),"let f a b = a+b in "]
+        let expected = "let f a b = a+b in "
         let tree = (Ast.Parse source).Value
         let oneRange = mkRange "/home/lewis/test.fs" (mkPos 1 8) (mkPos 1 9)
         let expression = findExpressionAtRange oneRange tree
