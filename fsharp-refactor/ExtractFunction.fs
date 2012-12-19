@@ -46,9 +46,14 @@ let CreateFunction source (inScopeTree : Ast.AstNode) (functionName : string) (a
     }
     
 let CallFunction source (functionName : string) (arguments : string list) =
-    let argumentString = String.concat " " arguments
     //TODO: don't always put brackets around function body
-    "(" + functionName + " " + argumentString + ")"
+    let nameRange = mkRange "/home/lewis/test.fs" (mkPos 1 1) (mkPos 1 13)
+    let parameterRange = mkRange "/home/lewis/test.fs" (mkPos 1 14) (mkPos 1 24)
+
+    refactoring "(functionName parameters)" {
+        yield (nameRange, functionName)
+        yield (parameterRange, String.concat " " arguments)
+    }
 
 let CanExtractFunction (tree : Ast.AstNode) (expressionRange : range) (functionName : string) = true
 
