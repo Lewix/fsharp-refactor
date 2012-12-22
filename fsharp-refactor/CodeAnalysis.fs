@@ -89,7 +89,6 @@ module ScopeAnalysis =
                 let idsDeclaredInBinding = getDeclarations (Ast.AstNode.Pattern pattern)
                 let scopeTreesFromBinding = makeScopeTrees (Ast.AstNode.Expression expression)
                 match pattern with
-                    //TODO: make it more clear that LongIdent case is a function?
                     | SynPat.LongIdent(functionIdent,_,_,arguments,_,_) ->
                         let idsFromArgument a = getDeclarations (Ast.AstNode.Pattern a)
                         let idsFromArguments = List.concat (Seq.map idsFromArgument arguments)
