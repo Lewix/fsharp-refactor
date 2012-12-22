@@ -99,24 +99,21 @@ type ScopeAnalysisModule() =
 
 [<TestFixture>]
 type ScopeTreeModule() =
+    static member getScopeTrees source =
+        ScopeAnalysis.makeScopeTrees (Ast.Parse source).Value
+    
     [<Test>]
     member this.``Creates a scope tree for a simple let statement``() =
-        let source = "let a = 1 in a"
-        let rootNode = Ast.Parse source
-        let scopeTree = ScopeAnalysis.makeScopeTrees (rootNode.Value)
-
-        match scopeTree with
+        let scopeTrees = ScopeTreeModule.getScopeTrees "let a = 1 in a"
+        match scopeTrees with
             | [ScopeAnalysis.Declaration(["a",_],[ScopeAnalysis.Usage("a",_)])] -> ()
             | _ -> Assert.Fail("The scope tree for 'let a = 1 in a' was incorrect:\n" +
-                               (sprintf "%A" scopeTree))
+                               (sprintf "%A" scopeTrees))
 
     [<Test>]
     member this.``Creates a scope tree for a more elaborate sequence of let statements``() =
-        let source = "let a =\n  let b = 1\n  let c = 2 + b + b\n  let d = 1\n  b+c\nlet b = 3+a"
-        let rootNode = Ast.Parse source
-        let scopeTree = ScopeAnalysis.makeScopeTrees (rootNode.Value)
-
-        match scopeTree with
+        let scopeTrees = ScopeTreeModule.getScopeTrees "let a =\n  let b = 1\n  let c = 2 + b + b\n  let d = 1\n  b+c\nlet b = 3+a"
+        match scopeTrees with
             | [ScopeAnalysis.Declaration(["a",_],
                                      [ScopeAnalysis.Declaration(["b",_],[]);
                                       ScopeAnalysis.Usage("op_Addition",_);
@@ -133,27 +130,21 @@ type ScopeTreeModule() =
                                       ScopeAnalysis.Usage("b",_)])] -> ()
             
             | _ -> Assert.Fail("The scope tree for elaborate let expression was incorrect:\n" +
-                               (sprintf "%A" scopeTree))
+                               (sprintf "%A" scopeTrees))
 
     [<Test>]
     member this.``Can create a scope tree for a match clause``() =
-        let source = "match a with (a,b) -> a"
-        let rootNode = Ast.Parse source
-        let scopeTree = ScopeAnalysis.makeScopeTrees (rootNode.Value)
-
-        match scopeTree with
+        let scopeTrees = ScopeTreeModule.getScopeTrees "match a with (a,b) -> a"
+        match scopeTrees with
             | [ScopeAnalysis.Usage("a",_);
                ScopeAnalysis.Declaration([("a",_);("b",_)],
                                      [ScopeAnalysis.Usage("a",_)])] -> ()
             | _ -> Assert.Fail("The scope tree for 'match a with (a,b) -> a' was incorrect:\n" +
-                               (sprintf "%A" scopeTree))
+                               (sprintf "%A" scopeTrees))
 
     [<Test>]
     member this.``Can create a scope tree for a function declaration``() =
-        let source = "let f a b c = a in f 1"
-        let rootNode = Ast.Parse source
-        let scopeTrees = ScopeAnalysis.makeScopeTrees (rootNode.Value)
-
+        let scopeTrees = ScopeTreeModule.getScopeTrees "let f a b c = a in f 1"
         match scopeTrees with
             | [ScopeAnalysis.Declaration([("f",_)],[ScopeAnalysis.Usage("f",_)]);
                ScopeAnalysis.Declaration([("a",_);("b",_);("c",_)],[ScopeAnalysis.Usage("a",_)])] -> ()
@@ -162,10 +153,7 @@ type ScopeTreeModule() =
 
     [<Test>]
     member this.``Can create a scope tree for two mutually recursive functions``() =
-        let source = "let f = g\nand g = f"
-        let rootNode = Ast.Parse source
-        let scopeTrees = ScopeAnalysis.makeScopeTrees (rootNode.Value)
-
+        let scopeTrees = ScopeTreeModule.getScopeTrees "let f = g\nand g = f"
         match scopeTrees with
             | [ScopeAnalysis.Declaration([("f",_);("g",_)],
                                          [ScopeAnalysis.Usage("g",_);
