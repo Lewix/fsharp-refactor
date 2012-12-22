@@ -159,3 +159,16 @@ type ScopeTreeModule() =
                ScopeAnalysis.Declaration([("a",_);("b",_);("c",_)],[ScopeAnalysis.Usage("a",_)])] -> ()
             | _ -> Assert.Fail("The scope tree for 'let f a b c = a in f 1' was incorrect:\n" +
                                (sprintf "%A" scopeTrees))
+
+    [<Test>]
+    member this.``Can create a scope tree for two mutually recursive functions``() =
+        let source = "let f = g\nand g = f"
+        let rootNode = Ast.Parse source
+        let scopeTrees = ScopeAnalysis.makeScopeTrees (rootNode.Value)
+
+        match scopeTrees with
+            | [ScopeAnalysis.Declaration([("f",_);("g",_)],
+                                         [ScopeAnalysis.Usage("g",_);
+                                          ScopeAnalysis.Usage("f",_)])] -> ()
+            | _ -> Assert.Fail("The scope tree for\n 'let f = g\nand g = f'\n was incorrect:\n" +
+                               (sprintf "%A" scopeTrees))
