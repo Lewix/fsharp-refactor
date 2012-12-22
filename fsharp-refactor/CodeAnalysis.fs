@@ -57,13 +57,37 @@ module ScopeAnalysis =
             | Ast.Children cs -> List.concat (Seq.map getDeclarations cs)
             | _ -> []
 
+    let isDeclaration (tree : ScopeTree) =
+        match tree with
+            | Declaration(_,_) -> true
+            | _ -> false
+
+    let isUsage (tree : ScopeTree) =
+        match tree with
+            | Usage(_,_) -> true
+            | _ -> false
+
     let addChildren (tree : ScopeTree) (children : ScopeTree list) =
         if List.isEmpty children then tree else
         match tree with
             | Usage(text,range) -> Declaration([text,range],children)
             | Declaration(is, cs) -> Declaration(is, List.append cs children)
 
-    //TODO: mutually recursive functions with "and" (multiple bindings per let)
+    let mergeTrees (trees : ScopeTree list) =
+        let rec mergeDeclarations declarations =
+            match declarations with
+                | [d] -> d
+                | Declaration(is1, ts1)::Declaration(is2, ts2)::ts ->
+                    mergeDeclarations (Declaration(List.append is1 is2, List.append ts1 ts2)::ts)
+
+        let usages = List.filter isUsage trees
+        let declarations = List.filter isDeclaration trees
+        assert (declarations <> [])
+       
+        mergeDeclarations declarations
+        |> fun declaration -> addChildren declaration usages
+        
+    //TODO: for recursive definitions, id is in its own scope
     let rec makeScopeTrees (tree : Ast.AstNode) =
         let rec makeNestedScopeTrees declarations =
             match declarations with
@@ -78,6 +102,10 @@ module ScopeAnalysis =
                 makeNestedScopeTrees (List.map Ast.AstNode.ModuleDeclaration ds)
             | Ast.AstNode.ModuleDeclaration(SynModuleDecl.Let(_,[b],_)) ->
                 makeScopeTrees (Ast.AstNode.Binding b)
+            | Ast.AstNode.ModuleDeclaration(SynModuleDecl.Let(_,bs,_)) ->
+                let scopeTreesFromBindings =
+                    List.concat (Seq.map makeScopeTrees (List.map Ast.AstNode.Binding bs))
+                [mergeTrees scopeTreesFromBindings]
             | Ast.AstNode.Expression(SynExpr.LetOrUse(_,_,[b],e,_)) ->
                 let bindingScopeTrees = makeScopeTrees (Ast.AstNode.Binding b)
                 let expressionScopeTrees = makeScopeTrees (Ast.AstNode.Expression e)
