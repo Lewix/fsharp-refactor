@@ -153,10 +153,42 @@ type ScopeTreeModule() =
 
     [<Test>]
     member this.``Can create a scope tree for two mutually recursive functions``() =
-        let scopeTrees = ScopeTreeModule.getScopeTrees "let f = g\nand g = f"
+        let scopeTrees = ScopeTreeModule.getScopeTrees "let rec f = g\nand g = f"
         match scopeTrees with
             | [ScopeAnalysis.Declaration([("f",_);("g",_)],
                                          [ScopeAnalysis.Usage("g",_);
                                           ScopeAnalysis.Usage("f",_)])] -> ()
-            | _ -> Assert.Fail("The scope tree for\n 'let f = g\nand g = f'\n was incorrect:\n" +
+            | _ -> Assert.Fail("The scope tree for\n 'let rec f = g\nand g = f'\n was incorrect:\n" +
                                (sprintf "%A" scopeTrees))
+
+    [<Test>]
+    member this.``Can create a scope tree for two mutually recursive functions in a LetOrUse``() =
+        let scopeTrees = ScopeTreeModule.getScopeTrees "let a =\n  let rec f = g\n  and g = f\n  f"
+        match scopeTrees with
+            | [ScopeAnalysis.Declaration([("a",_)],[]);
+               ScopeAnalysis.Declaration([("f",_);("g",_)],
+                                         [ScopeAnalysis.Usage("g",_);
+                                          ScopeAnalysis.Usage("f",_);
+                                          ScopeAnalysis.Usage("f",_)])] -> ()
+            | _ -> Assert.Fail("The scope tree for\n 'let a =\n  let rec f = g\n  and g = f\n  f'\n was incorrect:\n" +
+                               (sprintf "%A" scopeTrees))
+
+    [<Test>]
+    member this.``Can create a scope tree for a single recursive identifier``() =
+        let scopeTrees = ScopeTreeModule.getScopeTrees "let rec f = f"
+        match scopeTrees with
+            | [ScopeAnalysis.Declaration([("f",_)],[ScopeAnalysis.Usage("f",_)])] -> ()
+            | _ -> Assert.Fail("The scope tree for 'let rec f = f' was incorrect:\n" +
+                               (sprintf "%A" scopeTrees))
+
+    [<Test>]
+    member this.``Can create a scope tree for a single recursive LetOrUse``() =
+        let scopeTrees = ScopeTreeModule.getScopeTrees "let a =\n  let rec f = f\n  f"
+        match scopeTrees with
+            | [ScopeAnalysis.Declaration([("a",_)],[]);
+               ScopeAnalysis.Declaration([("f",_)],[ScopeAnalysis.Usage("f",_);
+                                                    ScopeAnalysis.Usage("f",_)])] -> ()
+            | _ -> Assert.Fail("The scope tree for 'let a =\n  let rec f = f\n  f' was incorrect:\n" +
+                               (sprintf "%A" scopeTrees))
+
+                                                    

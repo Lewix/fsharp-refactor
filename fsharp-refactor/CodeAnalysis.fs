@@ -100,16 +100,24 @@ module ScopeAnalysis =
         match tree with
             | Ast.ModuleOrNamespace(SynModuleOrNamespace.SynModuleOrNamespace(_,_,ds,_,_,_,_)) ->
                 makeNestedScopeTrees (List.map Ast.AstNode.ModuleDeclaration ds)
-            | Ast.AstNode.ModuleDeclaration(SynModuleDecl.Let(_,[b],_)) ->
-                makeScopeTrees (Ast.AstNode.Binding b)
-            | Ast.AstNode.ModuleDeclaration(SynModuleDecl.Let(_,bs,_)) ->
+            | Ast.AstNode.ModuleDeclaration(SynModuleDecl.Let(false,bs,_)) ->
+                makeNestedScopeTrees (List.map Ast.AstNode.Binding bs)
+            | Ast.AstNode.ModuleDeclaration(SynModuleDecl.Let(true,bs,_)) ->
                 let scopeTreesFromBindings =
                     List.concat (Seq.map makeScopeTrees (List.map Ast.AstNode.Binding bs))
                 [mergeTrees scopeTreesFromBindings]
-            | Ast.AstNode.Expression(SynExpr.LetOrUse(_,_,[b],e,_)) ->
-                let bindingScopeTrees = makeScopeTrees (Ast.AstNode.Binding b)
+            | Ast.AstNode.Expression(SynExpr.LetOrUse(false,_,bs,e,_)) ->
+                let bindingScopeTrees = makeNestedScopeTrees (List.map Ast.AstNode.Binding bs)
                 let expressionScopeTrees = makeScopeTrees (Ast.AstNode.Expression e)
                 (addChildren (List.head bindingScopeTrees) expressionScopeTrees)::(List.tail bindingScopeTrees)
+            | Ast.AstNode.Expression(SynExpr.LetOrUse(true,_,bs,e,_)) ->
+                // let rec id1 = e1 [and id2 = e1 [...]] in e
+                let scopeTreesFromBindings =
+                    List.concat (Seq.map makeScopeTrees (List.map Ast.AstNode.Binding bs))
+                let bindingScopeTree = mergeTrees scopeTreesFromBindings
+                let expressionScopeTrees = makeScopeTrees (Ast.AstNode.Expression e)
+                //TODO: mergeTrees needs to be fixed, as does addChildren
+                [addChildren bindingScopeTree expressionScopeTrees]
             | Ast.AstNode.MatchClause(Clause(p,we,e,_,_)) ->
                 [Declaration(getDeclarations (Ast.AstNode.Pattern p),
                              makeScopeTrees (Ast.AstNode.Expression e))]
