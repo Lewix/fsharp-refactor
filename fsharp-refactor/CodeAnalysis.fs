@@ -87,7 +87,6 @@ module ScopeAnalysis =
         mergeDeclarations declarations
         |> fun declaration -> addChildren declaration usages
         
-    //TODO: for recursive definitions, id is in its own scope
     let rec makeScopeTrees (tree : Ast.AstNode) =
         let rec makeNestedScopeTrees declarations =
             match declarations with
@@ -111,12 +110,10 @@ module ScopeAnalysis =
                 let expressionScopeTrees = makeScopeTrees (Ast.AstNode.Expression e)
                 (addChildren (List.head bindingScopeTrees) expressionScopeTrees)::(List.tail bindingScopeTrees)
             | Ast.AstNode.Expression(SynExpr.LetOrUse(true,_,bs,e,_)) ->
-                // let rec id1 = e1 [and id2 = e1 [...]] in e
                 let scopeTreesFromBindings =
                     List.concat (Seq.map makeScopeTrees (List.map Ast.AstNode.Binding bs))
                 let bindingScopeTree = mergeTrees scopeTreesFromBindings
                 let expressionScopeTrees = makeScopeTrees (Ast.AstNode.Expression e)
-                //TODO: mergeTrees needs to be fixed, as does addChildren
                 [addChildren bindingScopeTree expressionScopeTrees]
             | Ast.AstNode.MatchClause(Clause(p,we,e,_,_)) ->
                 [Declaration(getDeclarations (Ast.AstNode.Pattern p),
