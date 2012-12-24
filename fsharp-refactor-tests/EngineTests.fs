@@ -197,11 +197,9 @@ type ScopeTreeModule() =
         let scopeTrees = ScopeTreeModule.getScopeTrees "let rec f x = f x in f 1"
         match scopeTrees with
             | [ScopeAnalysis.Declaration([("f",_)],
-                                         [ScopeAnalysis.Usage("f",_);
-                                          ScopeAnalysis.Usage("x",_);
-                                          ScopeAnalysis.Usage("f",_)]);
-               ScopeAnalysis.Declaration([("x",_)],
-                                         [ScopeAnalysis.Usage("f",_);
-                                          ScopeAnalysis.Usage("x",_)])] -> ()
+                                         [ScopeAnalysis.Declaration([("x",_)],
+                                                                    [ScopeAnalysis.Usage("f",_);
+                                                                     ScopeAnalysis.Usage("x",_)]);
+                                          ScopeAnalysis.Usage("f",_)])]
             | _ -> Assert.Fail("The scope tree for 'let rec f x = f x in f 1' was incorrect:\n" +
                                (sprintf "%A" scopeTrees))
