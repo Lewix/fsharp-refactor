@@ -73,19 +73,18 @@ module ScopeAnalysis =
             | Usage(text,range) -> Declaration([text,range],children)
             | Declaration(is, cs) -> Declaration(is, List.append cs children)
 
-    let mergeTrees (trees : ScopeTree list) =
+    let mergeBindings (bindingTrees : ScopeTree list list) =
         let rec mergeDeclarations declarations =
             match declarations with
                 | [d] -> d
                 | Declaration(is1, ts1)::Declaration(is2, ts2)::ts ->
                     mergeDeclarations (Declaration(List.append is1 is2, List.append ts1 ts2)::ts)
 
-        let usages = List.filter isUsage trees
-        let declarations = List.filter isDeclaration trees
-        assert (declarations <> [])
-       
-        mergeDeclarations declarations
-        |> fun declaration -> addChildren declaration usages
+        let mainDeclarations = List.map List.head bindingTrees
+        let rest = List.concat (List.map List.tail bindingTrees)
+
+        mergeDeclarations mainDeclarations
+        |> fun declaration -> addChildren declaration rest
         
     let rec makeScopeTrees (tree : Ast.AstNode) =
         let rec makeNestedScopeTrees declarations =
@@ -103,16 +102,16 @@ module ScopeAnalysis =
                 makeNestedScopeTrees (List.map Ast.AstNode.Binding bs)
             | Ast.AstNode.ModuleDeclaration(SynModuleDecl.Let(true,bs,_)) ->
                 let scopeTreesFromBindings =
-                    List.concat (Seq.map makeScopeTrees (List.map Ast.AstNode.Binding bs))
-                [mergeTrees scopeTreesFromBindings]
+                    List.map makeScopeTrees (List.map Ast.AstNode.Binding bs)
+                [mergeBindings scopeTreesFromBindings]
             | Ast.AstNode.Expression(SynExpr.LetOrUse(false,_,bs,e,_)) ->
                 let bindingScopeTrees = makeNestedScopeTrees (List.map Ast.AstNode.Binding bs)
                 let expressionScopeTrees = makeScopeTrees (Ast.AstNode.Expression e)
                 (addChildren (List.head bindingScopeTrees) expressionScopeTrees)::(List.tail bindingScopeTrees)
             | Ast.AstNode.Expression(SynExpr.LetOrUse(true,_,bs,e,_)) ->
                 let scopeTreesFromBindings =
-                    List.concat (Seq.map makeScopeTrees (List.map Ast.AstNode.Binding bs))
-                let bindingScopeTree = mergeTrees scopeTreesFromBindings
+                    List.map makeScopeTrees (List.map Ast.AstNode.Binding bs)
+                let bindingScopeTree = mergeBindings scopeTreesFromBindings
                 let expressionScopeTrees = makeScopeTrees (Ast.AstNode.Expression e)
                 [addChildren bindingScopeTree expressionScopeTrees]
             | Ast.AstNode.MatchClause(Clause(p,we,e,_,_)) ->
