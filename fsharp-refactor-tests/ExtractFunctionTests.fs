@@ -33,7 +33,7 @@ type ExtractFunctionTransformModule() =
     [<Test>]
     member this.``Can extract an expression into a function aroud a Let expression``() =
         let source = "let a b = b+b"
-        let expected = "let double b = b+b in let a b = double b"
+        let expected = "let double b = b+b in let a b = (double b)"
         let tree = (Ast.Parse source).Value
         let letTree =
             List.head (findNodesWithRange (mkRange "/home/lewis/test.fs" (mkPos 1 0) (mkPos 1 13)) tree)
