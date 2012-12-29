@@ -5,6 +5,25 @@ open Microsoft.FSharp.Compiler.Ast
 open Microsoft.FSharp.Compiler.Range
 open FSharpRefactor.Engine.Ast
 
+module RangeAnalysis =
+    let rec FindNodesWithRange range (tree : Ast.AstNode) =
+        let nodeRange = Ast.GetRange(tree)
+        let remainingRanges =
+            match tree with
+                | Ast.Children cs -> List.concat (Seq.map (FindNodesWithRange range) cs)
+                | _ -> []
+        if Option.isSome nodeRange && range = nodeRange.Value
+        then tree::remainingRanges else remainingRanges
+
+    let FindExpressionAtRange range (tree : Ast.AstNode)  =
+        let nodesWithRange = FindNodesWithRange range tree
+        let isExpression node =
+            match node with
+                | Ast.AstNode.Expression _ -> true
+                | _ -> false
+        List.find isExpression nodesWithRange
+
+
 module ScopeAnalysis =
     type Identifier = string * range
     

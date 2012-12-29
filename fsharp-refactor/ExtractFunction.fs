@@ -5,26 +5,9 @@ open Microsoft.FSharp.Compiler.Ast
 open FSharpRefactor.Engine.Ast
 open FSharpRefactor.Engine.CodeTransforms
 open FSharpRefactor.Engine.CodeAnalysis.ScopeAnalysis
+open FSharpRefactor.Engine.CodeAnalysis.RangeAnalysis
 open FSharpRefactor.Engine.RefactoringWorkflow
 open FSharpRefactor.Engine.CodeTemplates
-
-let rec findNodesWithRange range (tree : Ast.AstNode) =
-    let nodeRange = Ast.GetRange(tree)
-    let remainingRanges =
-        match tree with
-            | Ast.Children cs -> List.concat (Seq.map (findNodesWithRange range) cs)
-            | _ -> []
-    if Option.isSome nodeRange && range = nodeRange.Value
-    then tree::remainingRanges else remainingRanges
-
-
-let findExpressionAtRange range (tree : Ast.AstNode)  =
-    let nodesWithRange = findNodesWithRange range tree
-    let isExpression node =
-        match node with
-            | Ast.AstNode.Expression _ -> true
-            | _ -> false
-    List.find isExpression nodesWithRange
 
 let rec stripBrackets (body : string) =
     if body.[0] = '(' && body.[(String.length body)-1] = ')'
@@ -51,7 +34,7 @@ let CanExtractFunction (tree : Ast.AstNode) (expressionRange : range) (functionN
 let DoExtractFunction source (inScopeTree : Ast.AstNode) (expressionRange : range) (functionName : string) =
     refactoring source {
         let body = CodeTransforms.TextOfRange source expressionRange
-        let bodyExpression = findExpressionAtRange expressionRange inScopeTree
+        let bodyExpression = FindExpressionAtRange expressionRange inScopeTree
         let arguments =
             GetFreeIdentifiers (makeScopeTrees inScopeTree) DefaultDeclared
             |> Set.difference (GetFreeIdentifiers (makeScopeTrees bodyExpression) DefaultDeclared)
