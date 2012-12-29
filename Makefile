@@ -7,10 +7,12 @@ SOURCES=fsharp-refactor/Ast.fs \
 	fsharp-refactor/RefactoringWorkflow.fs \
 	fsharp-refactor/CodeTemplates.fs \
         fsharp-refactor/Rename.fs \
-	fsharp-refactor/ExtractFunction.fs
+	fsharp-refactor/ExtractFunction.fs \
+	fsharp-refactor/AddArgument.fs
 TESTS=fsharp-refactor-tests/EngineTests.fs \
       fsharp-refactor-tests/RenameTests.fs \
-      fsharp-refactor-tests/ExtractFunctionTests.fs
+      fsharp-refactor-tests/ExtractFunctionTests.fs \
+      fsharp-refactor-tests/AddArgumentTests.fs
 
 all: FSharp.Refactor.dll FSharp.Refactor.Tests.dll
 
