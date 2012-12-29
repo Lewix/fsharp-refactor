@@ -217,3 +217,14 @@ type RangeAnalysisModule() =
         match expression with
             | Ast.AstNode.Expression(SynExpr.Paren(SynExpr.App(_,_,SynExpr.App(_,_,_,SynExpr.Const(_,_),_),SynExpr.Const(_,_),_),_,_,_)) -> ()
             | _ -> Assert.Fail("The AstNode was not the one for (2+3): " + (sprintf "%A" expression))
+
+    [<Test>]
+    member this.``Can find the binding from the binding's range``() =
+        let source = "let f a b = a+b"
+        let tree = (Ast.Parse source).Value
+        let bindingRange = mkRange "/home/lewis/test.fs" (mkPos 1 4) (mkPos 1 15)
+        let binding = RangeAnalysis.FindBindingAtRange bindingRange tree
+
+        match binding with
+            | Ast.AstNode.Binding(_) -> ()
+            | _ -> Assert.Fail("The AstNode was not the one for the binding 'let f a b = a+b': " + (sprintf "%A" binding))

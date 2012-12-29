@@ -15,13 +15,22 @@ module RangeAnalysis =
         if Option.isSome nodeRange && range = nodeRange.Value
         then tree::remainingRanges else remainingRanges
 
+    let FindAstNodeAtRange range (tree : Ast.AstNode) isNode =
+        List.find isNode (FindNodesWithRange range tree)
+
     let FindExpressionAtRange range (tree : Ast.AstNode)  =
-        let nodesWithRange = FindNodesWithRange range tree
         let isExpression node =
             match node with
                 | Ast.AstNode.Expression _ -> true
                 | _ -> false
-        List.find isExpression nodesWithRange
+        FindAstNodeAtRange range tree isExpression
+
+    let FindBindingAtRange range (tree : Ast.AstNode) =
+        let isBinding node  =
+            match node with
+                | Ast.AstNode.Binding _ -> true
+                | _ -> false
+        FindAstNodeAtRange range tree isBinding
 
 
 module ScopeAnalysis =
