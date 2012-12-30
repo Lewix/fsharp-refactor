@@ -24,6 +24,9 @@ let AddArgumentToBinding source (tree : Ast.AstNode) (bindingRange : range) (arg
         if Option.isSome range then yield (range.Value.EndRange, " " + argumentName)
     }
 
-let AddArgumentToFunctionCall source (tree : Ast.AstNode) (callRange : range) (argument : string) = source
+let AddArgumentToFunctionCall source (tree : Ast.AstNode) (callRange : range) (argument : string) =
+    refactoring source {
+        yield (callRange.EndRange, " " + argument)
+    }
 
 let AddArgument source (bindingRange : range) (argumentName : string) (defaultValue : string) = source
