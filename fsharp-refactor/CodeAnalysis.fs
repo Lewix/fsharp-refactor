@@ -58,6 +58,11 @@ module ScopeAnalysis =
 
     let DefaultDeclared = Set ["op_Addition"]
 
+    let rec ListNodes tree =
+        match tree with
+            | Declaration(is, ts) as d -> d::(List.collect ListNodes ts)
+            | usage -> [usage]
+
     let GetFreeIdentifiers (trees : ScopeTree list) (declared : Set<string>) =
         let rec freeIdentifiersInSingleTree foundFree declared tree =
             match tree with
