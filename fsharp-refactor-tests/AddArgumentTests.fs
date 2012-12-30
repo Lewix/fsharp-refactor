@@ -20,7 +20,7 @@ type AddArgumentModule() =
     member this.``Can add an argument to a function call``() =
         let source = "f a \"b\" 3"
         let tree = (Ast.Parse source).Value
-        let callRange = mkRange "/home/lewis/test.fs" (mkPos 1 0) (mkPos 1 9)
-        let expected ="f a \"b\" 3 \"arg\""
+        let callRange = mkRange "/home/lewis/test.fs" (mkPos 1 0) (mkPos 1 3)
+        let expected ="f \"arg\" a \"b\" 3"
 
         Assert.AreEqual(expected, AddArgumentToFunctionCall source tree callRange "\"arg\"")
