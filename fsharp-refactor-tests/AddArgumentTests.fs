@@ -2,6 +2,7 @@ namespace FSharpRefactor.Tests.AddArgumentTests
 
 open NUnit.Framework
 open Microsoft.FSharp.Compiler.Range
+open Microsoft.FSharp.Compiler.Ast
 open FSharpRefactor.Engine.Ast
 open FSharpRefactor.Refactorings.AddArgument
 
@@ -24,3 +25,16 @@ type AddArgumentModule() =
         let expected ="f \"arg\" a \"b\" 3"
 
         Assert.AreEqual(expected, AddArgumentToFunctionCall source tree callRange "\"arg\"")
+
+    [<Test>]
+    member this.``Can find all the App nodes calling a certain function``() =
+        let source = "(f 1 2 3) + ((f 2) 2) + (1 + (2 + (f 3 3 4)))"
+        let tree = (Ast.Parse source).Value
+        let functionCalls = FindFunctionCalls source tree "f"
+
+        match functionCalls with
+            | [SynExpr.App(_,_,_,SynExpr.Const(SynConst.Int32(1),_),_);
+               SynExpr.App(_,_,_,SynExpr.Const(SynConst.Int32(2),_),_);
+               SynExpr.App(_,_,_,SynExpr.Const(SynConst.Int32(3),_),_)] -> ()
+            | _ -> Assert.Fail("Did no get the correct function calls: " + (sprintf "%A" functionCalls))
+        

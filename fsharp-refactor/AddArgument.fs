@@ -30,4 +30,6 @@ let AddArgumentToFunctionCall source (tree : Ast.AstNode) (callRange : range) (a
         yield (argRange.StartRange, argument + " ")
     }
 
+let FindFunctionCalls source (tree : Ast.AstNode) (functionName : string) = [] 
+
 let AddArgument source (bindingRange : range) (argumentName : string) (defaultValue : string) = source
