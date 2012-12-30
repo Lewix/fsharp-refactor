@@ -30,8 +30,8 @@ type AddArgumentModule() =
     member this.``Can find all the App nodes calling a certain function``() =
         let source = "(let f a b c = 1 in (f 1 2 3) + ((f 2) 2) + (1 + (2 + (f 3 3 4)))) + (f 1)"
         let tree = (Ast.Parse source).Value
-        let bindingRange = mkRange "/home/lewis/test.fs" (mkPos 1 5) (mkPos 1 12)
-        let functionCalls = FindFunctionCalls source tree bindingRange
+        let bindingRange = mkRange "/home/lewis/test.fs" (mkPos 1 5) (mkPos 1 16)
+        let functionCalls = FindFunctionCalls source tree bindingRange "f"
 
         match functionCalls with
             | [Ast.AstNode.Expression(SynExpr.App(_,_,_,SynExpr.Const(SynConst.Int32(1),_),_));
