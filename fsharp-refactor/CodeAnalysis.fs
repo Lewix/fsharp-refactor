@@ -6,14 +6,16 @@ open Microsoft.FSharp.Compiler.Range
 open FSharpRefactor.Engine.Ast
 
 module RangeAnalysis =
+    let rec ListNodes (tree : Ast.AstNode) =
+        match tree with
+            | Ast.Children cs -> tree::(List.concat (Seq.map ListNodes cs))
+            | _ -> [tree]
+            
     let rec FindNodesWithRange range (tree : Ast.AstNode) =
-        let nodeRange = Ast.GetRange(tree)
-        let remainingRanges =
-            match tree with
-                | Ast.Children cs -> List.concat (Seq.map (FindNodesWithRange range) cs)
-                | _ -> []
-        if Option.isSome nodeRange && range = nodeRange.Value
-        then tree::remainingRanges else remainingRanges
+        let allNodes = ListNodes tree
+        let hasRange node =
+            Option.isSome (Ast.GetRange node) && (Ast.GetRange node).Value = range
+        List.filter hasRange allNodes
 
     let FindAstNodeAtRange range (tree : Ast.AstNode) isNode =
         List.find isNode (FindNodesWithRange range tree)
