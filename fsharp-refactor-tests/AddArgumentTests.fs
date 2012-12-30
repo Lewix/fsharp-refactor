@@ -12,7 +12,7 @@ type AddArgumentModule() =
         let source = "let f a b = a+b"
         let tree = (Ast.Parse source).Value
         let bindingRange = mkRange "/home/lewis/test.fs" (mkPos 1 4) (mkPos 1 15)
-        let expected = "let f a b c = a+b"
+        let expected = "let f c a b = a+b"
 
         Assert.AreEqual(expected, AddArgumentToBinding source tree bindingRange "c")
 
