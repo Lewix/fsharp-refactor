@@ -28,13 +28,13 @@ type AddArgumentModule() =
 
     [<Test>]
     member this.``Can find all the App nodes calling a certain function``() =
-        let source = "(f 1 2 3) + ((f 2) 2) + (1 + (2 + (f 3 3 4)))"
+        let source = "(let f a b c = 1 in (f 1 2 3) + ((f 2) 2) + (1 + (2 + (f 3 3 4)))) + (f 1)"
         let tree = (Ast.Parse source).Value
-        let functionCalls = FindFunctionCalls source tree "f"
+        let bindingRange = mkRange "/home/lewis/test.fs" (mkPos 1 5) (mkPos 1 12)
+        let functionCalls = FindFunctionCalls source tree bindingRange
 
         match functionCalls with
             | [Ast.AstNode.Expression(SynExpr.App(_,_,_,SynExpr.Const(SynConst.Int32(1),_),_));
                Ast.AstNode.Expression(SynExpr.App(_,_,_,SynExpr.Const(SynConst.Int32(2),_),_));
                Ast.AstNode.Expression(SynExpr.App(_,_,_,SynExpr.Const(SynConst.Int32(3),_),_))] -> ()
             | _ -> Assert.Fail("Did no get the correct function calls: " + (sprintf "%A" functionCalls))
-        

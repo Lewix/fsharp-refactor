@@ -30,12 +30,7 @@ let AddArgumentToFunctionCall source (tree : Ast.AstNode) (callRange : range) (a
         yield (argRange.StartRange, argument + " ")
     }
 
-let FindFunctionCalls source (tree : Ast.AstNode) (functionName : string) =
-    let isFunctionCall node =
-        match node with
-            | Ast.AstNode.Expression(SynExpr.App(_,_,SynExpr.Ident(f),_,_)) -> functionName = f.idText
-            | _ -> false
-    List.filter isFunctionCall (ListNodes tree)
-    
+let FindFunctionCalls source (tree : Ast.AstNode) (definitionRange : range) = []    
 
 let AddArgument source (bindingRange : range) (argumentName : string) (defaultValue : string) = source
+        
