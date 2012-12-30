@@ -33,8 +33,8 @@ type AddArgumentModule() =
         let functionCalls = FindFunctionCalls source tree "f"
 
         match functionCalls with
-            | [SynExpr.App(_,_,_,SynExpr.Const(SynConst.Int32(1),_),_);
-               SynExpr.App(_,_,_,SynExpr.Const(SynConst.Int32(2),_),_);
-               SynExpr.App(_,_,_,SynExpr.Const(SynConst.Int32(3),_),_)] -> ()
+            | [Ast.AstNode.Expression(SynExpr.App(_,_,_,SynExpr.Const(SynConst.Int32(1),_),_));
+               Ast.AstNode.Expression(SynExpr.App(_,_,_,SynExpr.Const(SynConst.Int32(2),_),_));
+               Ast.AstNode.Expression(SynExpr.App(_,_,_,SynExpr.Const(SynConst.Int32(3),_),_))] -> ()
             | _ -> Assert.Fail("Did no get the correct function calls: " + (sprintf "%A" functionCalls))
         
