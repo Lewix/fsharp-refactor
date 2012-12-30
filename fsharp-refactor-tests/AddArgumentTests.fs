@@ -15,3 +15,12 @@ type AddArgumentModule() =
         let expected = "let f a b c = a+b"
 
         Assert.AreEqual(expected, AddArgumentToBinding source tree bindingRange "c")
+
+    [<Test>]
+    member this.``Can add an argument to a function call``() =
+        let source = "f a \"b\" 3"
+        let tree = (Ast.Parse source).Value
+        let callRange = mkRange "/home/lewis/test.fs" (mkPos 1 0) (mkPos 1 11)
+        let expected ="f a \"b\" 3 \"arg\""
+
+        Assert.AreEqual(expected, AddArgumentToFunctionCall source tree callRange "\"arg\"")

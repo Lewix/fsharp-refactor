@@ -23,6 +23,7 @@ let AddArgumentToBinding source (tree : Ast.AstNode) (bindingRange : range) (arg
         let range = Ast.GetRange (Ast.AstNode.Pattern (last arguments))
         if Option.isSome range then yield (range.Value.EndRange, " " + argumentName)
     }
-    
+
+let AddArgumentToFunctionCall source (tree : Ast.AstNode) (callRange : range) (argument : string) = source
 
 let AddArgument source (bindingRange : range) (argumentName : string) (defaultValue : string) = source
