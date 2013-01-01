@@ -38,3 +38,13 @@ type AddArgumentModule() =
                Ast.AstNode.Expression(SynExpr.App(_,_,_,SynExpr.Const(SynConst.Int32(2),_),_));
                Ast.AstNode.Expression(SynExpr.App(_,_,_,SynExpr.Const(SynConst.Int32(3),_),_))] -> ()
             | _ -> Assert.Fail("Did no get the correct function calls: " + (sprintf "%A" functionCalls))
+
+    [<Test>]
+    member this.``Can add an argument to a function``() =
+        let source = "(let f a b c = 1 in (f 1 2 3) + ((f 2) 2) + (1 + (2 + (f 3 3 4)))) + (f 1)"
+        let tree = (Ast.Parse source).Value
+        let bindingRange = mkRange "/home/lewis/test.fs" (mkPos 1 5) (mkPos 1 16)
+        let expected = "(let f arg a b c = 1 in (f 0 1 2 3) + ((f 0 2) 2) + (1 + (2 + (f 0 3 3 4)))) + (f 1)"
+
+        Assert.AreEqual(expected, AddArgument source tree bindingRange "arg" "0")
+        

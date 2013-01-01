@@ -70,4 +70,4 @@ let FindFunctionCalls source (tree : Ast.AstNode) (bindingRange : range) (functi
     |> List.map Ast.AstNode.Expression
     
     
-let AddArgument source (bindingRange : range) (argumentName : string) (defaultValue : string) = source
+let AddArgument source (tree : Ast.AstNode) (bindingRange : range) (argumentName : string) (defaultValue : string) = source
