@@ -31,11 +31,11 @@ let AddArgumentToFunctionCall source (tree : Ast.AstNode) (callRange : range) (a
         yield (argRange.StartRange, argument + " ")
     }
 
-let FindFunctionCalls source (tree : Ast.AstNode) (declarationRange : range) (functionName : string) =
+let FindFunctionCalls source (tree : Ast.AstNode) (bindingRange : range) (functionName : string) =
     let isDeclarationOfFunction scopeTree =
         match scopeTree with
             | Declaration(is,ts) ->
-                List.exists (fun (n,r) -> n = functionName) is
+                List.exists (fun (n,r) -> rangeContainsRange bindingRange r && n = functionName) is
             | _ -> false
     let isApp node =
         match node with
