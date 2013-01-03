@@ -26,13 +26,21 @@ type RenameAnalysisModule() =
     member this.``Renaming analysis with nested declaration is correct``() =
         let goodSource = "let a = 1 in let b = 2 in b"
         let badSource = "let a = 1 in let b = 2 in a"
-        let declarationRange = mkRange "/home/lewis/test.fs" (mkPos 1 5) (mkPos 1 5)
+        let declarationRange = mkRange "/home/lewis/test.fs" (mkPos 1 4) (mkPos 1 5)
  
         Assert.AreEqual(Valid,CanRename (Ast.Parse goodSource).Value ("a", declarationRange) "b",
                         "Should be able to rename a to b")
         Assert.AreEqual(Invalid("a is free in the scope of a b defined in its scope"),
                         CanRename (Ast.Parse badSource).Value ("a", declarationRange) "b",
                         "Shouldn't be able to rename a to b")
+
+    [<Test>]
+    member this.``Cannot rename to a name already bound in the same pattern``() =
+        let source = "let f a b c = 1"
+        let declarationRange = mkRange "/home/lewis/test.fs" (mkPos 1 6) (mkPos 1 7)
+
+        Assert.AreEqual(Invalid("b is already declared in that pattern"),
+                        CanRename (Ast.Parse source).Value ("a", declarationRange) "b")
 
 [<TestFixture>]
 type RenameTransformModule() =
