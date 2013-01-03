@@ -9,7 +9,7 @@ open FSharpRefactor.Engine.CodeAnalysis.ScopeAnalysis
 open FSharpRefactor.Engine.RefactoringWorkflow
 
 let AddArgumentToBinding source (tree : Ast.AstNode) (bindingRange : range) (argumentName : string) =
-    refactoring source {
+    refactoring source true {
         let arguments =
             match FindBindingAtRange bindingRange tree with
                 | Ast.AstNode.Binding(SynBinding.Binding(_,_,_,_,_,_,_,
@@ -20,7 +20,7 @@ let AddArgumentToBinding source (tree : Ast.AstNode) (bindingRange : range) (arg
     }
 
 let AddArgumentToFunctionCall source (tree : Ast.AstNode) (callRange : range) (argument : string) =
-    refactoring source {
+    refactoring source true {
         let rec findArg nodesAtCallRange =
             match nodesAtCallRange with
                 | [] -> raise (new NotImplementedException "No app found")
@@ -76,7 +76,7 @@ let findFunctionName source (tree : Ast.AstNode) (bindingRange : range) =
 
         
 let AddArgument source (tree : Ast.AstNode) (bindingRange : range) (argumentName : string) (defaultValue : string) =
-    RunRefactoring (refactoring source {
+    RunRefactoring (refactoring source true {
         let callRanges =
             findFunctionName source tree bindingRange
             |> FindFunctionCalls source tree bindingRange

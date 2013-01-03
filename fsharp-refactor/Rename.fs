@@ -55,7 +55,8 @@ let CanRename (tree : Ast.AstNode) (name : string, declarationRange : range) (ne
 
 
 let DoRename source (tree: Ast.AstNode) (declarationIdentifier : Identifier) (newName : string) =
-    RunRefactoring (refactoring source {
+    let valid = CanRename tree declarationIdentifier newName 
+    RunRefactoring (refactoring source valid {
         let declarationScope =
             findDeclarationInScopeTrees (makeScopeTrees tree) declarationIdentifier
         if Option.isSome declarationScope
