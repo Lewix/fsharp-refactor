@@ -15,24 +15,24 @@ let rec stripBrackets (body : string) =
     else body
 
 let CreateFunction source (inScopeTree : Ast.AstNode) (functionName : string) (arguments : string list) (body : string) (isRecursive : bool) =
-    refactoring FunctionDefinition.Template {
+    RunRefactoring (refactoring FunctionDefinition.Template {
         if isRecursive then yield (FunctionDefinition.RecRange, FunctionDefinition.RecTemplate)
         yield (FunctionDefinition.NameRange, functionName)
         yield (FunctionDefinition.ParameterRange, String.concat " " arguments)
         yield (FunctionDefinition.BodyRange, stripBrackets body)
-    }
+    })
     
 let CallFunction source (functionName : string) (arguments : string list) =
     //TODO: don't always put brackets around function body
-    refactoring FunctionCall.Template {
+    RunRefactoring (refactoring FunctionCall.Template {
         yield (FunctionCall.NameRange, functionName)
         yield (FunctionCall.ParameterRange, String.concat " " arguments)
-    }
+    })
 
 let CanExtractFunction (tree : Ast.AstNode) (expressionRange : range) (functionName : string) = true
 
 let DoExtractFunction source (inScopeTree : Ast.AstNode) (expressionRange : range) (functionName : string) =
-    refactoring source {
+    RunRefactoring (refactoring source {
         let body = CodeTransforms.TextOfRange source expressionRange
         let bodyExpression = FindExpressionAtRange expressionRange inScopeTree
         let arguments =
@@ -42,4 +42,4 @@ let DoExtractFunction source (inScopeTree : Ast.AstNode) (expressionRange : rang
 
         yield ((Ast.GetRange inScopeTree).Value.StartRange, CreateFunction source inScopeTree functionName arguments body false)
         yield (expressionRange, CallFunction source functionName arguments)
-    }
+    })

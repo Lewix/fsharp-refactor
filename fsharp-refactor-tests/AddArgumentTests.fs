@@ -4,6 +4,7 @@ open NUnit.Framework
 open Microsoft.FSharp.Compiler.Range
 open Microsoft.FSharp.Compiler.Ast
 open FSharpRefactor.Engine.Ast
+open FSharpRefactor.Engine.RefactoringWorkflow
 open FSharpRefactor.Refactorings.AddArgument
 
 [<TestFixture>]
@@ -15,7 +16,7 @@ type AddArgumentModule() =
         let bindingRange = mkRange "/home/lewis/test.fs" (mkPos 1 4) (mkPos 1 15)
         let expected = "let f c a b = a+b"
 
-        Assert.AreEqual(expected, AddArgumentToBinding source tree bindingRange "c")
+        Assert.AreEqual(expected, RunRefactoring (AddArgumentToBinding source tree bindingRange "c"))
 
     [<Test>]
     member this.``Can add an argument to a function call``() =
@@ -24,7 +25,7 @@ type AddArgumentModule() =
         let callRange = mkRange "/home/lewis/test.fs" (mkPos 1 0) (mkPos 1 3)
         let expected ="f \"arg\" a \"b\" 3"
 
-        Assert.AreEqual(expected, AddArgumentToFunctionCall source tree callRange "\"arg\"")
+        Assert.AreEqual(expected, RunRefactoring (AddArgumentToFunctionCall source tree callRange "\"arg\""))
 
     [<Test>]
     member this.``Can find all the App nodes calling a certain function``() =
