@@ -46,27 +46,27 @@ let FindFunctionCalls source (tree : Ast.AstNode) (bindingRange : range) (functi
             | Usage(n,r) -> if n = functionName then Some r else None
             | _ -> None
             
-    let findAppAroundRange (functionRange : range) =
-        let rec tryFindAppAroundRange tree =
+    let tryFindAppForRange (functionRange : range) =
+        let rec tryFindAppForRange tree =
             match tree with
                 | Ast.AstNode.Expression(SynExpr.App(_,_,f,e,r) as app) ->
-                    if rangeContainsRange r functionRange then
-                        let nestedApp = List.tryPick tryFindAppAroundRange
-                                                     [Ast.AstNode.Expression e; Ast.AstNode.Expression f]
+                    if rangeContainsRange (Ast.GetRange (Ast.AstNode.Expression f)).Value functionRange then
+                        let nestedApp = List.tryPick tryFindAppForRange [Ast.AstNode.Expression f]
                         if Option.isSome nestedApp then nestedApp else Some app
+                    else if rangeContainsRange (Ast.GetRange (Ast.AstNode.Expression e)).Value functionRange then
+                        let nestedApp = List.tryPick tryFindAppForRange [Ast.AstNode.Expression e]
+                        if Option.isSome nestedApp then nestedApp else None
                     else None
-                | Ast.Children cs -> List.tryPick tryFindAppAroundRange cs
+                | Ast.Children cs -> List.tryPick tryFindAppForRange cs
                 | _ -> None
-        let app = tryFindAppAroundRange tree
-        if Option.isSome app then app.Value
-        else raise (new Collections.Generic.KeyNotFoundException("Not such node"))
+        tryFindAppForRange tree
     
     makeScopeTrees tree
     |> List.collect ListNodes
     |> List.find isDeclarationOfFunction
     |> ListNodes
     |> List.choose rangeIfUsageOfFunction
-    |> List.map findAppAroundRange
+    |> List.choose tryFindAppForRange
     |> List.map Ast.AstNode.Expression
 
 let findFunctionName source (tree : Ast.AstNode) (bindingRange : range) =
