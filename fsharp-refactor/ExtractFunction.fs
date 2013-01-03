@@ -31,7 +31,7 @@ let CallFunction source (functionName : string) (arguments : string list) =
 
 let CanExtractFunction (tree : Ast.AstNode) (expressionRange : range) (functionName : string) = true
 
-let DoExtractFunction source (inScopeTree : Ast.AstNode) (expressionRange : range) (functionName : string) =
+let ExtractFunction source (inScopeTree : Ast.AstNode) (expressionRange : range) (functionName : string) =
     RunRefactoring (refactoring source Valid {
         let body = CodeTransforms.TextOfRange source expressionRange
         let bodyExpression = FindExpressionAtRange expressionRange inScopeTree
