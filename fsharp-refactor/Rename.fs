@@ -61,14 +61,20 @@ let CanRename (tree : Ast.AstNode) (name : string, declarationRange : range) (ne
         findDeclarationInScopeTrees (makeScopeTrees tree) (name, declarationRange)
         
     if Option.isSome declarationScope then
-        if isFree newName declarationScope.Value then Invalid(newNameIsFree)
+        let isNameBoundTwice =
+            match declarationScope.Value with
+                | Declaration(is,ts) -> isDeclared newName is
+                | _ -> false
+        if isNameBoundTwice then Invalid(sprintf "%s is already declared in that pattern" newName)
         else
-            let isOldNameFree =
-                getTopLevelDeclarations newName declarationScope.Value
-                |> List.map (isFree name)
-                |> List.fold (||) false
-            if isOldNameFree then Invalid(oldNameIsFree)
-            else Valid
+            if isFree newName declarationScope.Value then Invalid(newNameIsFree)
+            else
+                let isOldNameFree =
+                    getTopLevelDeclarations newName declarationScope.Value
+                    |> List.map (isFree name)
+                    |> List.fold (||) false
+                if isOldNameFree then Invalid(oldNameIsFree)
+                else Valid
     else Invalid("Could not find a declaration at the given range")
 
 
