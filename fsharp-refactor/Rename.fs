@@ -78,7 +78,7 @@ let CanRename (tree : Ast.AstNode) (name : string, declarationRange : range) (ne
     else Invalid("Could not find a declaration at the given range")
 
 
-let DoRename source (tree: Ast.AstNode) (declarationIdentifier : Identifier) (newName : string) =
+let Rename source (tree: Ast.AstNode) (declarationIdentifier : Identifier) (newName : string) =
     let valid = CanRename tree declarationIdentifier newName 
     RunRefactoring (refactoring source valid {
         let declarationScope =
