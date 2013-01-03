@@ -42,7 +42,7 @@ type AddArgumentModule() =
 
     [<Test>]
     member this.``Can find App nodes calling a function without duplicates``() =
-        let source = "let f a b = 1 in f f"
+        let source = "let f a b = 1 in f f f"
         let tree = (Ast.Parse source).Value
         let bindingRange = mkRange "/home/lewis/test.fs" (mkPos 1 4) (mkPos 1 12)
         let functionCalls = FindFunctionCalls source tree bindingRange "f"
