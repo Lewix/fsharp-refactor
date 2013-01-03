@@ -79,8 +79,14 @@ let findFunctionName source (tree : Ast.AstNode) (bindingRange : range) =
 
         
 let AddArgument source (tree : Ast.AstNode) (bindingRange : range) (argumentName : string) (defaultValue : string) =
-    source
-    //Find function name
-    //Find function calls
-    //Call AddArgumentToFunctionCall and AddArgumentToBinding with the right source and tree (just source of call/binding?)
+    RunRefactoring (refactoring source {
+        let callRanges =
+            findFunctionName source tree bindingRange
+            |> FindFunctionCalls source tree bindingRange
+            |> List.map Ast.GetRange
+            |> List.map Option.get
+        yield! (AddArgumentToBinding source tree bindingRange argumentName)
+        for callRange in callRanges do
+            yield! (AddArgumentToFunctionCall source tree callRange defaultValue)
+    })
     
