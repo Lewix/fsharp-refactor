@@ -11,15 +11,20 @@ type Refactoring =
     | Success of Source * Change list
     | Failure of ErrorMessage
 
+type RefactoringValidity =
+    | Valid
+    | Invalid of ErrorMessage
+
 exception RefactoringFailure of ErrorMessage
 
-type RefactoringBuilder(source,valid) =
+type RefactoringBuilder(source,validity) =
     member this.source = source
-    member this.valid = valid
+    member this.validity = validity
         
     member this.Yield(change) : Refactoring =
-        if this.valid then Success(this.source,[change])
-        else Failure("")
+        match this.validity with
+            | Valid -> Success(this.source,[change])
+            | Invalid message -> Failure(message)
 
     member this.YieldFrom(refactoring) : Refactoring = refactoring
 
