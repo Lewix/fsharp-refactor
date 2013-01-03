@@ -5,7 +5,23 @@ open Microsoft.FSharp.Compiler.Range
 open Microsoft.FSharp.Compiler.Ast
 open FSharpRefactor.Engine.Ast
 open FSharpRefactor.Engine.CodeAnalysis.RangeAnalysis
+open FSharpRefactor.Engine.RefactoringWorkflow
 open FSharpRefactor.Refactorings.ExtractFunction
+
+[<TestFixture>]
+type ExtractFunctionAnalysisModule() =
+    [<Test>]
+    member this.``Cannot extract a function with a taken name``() =
+        let assertFun source expected =
+            let tree = (Ast.Parse source).Value
+            let letTree =
+                List.head (FindNodesWithRange (mkRange "/home/lewis/test.fs" (mkPos 1 15) (mkPos 1 26)) tree)
+            let expressionRange = mkRange "/home/lewis/test.fs" (mkPos 1 15) (mkPos 1 19)
+
+            Assert.AreEqual(expected, CanExtractFunction letTree expressionRange "f")
+
+        assertFun "let f a = 1 in (1+2)+(f 1)" (Invalid("f is free in the scope of newFunction"))
+        assertFun "let f a = 1 in (1+2)+(g 1)" Valid
 
 [<TestFixture>]
 type ExtractFunctionTransformModule() =
