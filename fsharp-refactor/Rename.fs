@@ -41,18 +41,35 @@ let rec rangesToReplace (name, declarationRange) tree =
 let CanRename (tree : Ast.AstNode) (name : string, declarationRange : range) (newName : string) =
     // Check if targetName is free in tree
     // Call onDeclarationFun if declaration of targetName encountered
-    let rec isFree (onDeclarationFun : ScopeTree -> bool) targetName tree =
+    let newNameIsFree = sprintf "%s is free in the scope of %s" newName name
+    let oldNameIsFree = sprintf "%s is free in the scope of a %s defined in its scope" name newName
+    let rec isFree targetName tree =
         match tree with
-            | Usage(n,_) -> n <> targetName
+            | Usage(n,_) -> n = targetName
             | Declaration(is, ts) ->
+                if isDeclared targetName is then false
+                else List.fold (||) false (List.map (isFree targetName) ts)
+    let rec getTopLevelDeclarations targetName tree =
+        match tree with
+            | Declaration(is, ts) as declaration->
                 if isDeclared targetName is
-                then onDeclarationFun (Declaration(is, ts))
-                else List.fold (fun state t -> state && isFree onDeclarationFun targetName t) true ts
+                then [declaration]
+                else List.collect (getTopLevelDeclarations targetName) ts
+            | _ -> []
 
     let declarationScope =
         findDeclarationInScopeTrees (makeScopeTrees tree) (name, declarationRange)
-    if Option.isSome declarationScope
-    then isFree (isFree (fun _ -> true) name) newName declarationScope.Value else false
+        
+    if Option.isSome declarationScope then
+        if isFree newName declarationScope.Value then Invalid(newNameIsFree)
+        else
+            let isOldNameFree =
+                getTopLevelDeclarations newName declarationScope.Value
+                |> List.map (isFree name)
+                |> List.fold (||) false
+            if isOldNameFree then Invalid(oldNameIsFree)
+            else Valid
+    else Invalid("Could not find a declaration at the given range")
 
 
 let DoRename source (tree: Ast.AstNode) (declarationIdentifier : Identifier) (newName : string) =

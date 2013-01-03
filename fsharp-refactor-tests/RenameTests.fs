@@ -6,6 +6,7 @@ open Microsoft.FSharp.Compiler.Range
 
 open FSharpRefactor.Engine.Ast
 open FSharpRefactor.Engine.CodeAnalysis
+open FSharpRefactor.Engine.RefactoringWorkflow
 open FSharpRefactor.Refactorings.Rename
 
 [<TestFixture>]
@@ -16,10 +17,10 @@ type RenameAnalysisModule() =
         let badSource = "let a = 1 in b"
         let declarationRange = mkRange "/home/lewis/test.fs" (mkPos 1 4) (mkPos 1 5)
 
-        Assert.IsTrue(CanRename (Ast.Parse goodSource).Value ("a", declarationRange) "b",
-                      "Should be able to rename a to b")
-        Assert.IsFalse(CanRename (Ast.Parse badSource).Value ("a", declarationRange) "b",
-                       "Shouldn't be able to rename a to b")
+        Assert.AreEqual(Valid,CanRename (Ast.Parse goodSource).Value ("a", declarationRange) "b",
+                        "Should be able to rename a to b")
+        Assert.AreEqual(Invalid("b is free in the scope of a"),CanRename (Ast.Parse badSource).Value ("a", declarationRange) "b",
+                        "Shouldn't be able to rename a to b")
 
     [<Test>]
     member this.``Renaming analysis with nested declaration is correct``() =
@@ -27,10 +28,11 @@ type RenameAnalysisModule() =
         let badSource = "let a = 1 in let b = 2 in a"
         let declarationRange = mkRange "/home/lewis/test.fs" (mkPos 1 5) (mkPos 1 5)
  
-        Assert.IsTrue(CanRename (Ast.Parse goodSource).Value ("a", declarationRange) "b",
-                      "Should be able to rename a to b")
-        Assert.IsFalse(CanRename (Ast.Parse badSource).Value ("a", declarationRange) "b",
-                       "Shouldn't be able to rename a to b")
+        Assert.AreEqual(Valid,CanRename (Ast.Parse goodSource).Value ("a", declarationRange) "b",
+                        "Should be able to rename a to b")
+        Assert.AreEqual(Invalid("a is free in the scope of a b defined in its scope"),
+                        CanRename (Ast.Parse badSource).Value ("a", declarationRange) "b",
+                        "Shouldn't be able to rename a to b")
 
 [<TestFixture>]
 type RenameTransformModule() =
