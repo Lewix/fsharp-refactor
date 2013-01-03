@@ -37,6 +37,7 @@ let rec rangesToReplace (name, declarationRange) tree =
                 if Option.isSome declarationRange then declarationRange.Value::remainingRanges
                 else remainingRanges
 
+//TODO: Check same id will not be bound twice in the same Declaration
 let CanRename (tree : Ast.AstNode) (name : string, declarationRange : range) (newName : string) =
     // Check if targetName is free in tree
     // Call onDeclarationFun if declaration of targetName encountered
