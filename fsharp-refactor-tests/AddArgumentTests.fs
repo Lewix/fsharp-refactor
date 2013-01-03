@@ -48,3 +48,10 @@ type AddArgumentModule() =
 
         Assert.AreEqual(expected, AddArgument source tree bindingRange "arg" "0")
         
+    [<Test>]
+    member this.``Can find the name of a function given its binding's range``() =
+        let source = "let f a b = a+b"
+        let tree = (Ast.Parse source).Value
+        let bindingRange = mkRange "/home/lewis/test.fs" (mkPos 1 4) (mkPos 1 15)
+
+        Assert.AreEqual("f", findFunctionName source tree bindingRange)

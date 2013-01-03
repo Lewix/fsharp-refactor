@@ -68,6 +68,19 @@ let FindFunctionCalls source (tree : Ast.AstNode) (bindingRange : range) (functi
     |> List.choose rangeIfUsageOfFunction
     |> List.map findAppAroundRange
     |> List.map Ast.AstNode.Expression
+
+let findFunctionName source (tree : Ast.AstNode) (bindingRange : range) =
+    match FindBindingAtRange bindingRange tree with
+        | Ast.AstNode.Binding(SynBinding.Binding(_,_,_,_,_,_,_,p,_,_,_,_)) ->
+            match Ast.AstNode.Pattern p with
+                | DeclaredIdent(i,r) -> i
+                | _ -> raise (new Exception("Binding was not a function"))
+        | _ -> raise (new Exception("No binding at that range"))
+
+        
+let AddArgument source (tree : Ast.AstNode) (bindingRange : range) (argumentName : string) (defaultValue : string) =
+    source
+    //Find function name
+    //Find function calls
+    //Call AddArgumentToFunctionCall and AddArgumentToBinding with the right source and tree (just source of call/binding?)
     
-    
-let AddArgument source (tree : Ast.AstNode) (bindingRange : range) (argumentName : string) (defaultValue : string) = source
