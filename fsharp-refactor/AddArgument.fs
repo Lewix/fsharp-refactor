@@ -49,13 +49,10 @@ let FindFunctionCalls source (tree : Ast.AstNode) (bindingRange : range) (functi
     let tryFindAppForRange (functionRange : range) =
         let rec tryFindAppForRange tree =
             match tree with
-                | Ast.AstNode.Expression(SynExpr.App(_,_,f,e,r) as app) ->
-                    if rangeContainsRange (Ast.GetRange (Ast.AstNode.Expression f)).Value functionRange then
-                        let nestedApp = List.tryPick tryFindAppForRange [Ast.AstNode.Expression f]
-                        if Option.isSome nestedApp then nestedApp else Some app
-                    else if rangeContainsRange (Ast.GetRange (Ast.AstNode.Expression e)).Value functionRange then
-                        let nestedApp = List.tryPick tryFindAppForRange [Ast.AstNode.Expression e]
-                        if Option.isSome nestedApp then nestedApp else None
+                | Ast.AstNode.Expression(SynExpr.App(_,_,SynExpr.Ident(id),e,_) as app) ->
+                    if id.idRange = functionRange then Some app
+                    else if rangeContainsRange (Ast.GetRange (Ast.AstNode.Expression e)).Value functionRange
+                    then List.tryPick tryFindAppForRange [Ast.AstNode.Expression e]
                     else None
                 | Ast.Children cs -> List.tryPick tryFindAppForRange cs
                 | _ -> None
