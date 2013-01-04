@@ -70,3 +70,16 @@ type RenameTransformModule() =
         Assert.AreEqual(expected, DoRename source (Ast.Parse source).Value ("a", declarationRange) "c")
 
         
+    [<Test>]
+    member this.``Can rename a function and its arguments``() =
+        let source = "let f a b = a+b in f 1 2"
+        let expected = "let g a b = a+b in g 1 2"
+        let declarationRange = mkRange "/home/lewis/test.fs" (mkPos 1 4) (mkPos 1 5)
+
+        Assert.AreEqual(expected, DoRename source (Ast.Parse source).Value ("f", declarationRange) "g")
+
+        let source = "let f a b = a+b in f 1 2"
+        let expected = "let f c b = c+b in f 1 2"
+        let declarationRange = mkRange "/home/lewis/test.fs" (mkPos 1 6) (mkPos 1 7)
+         
+        Assert.AreEqual(expected, DoRename source (Ast.Parse source).Value ("a", declarationRange) "c")
