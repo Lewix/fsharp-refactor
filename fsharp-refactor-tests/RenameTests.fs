@@ -83,3 +83,11 @@ type RenameTransformModule() =
         let declarationRange = mkRange "/home/lewis/test.fs" (mkPos 1 6) (mkPos 1 7)
          
         Assert.AreEqual(expected, DoRename source (Ast.Parse source).Value ("a", declarationRange) "c")
+
+    [<Test>]
+    member this.``Can rename a nested identifier``() =
+        let source = "let a = 1 in let b = 1 in b"
+        let expected = "let a = 1 in let c = 1 in c"
+        let declarationRange = mkRange "/home/lewis/test.fs" (mkPos 1 17) (mkPos 1 18)
+
+        Assert.AreEqual(expected, DoRename source (Ast.Parse source).Value ("b", declarationRange) "c")

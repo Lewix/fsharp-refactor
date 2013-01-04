@@ -22,7 +22,7 @@ let rec findDeclarationInScopeTrees trees (name, declarationRange) =
         | Declaration(is, ts)::ds ->
             let isDeclaration = (fun (n,r) -> n = name && rangeContainsRange r declarationRange)
             if List.exists isDeclaration is then Some(Declaration(is, ts))
-            else findDeclarationInScopeTrees ds (name, declarationRange)
+            else findDeclarationInScopeTrees (List.append ts ds) (name, declarationRange)
 
 let rec rangesToReplace (name, declarationRange) tree =
     let isNestedDeclaration idents =
