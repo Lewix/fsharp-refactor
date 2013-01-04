@@ -52,8 +52,8 @@ module ScopeAnalysis =
         match node with
             | Ast.Pattern(SynPat.Named(_,i,_,_,_)) -> Some(i.idText, i.idRange)
             //TODO: Make everything work with LongIdentWithDots
-            | Ast.Pattern(SynPat.LongIdent(LongIdentWithDots(i::is,_),_,_,_,_,_) as longIdent) ->
-                Some(i.idText, longIdent.Range)
+            | Ast.Pattern(SynPat.LongIdent(LongIdentWithDots(i::_,_),_,_,_,_,_)) ->
+                Some(i.idText, i.idRange)
             | _ -> None
 
     let DefaultDeclared = Set ["op_Addition"]
