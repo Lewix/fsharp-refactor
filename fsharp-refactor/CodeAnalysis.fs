@@ -1,39 +1,10 @@
 namespace FSharpRefactor.Engine.CodeAnalysis
 
 open System
+open System.Collections.Generic
 open Microsoft.FSharp.Compiler.Ast
 open Microsoft.FSharp.Compiler.Range
 open FSharpRefactor.Engine.Ast
-
-module RangeAnalysis =
-    let rec ListNodes (tree : Ast.AstNode) =
-        match tree with
-            | Ast.Children cs -> tree::(List.concat (Seq.map ListNodes cs))
-            | _ -> [tree]
-            
-    let rec FindNodesWithRange range (tree : Ast.AstNode) =
-        let allNodes = ListNodes tree
-        let hasRange node =
-            Option.isSome (Ast.GetRange node) && (Ast.GetRange node).Value = range
-        List.filter hasRange allNodes
-
-    let FindAstNodeAtRange range (tree : Ast.AstNode) isNode =
-        List.find isNode (FindNodesWithRange range tree)
-
-    let FindExpressionAtRange range (tree : Ast.AstNode)  =
-        let isExpression node =
-            match node with
-                | Ast.AstNode.Expression _ -> true
-                | _ -> false
-        FindAstNodeAtRange range tree isExpression
-
-    let FindBindingAtRange range (tree : Ast.AstNode) =
-        let isBinding node  =
-            match node with
-                | Ast.AstNode.Binding _ -> true
-                | _ -> false
-        FindAstNodeAtRange range tree isBinding
-
 
 module ScopeAnalysis =
     type Identifier = string * range
@@ -74,6 +45,18 @@ module ScopeAnalysis =
                     Set.unionMany (Seq.map (freeIdentifiersInSingleTree foundFree updatedDeclared) ts)
                     
         Set.unionMany (Seq.map (freeIdentifiersInSingleTree (Set []) declared) trees)
+
+    let IsDeclared (name : string) (identifiers : Identifier list) =
+        List.exists (fun (n,_) -> n = name) identifiers
+
+    let FindIdentifierWithName (trees : ScopeTree list) (name : string) =
+        let rec tryFindIdentifierWithName tree =
+            match tree with
+                | Declaration(is, ts) ->
+                    if IsDeclared name is then Some (List.find (fun (n,r) -> n = name) is)
+                    else List.tryPick tryFindIdentifierWithName ts
+                | _ -> None
+        List.pick tryFindIdentifierWithName trees
 
     let GetDeclarations (trees : ScopeTree list) =
         let rec declarationsInSingleTree tree =
@@ -165,3 +148,43 @@ module ScopeAnalysis =
             | Ast.Children(cs) -> List.concat (Seq.map makeScopeTrees cs)
             | UsedIdent(text, range) -> [Usage(text, range)]
             | _ -> []
+
+
+module RangeAnalysis =
+    let rec ListNodes (tree : Ast.AstNode) =
+        match tree with
+            | Ast.Children cs -> tree::(List.concat (Seq.map ListNodes cs))
+            | _ -> [tree]
+            
+    let rec FindNodesWithRange range (tree : Ast.AstNode) =
+        let allNodes = ListNodes tree
+        let hasRange node =
+            Option.isSome (Ast.GetRange node) && (Ast.GetRange node).Value = range
+        List.filter hasRange allNodes
+
+    let FindAstNodeAtRange range (tree : Ast.AstNode) isNode =
+        List.find isNode (FindNodesWithRange range tree)
+
+    let FindExpressionAtRange range (tree : Ast.AstNode)  =
+        let isExpression node =
+            match node with
+                | Ast.AstNode.Expression _ -> true
+                | _ -> false
+        FindAstNodeAtRange range tree isExpression
+
+    let FindBindingAtRange range (tree : Ast.AstNode) =
+        let isBinding node  =
+            match node with
+                | Ast.AstNode.Binding _ -> true
+                | _ -> false
+        FindAstNodeAtRange range tree isBinding
+
+    let FindIdentifierAtRange range (tree : Ast.AstNode) =
+        let binding = FindBindingAtRange range tree
+        let pattern =
+            match binding with
+                | Ast.AstNode.Binding(SynBinding.Binding(_,_,_,_,_,_,_,pattern,_,_,_,_)) -> Ast.AstNode.Pattern pattern
+                | _ -> raise (new KeyNotFoundException("Couldn't find an identifier declaration at that range"))
+        match pattern with
+            | ScopeAnalysis.DeclaredIdent id -> id
+            | _ -> raise (new KeyNotFoundException("Couldn't find an identifier declaration at that range"))

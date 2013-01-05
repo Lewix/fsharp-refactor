@@ -8,9 +8,6 @@ open FSharpRefactor.Engine.CodeTransforms
 open FSharpRefactor.Engine.RefactoringWorkflow
 
 
-let isDeclared (name : string) (identifiers : Identifier list) =
-    List.exists (fun (n,_) -> n = name) identifiers
-
 let rangeOfIdent (name : string) (identifiers : Identifier list) =
     let identifier = List.tryFind (fun (n,_) -> n = name) identifiers
     if Option.isNone identifier then None else Some(snd identifier.Value)
@@ -46,12 +43,12 @@ let CanRename (tree : Ast.AstNode) (name : string, declarationRange : range) (ne
         match tree with
             | Usage(n,_) -> n = targetName
             | Declaration(is, ts) ->
-                if isDeclared targetName is then false
+                if IsDeclared targetName is then false
                 else List.fold (||) false (List.map (isFree targetName) ts)
     let rec getTopLevelDeclarations targetName tree =
         match tree with
             | Declaration(is, ts) as declaration->
-                if isDeclared targetName is
+                if IsDeclared targetName is
                 then [declaration]
                 else List.collect (getTopLevelDeclarations targetName) ts
             | _ -> []
@@ -62,7 +59,7 @@ let CanRename (tree : Ast.AstNode) (name : string, declarationRange : range) (ne
     if Option.isSome declarationScope then
         let isNameBoundTwice =
             match declarationScope.Value with
-                | Declaration(is,ts) -> isDeclared newName is
+                | Declaration(is,ts) -> IsDeclared newName is
                 | _ -> false
         if isNameBoundTwice then Invalid(sprintf "%s is already declared in that pattern" newName)
         else
