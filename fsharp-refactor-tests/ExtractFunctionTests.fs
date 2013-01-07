@@ -11,7 +11,6 @@ open FSharpRefactor.Refactorings.ExtractFunction
 
 [<TestFixture>]
 type ExtractFunctionAnalysisModule() =
-    //TODO: test ExtractFunction when there are no arguments (extraneous spaces)
     //TODO: test ExtractFunction when expressionRange and inScopeTree start at same pos
     [<Test>]
     member this.``Cannot extract a function with a taken name``() =
