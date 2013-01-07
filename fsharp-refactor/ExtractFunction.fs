@@ -43,7 +43,7 @@ let ExtractTempFunction source (inScopeTree : Ast.AstNode) (expressionRange : ra
         yield (expressionRange, CallFunction source functionName arguments)
     }
 
-let ExtractFunction source (inScopeTree : Ast.AstNode) (expressionRange : range) (functionName : string) =
+let ExtractFunction source (tree : Ast.AstNode) (inScopeTree : Ast.AstNode) (expressionRange : range) (functionName : string) =
     let unusedName = "tmpFunction"
     let sourceWithTempFunction = RunRefactoring (ExtractTempFunction source inScopeTree expressionRange unusedName)
     let tree = (Ast.Parse sourceWithTempFunction).Value
@@ -51,5 +51,5 @@ let ExtractFunction source (inScopeTree : Ast.AstNode) (expressionRange : range)
     Rename sourceWithTempFunction tree identifier functionName
     
 
-let DoExtractFunction source (inScopeTree : Ast.AstNode) (expressionRange : range) (functionName : string) =
-    RunRefactoring (ExtractFunction source inScopeTree expressionRange functionName)
+let DoExtractFunction source (tree : Ast.AstNode) (inScopeTree : Ast.AstNode) (expressionRange : range) (functionName : string) =
+    RunRefactoring (ExtractFunction source tree inScopeTree expressionRange functionName)

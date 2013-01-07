@@ -22,7 +22,7 @@ type ExtractFunctionAnalysisModule() =
             List.head (FindNodesWithRange (mkRange "/home/lewis/test.fs" (mkPos 1 15) (mkPos 1 26)) tree)
         let expressionRange = mkRange "/home/lewis/test.fs" (mkPos 1 21) (mkPos 1 26)
 
-        ignore (Assert.Throws<RefactoringFailure>(fun () -> ignore (DoExtractFunction source inScopeTree expressionRange "f")))
+        ignore (Assert.Throws<RefactoringFailure>(fun () -> ignore (DoExtractFunction source tree inScopeTree expressionRange "f")))
 
 
 [<TestFixture>]
@@ -36,7 +36,7 @@ type ExtractFunctionTransformModule() =
             List.head (FindNodesWithRange (mkRange "/home/lewis/test.fs" (mkPos 1 13) (mkPos 1 32)) tree)
         let expressionRange = mkRange "/home/lewis/test.fs" (mkPos 1 25) (mkPos 1 30)
 
-        Assert.AreEqual(expected, DoExtractFunction source letTree expressionRange "f")
+        Assert.AreEqual(expected, DoExtractFunction source tree letTree expressionRange "f")
         
     [<Test>]
     member this.``Can extract an expression into a function aroud a Let expression``() =
@@ -47,7 +47,7 @@ type ExtractFunctionTransformModule() =
             List.head (FindNodesWithRange (mkRange "/home/lewis/test.fs" (mkPos 1 0) (mkPos 1 13)) tree)
         let expressionRange = mkRange "/home/lewis/test.fs" (mkPos 1 10) (mkPos 1 13)
 
-        Assert.AreEqual(expected, DoExtractFunction source letTree expressionRange "double")
+        Assert.AreEqual(expected, DoExtractFunction source tree letTree expressionRange "double")
         
 
 [<TestFixture>]
