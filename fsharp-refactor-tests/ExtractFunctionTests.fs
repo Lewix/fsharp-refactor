@@ -11,7 +11,6 @@ open FSharpRefactor.Refactorings.ExtractFunction
 
 [<TestFixture>]
 type ExtractFunctionAnalysisModule() =
-    //TODO: test ExtractFunction when expressionRange and inScopeTree start at same pos
     [<Test>]
     member this.``Cannot extract a function with a taken name``() =
         let source = "let f a = 1 in (f 1)+(1+2)"
