@@ -19,52 +19,28 @@ let AddArgumentToBinding source (tree : Ast.AstNode) (bindingRange : range) (arg
         if Option.isSome firstArgRange then yield (firstArgRange.Value.StartRange, argumentName + " ")
     }
 
-let AddArgumentToFunctionCall source (tree : Ast.AstNode) (callRange : range) (argument : string) =
+//TODO: Add brackets around usage if needed (if it's not an App)
+let AddArgumentToFunctionUsage source (tree : Ast.AstNode) (identRange : range) (argument : string) =
     refactoring source Valid {
-        let rec findArg nodesAtCallRange =
-            match nodesAtCallRange with
-                | [] -> raise (new NotImplementedException "No app found")
-                | Ast.AstNode.Expression(SynExpr.App(_,_,_,arg,_))::_ -> Ast.AstNode.Expression arg
-                | e::es -> findArg es
-        //TODO: GetRange shouldn't return an Option, it's a pain
-        let argRange = (Ast.GetRange (findArg (FindNodesWithRange callRange tree))).Value
-        yield (argRange.StartRange, argument + " ")
+        yield (identRange.EndRange, " " + argument)
     }
 
-let FindFunctionCalls source (tree : Ast.AstNode) (bindingRange : range) (functionName : string) =
+let FindFunctionUsageRanges source (tree : Ast.AstNode) (bindingRange : range) (functionName : string) =
     let isDeclarationOfFunction scopeTree =
         match scopeTree with
             | Declaration(is,ts) ->
                 List.exists (fun (n,r) -> rangeContainsRange bindingRange r && n = functionName) is
-            | _ -> false
-    let isApp node =
-        match node with
-            | Ast.AstNode.Expression(SynExpr.App(_,_,_,_,_)) -> true
             | _ -> false
     let rangeIfUsageOfFunction scopeTree =
         match scopeTree with
             | Usage(n,r) -> if n = functionName then Some r else None
             | _ -> None
             
-    let tryFindAppForRange (functionRange : range) =
-        let rec tryFindAppForRange tree =
-            match tree with
-                | Ast.AstNode.Expression(SynExpr.App(_,_,SynExpr.Ident(id),e,_) as app) ->
-                    if id.idRange = functionRange then Some app
-                    else if rangeContainsRange (Ast.GetRange (Ast.AstNode.Expression e)).Value functionRange
-                    then List.tryPick tryFindAppForRange [Ast.AstNode.Expression e]
-                    else None
-                | Ast.Children cs -> List.tryPick tryFindAppForRange cs
-                | _ -> None
-        tryFindAppForRange tree
-    
     makeScopeTrees tree
     |> List.collect ListNodes
     |> List.find isDeclarationOfFunction
     |> ListNodes
     |> List.choose rangeIfUsageOfFunction
-    |> List.choose tryFindAppForRange
-    |> List.map Ast.AstNode.Expression
 
 let findFunctionName source (tree : Ast.AstNode) (bindingRange : range) =
     match FindBindingAtRange bindingRange tree with
@@ -74,16 +50,14 @@ let findFunctionName source (tree : Ast.AstNode) (bindingRange : range) =
                 | _ -> raise (new Exception("Binding was not a function"))
         | _ -> raise (new Exception("No binding at that range"))
 
-        
+
 let AddArgument source (tree : Ast.AstNode) (bindingRange : range) (argumentName : string) (defaultValue : string) =
     RunRefactoring (refactoring source Valid {
-        let callRanges =
+        let identRanges =
             findFunctionName source tree bindingRange
-            |> FindFunctionCalls source tree bindingRange
-            |> List.map Ast.GetRange
-            |> List.map Option.get
+            |> FindFunctionUsageRanges source tree bindingRange
         yield! (AddArgumentToBinding source tree bindingRange argumentName)
-        for callRange in callRanges do
-            yield! (AddArgumentToFunctionCall source tree callRange defaultValue)
+        for identRange in identRanges do
+            yield! (AddArgumentToFunctionUsage source tree identRange defaultValue)
     })
     
