@@ -1,5 +1,5 @@
 REFS=-r:/mnt/media/git/university/personalproj/fsharp-refactor/FSharp.Compiler.dll \
-	-r:nunit.framework.dll
+	-r:/usr/lib/nunit/nunit.framework.dll
 OPTS=--target:library --nologo
 SOURCES=fsharp-refactor/Ast.fs \
 	fsharp-refactor/CodeTransforms.fs \
@@ -23,7 +23,7 @@ FSharp.Refactor.Tests.dll: FSharp.Refactor.dll $(TESTS)
 	fsharpc $(OPTS) -o:FSharp.Refactor.Tests.dll -r:FSharp.Refactor.dll $(REFS) $(TESTS)
 
 run-tests: FSharp.Refactor.Tests.dll
-	mono /usr/lib/mono/4.5/nunit-console.exe -nologo FSharp.Refactor.Tests.dll
+	mono /usr/lib/nunit/nunit-console.exe -nologo FSharp.Refactor.Tests.dll
 
 tags: 
 	ctags -e $(SOURCES) $(TESTS)
