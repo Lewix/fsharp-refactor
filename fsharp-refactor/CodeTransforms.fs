@@ -40,7 +40,9 @@ module CodeTransforms =
     let ChangeTextOf (source : string) (rangeTextPairsToChange : (range * string) list) =
         let sortedPairs =
             let sortFunction (range1, _) (range2, _) =
-                -rangeOrder.Compare(range1, range2)
+                let compared = -rangeOrder.Compare(range1, range2)
+                if compared = 0 then -posOrder.Compare(range1.End, range2.End)
+                else compared
 
             List.sortWith sortFunction rangeTextPairsToChange
 

@@ -66,7 +66,14 @@ type CodeTransformsModule() =
 
         Assert.AreEqual(expected, CodeTransforms.TextOfRange source range)
 
+    [<Test>]
+    member this.``Can change text for two ranges with same start point, if one is of length 0``() =
+        let source = "1"
+        let expected = "5+2"
+        let range1= mkRange "/home/lewis/test.fs" (mkPos 1 0) (mkPos 1 1)
+        let range2 = mkRange "/home/lewis/test.fs" (mkPos 1 0) (mkPos 1 0)
 
+        Assert.AreEqual(expected, CodeTransforms.ChangeTextOf source [(range2,"5+");(range1,"2")])
 
 [<TestFixture>]
 type ScopeAnalysisModule() =
