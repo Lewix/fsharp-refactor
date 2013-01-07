@@ -31,7 +31,8 @@ let CreateFunction source (inScopeTree : Ast.AstNode) (functionName : string) (a
     RunRefactoring (refactoring FunctionDefinition.Template Valid {
         if isRecursive then yield (FunctionDefinition.RecRange, FunctionDefinition.RecTemplate)
         yield (FunctionDefinition.NameRange, functionName)
-        yield (FunctionDefinition.ParameterRange, String.concat " " arguments)
+        if List.isEmpty arguments then yield (FunctionDefinition.ParameterRange, "")
+        else yield (FunctionDefinition.ParameterRange, " " + (String.concat " " arguments))
         yield (FunctionDefinition.BodyRange, stripBrackets body)
     })
     
@@ -39,9 +40,11 @@ let CallFunction source (functionName : string) (arguments : string list) =
     //TODO: don't always put brackets around function body
     RunRefactoring (refactoring FunctionCall.Template Valid {
         yield (FunctionCall.NameRange, functionName)
-        yield (FunctionCall.ParameterRange, String.concat " " arguments)
+        if List.isEmpty arguments then yield (FunctionCall.ParameterRange, "")
+        else yield (FunctionCall.ParameterRange, " " + (String.concat " " arguments))
     })
 
+//TODO: fail if expressionRange is not contained in Ast.GetRange(inScopeTree).Value
 let ExtractTempFunction source (inScopeTree : Ast.AstNode) (expressionRange : range) (functionName : string) =
     refactoring source Valid {
         let body = CodeTransforms.TextOfRange source expressionRange

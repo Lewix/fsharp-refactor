@@ -13,7 +13,6 @@ open FSharpRefactor.Refactorings.ExtractFunction
 type ExtractFunctionAnalysisModule() =
     //TODO: test ExtractFunction when there are no arguments (extraneous spaces)
     //TODO: test ExtractFunction when expressionRange and inScopeTree start at same pos
-
     [<Test>]
     member this.``Cannot extract a function with a taken name``() =
         let source = "let f a = 1 in (f 1)+(1+2)"
@@ -34,6 +33,18 @@ type ExtractFunctionAnalysisModule() =
 
 [<TestFixture>]
 type ExtractFunctionTransformModule() =
+    [<Test>]
+    member this.``Can extract an expression into a value, if it needs no arguments``() =
+        let source = "1+3+4+4"
+        let expected = "let a = 1+3+4+4 in (a)"
+        let tree = (Ast.Parse source).Value
+        let letTree =
+            List.head (FindNodesWithRange (mkRange "/home/lewis/test.fs" (mkPos 1 0) (mkPos 1 7)) tree)
+
+        let expressionRange = mkRange "/home/lewis/test.fs" (mkPos 1 0) (mkPos 1 7)
+
+        Assert.AreEqual(expected, DoExtractFunction source tree letTree expressionRange "a")
+    
     [<Test>]
     member this.``Can extract an expression into a function around a LetOrUse expression``() =
         let source = "let c = 1 in let a b = 1+(b+c)+4"
