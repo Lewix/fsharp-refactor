@@ -24,6 +24,13 @@ type ExtractFunctionAnalysisModule() =
 
         ignore (Assert.Throws<RefactoringFailure>(fun () -> ignore (DoExtractFunction source tree inScopeTree expressionRange "f")))
 
+    [<Test>]
+    member this.``Can find an unused name``() =
+        let source = "let f a b c = 1\nlet g = 3"
+        let tree = (Ast.Parse source).Value
+        
+        Assert.IsFalse(Set.contains (findUnusedName tree) (Set ["f";"a";"b";"c";"g"]))
+
 
 [<TestFixture>]
 type ExtractFunctionTransformModule() =
