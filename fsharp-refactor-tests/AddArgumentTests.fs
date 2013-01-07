@@ -59,6 +59,15 @@ type AddArgumentModule() =
         let expected = "(let f arg a b c = 1 in (f 0 1 2 3) + ((f 0 2) 2) + (1 + (2 + (f 0 3 3 4)))) + (f 1)"
 
         Assert.AreEqual(expected, AddArgument source tree bindingRange "arg" "0")
+
+    [<Test>]
+    member this.``Can add an argument to a function, even if it is not being applied``() =
+        let source = "let f a = 1 in let g a = f in g 1 1"
+        let tree = (Ast.Parse source).Value
+        let bindingRange = mkRange "/home/lewis/test.fs" (mkPos 1 4) (mkPos 1 11)
+        let expected = "let f arg a = 1 in let g a = f \"value\" in g 1 1"
+
+        Assert.AreEqual(expected, AddArgument source tree bindingRange "arg" "\"value\"")
         
     [<Test>]
     member this.``Can find the name of a function given its binding's range``() =
