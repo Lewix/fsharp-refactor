@@ -8,20 +8,22 @@ open FSharpRefactor.Engine.CodeAnalysis.RangeAnalysis
 open FSharpRefactor.Engine.RefactoringWorkflow
 open FSharpRefactor.Refactorings.ExtractFunction
 
+
 [<TestFixture>]
 type ExtractFunctionAnalysisModule() =
+    //TODO: test ExtractFunction when there are no arguments (extraneous spaces)
+    //TODO: test ExtractFunction when expressionRange and inScopeTree start at same pos
+
     [<Test>]
     member this.``Cannot extract a function with a taken name``() =
-        let assertFun source expected =
-            let tree = (Ast.Parse source).Value
-            let letTree =
-                List.head (FindNodesWithRange (mkRange "/home/lewis/test.fs" (mkPos 1 15) (mkPos 1 26)) tree)
-            let expressionRange = mkRange "/home/lewis/test.fs" (mkPos 1 15) (mkPos 1 19)
+        let source = "let f a = 1 in (f 1)+(1+2)"
+        let tree = (Ast.Parse source).Value
+        let inScopeTree =
+            List.head (FindNodesWithRange (mkRange "/home/lewis/test.fs" (mkPos 1 15) (mkPos 1 26)) tree)
+        let expressionRange = mkRange "/home/lewis/test.fs" (mkPos 1 21) (mkPos 1 26)
 
-            Assert.AreEqual(expected, CanExtractFunction letTree expressionRange "f")
+        ignore (Assert.Throws<RefactoringFailure>(fun () -> ignore (DoExtractFunction source inScopeTree expressionRange "f")))
 
-        assertFun "let f a = 1 in (1+2)+(f 1)" (Invalid("f is free in the scope of newFunction"))
-        assertFun "let f a = 1 in (1+2)+(g 1)" Valid
 
 [<TestFixture>]
 type ExtractFunctionTransformModule() =
