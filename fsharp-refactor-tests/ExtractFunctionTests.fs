@@ -36,7 +36,7 @@ type ExtractFunctionTransformModule() =
             List.head (FindNodesWithRange (mkRange "/home/lewis/test.fs" (mkPos 1 13) (mkPos 1 32)) tree)
         let expressionRange = mkRange "/home/lewis/test.fs" (mkPos 1 25) (mkPos 1 30)
 
-        Assert.AreEqual(expected, ExtractFunction source letTree expressionRange "f")
+        Assert.AreEqual(expected, DoExtractFunction source letTree expressionRange "f")
         
     [<Test>]
     member this.``Can extract an expression into a function aroud a Let expression``() =
@@ -47,7 +47,7 @@ type ExtractFunctionTransformModule() =
             List.head (FindNodesWithRange (mkRange "/home/lewis/test.fs" (mkPos 1 0) (mkPos 1 13)) tree)
         let expressionRange = mkRange "/home/lewis/test.fs" (mkPos 1 10) (mkPos 1 13)
 
-        Assert.AreEqual(expected, ExtractFunction source letTree expressionRange "double")
+        Assert.AreEqual(expected, DoExtractFunction source letTree expressionRange "double")
         
 
 [<TestFixture>]

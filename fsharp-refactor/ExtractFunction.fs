@@ -8,6 +8,7 @@ open FSharpRefactor.Engine.CodeAnalysis.ScopeAnalysis
 open FSharpRefactor.Engine.CodeAnalysis.RangeAnalysis
 open FSharpRefactor.Engine.RefactoringWorkflow
 open FSharpRefactor.Engine.CodeTemplates
+open FSharpRefactor.Refactorings.Rename
 
 let rec stripBrackets (body : string) =
     if body.[0] = '(' && body.[(String.length body)-1] = ')'
@@ -29,10 +30,8 @@ let CallFunction source (functionName : string) (arguments : string list) =
         yield (FunctionCall.ParameterRange, String.concat " " arguments)
     })
 
-let CanExtractFunction (tree : Ast.AstNode) (expressionRange : range) (functionName : string) = true
-
-let ExtractFunction source (inScopeTree : Ast.AstNode) (expressionRange : range) (functionName : string) =
-    RunRefactoring (refactoring source Valid {
+let ExtractTempFunction source (inScopeTree : Ast.AstNode) (expressionRange : range) (functionName : string) =
+    refactoring source Valid {
         let body = CodeTransforms.TextOfRange source expressionRange
         let bodyExpression = FindExpressionAtRange expressionRange inScopeTree
         let arguments =
@@ -42,4 +41,15 @@ let ExtractFunction source (inScopeTree : Ast.AstNode) (expressionRange : range)
 
         yield ((Ast.GetRange inScopeTree).Value.StartRange, CreateFunction source inScopeTree functionName arguments body false)
         yield (expressionRange, CallFunction source functionName arguments)
-    })
+    }
+
+let ExtractFunction source (inScopeTree : Ast.AstNode) (expressionRange : range) (functionName : string) =
+    let unusedName = "tmpFunction"
+    let sourceWithTempFunction = RunRefactoring (ExtractTempFunction source inScopeTree expressionRange unusedName)
+    let tree = (Ast.Parse sourceWithTempFunction).Value
+    let identifier = FindIdentifierWithName (makeScopeTrees tree) unusedName
+    Rename sourceWithTempFunction tree identifier functionName
+    
+
+let DoExtractFunction source (inScopeTree : Ast.AstNode) (expressionRange : range) (functionName : string) =
+    RunRefactoring (ExtractFunction source inScopeTree expressionRange functionName)
