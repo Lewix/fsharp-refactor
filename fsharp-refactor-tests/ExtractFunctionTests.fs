@@ -12,6 +12,17 @@ open FSharpRefactor.Refactorings.ExtractFunction
 [<TestFixture>]
 type ExtractFunctionAnalysisModule() =
     [<Test>]
+    member this.``Cannot extract a function if expressionRange is not contained within inScopeTree``() =
+        let source = "(1+2)+(3+4)"
+        let tree = (Ast.Parse source).Value
+        let inScopeTree =
+            List.head (FindNodesWithRange (mkRange "/home/lewis/test.fs" (mkPos 1 0) (mkPos 1 5)) tree)
+        let expressionRange = mkRange "/home/lewis/test.fs" (mkPos 1 6) (mkPos 1 11)
+
+        Assert.AreEqual(Invalid("The expression is not contained within the specified scope"),
+                        CanExtractFunction source inScopeTree expressionRange "f")
+
+    [<Test>]
     member this.``Cannot extract a function with a taken name``() =
         let source = "let f a = 1 in (f 1)+(1+2)"
         let tree = (Ast.Parse source).Value
