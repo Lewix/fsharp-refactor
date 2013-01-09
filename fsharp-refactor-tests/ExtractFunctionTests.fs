@@ -5,6 +5,7 @@ open Microsoft.FSharp.Compiler.Range
 open Microsoft.FSharp.Compiler.Ast
 open FSharpRefactor.Engine.Ast
 open FSharpRefactor.Engine.CodeAnalysis.RangeAnalysis
+open FSharpRefactor.Engine.CodeTransforms
 open FSharpRefactor.Engine.RefactoringWorkflow
 open FSharpRefactor.Refactorings.ExtractFunction
 
@@ -39,6 +40,19 @@ type ExtractFunctionAnalysisModule() =
         
         Assert.IsFalse(Set.contains (findUnusedName tree) (Set ["f";"a";"b";"c";"g"]))
 
+    [<Test>]
+    member this.``Can find a suitable default inScopeTree from expressionRange``() =
+        let source1 = "let f a b = 5*a + b"
+        let source2 = "let f a b =\n  let x = 5*a + b"
+        let expressionRange1 = mkRange "/home/lewis/test.fs" (mkPos 1 13) (mkPos 1 16)
+        let expressionRange2 = mkRange "/home/lewis/test.fs" (mkPos 1 24) (mkPos 1 27)
+        let expected1 = "5*a + b"
+        let expected2 = "let x = 5*a + b"
+
+        Assert.AreEqual(expected1,
+                        CodeTransforms.TextOfRange source1 (Ast.GetRange (DefaultInScopeTree source1 (Ast.Parse source1).Value expressionRange1)).Value)
+        Assert.AreEqual(expected2,
+                        CodeTransforms.TextOfRange source2 (Ast.GetRange (DefaultInScopeTree source2 (Ast.Parse source2).Value expressionRange2)).Value)
 
 [<TestFixture>]
 type ExtractFunctionTransformModule() =
