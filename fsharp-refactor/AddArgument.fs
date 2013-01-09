@@ -8,6 +8,9 @@ open FSharpRefactor.Engine.CodeAnalysis.RangeAnalysis
 open FSharpRefactor.Engine.CodeAnalysis.ScopeAnalysis
 open FSharpRefactor.Engine.RefactoringWorkflow
 
+let DefaultBindingRange source (tree : Ast.AstNode) (position : pos) =
+    Some (mkRange "/home/lewis/test.fs" (mkPos 1 0) (mkPos 1 0))
+
 let AddArgumentToBinding source (tree : Ast.AstNode) (bindingRange : range) (argumentName : string) =
     refactoring source Valid {
         let arguments =

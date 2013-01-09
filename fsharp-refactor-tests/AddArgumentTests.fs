@@ -4,6 +4,7 @@ open NUnit.Framework
 open Microsoft.FSharp.Compiler.Range
 open Microsoft.FSharp.Compiler.Ast
 open FSharpRefactor.Engine.Ast
+open FSharpRefactor.Engine.CodeTransforms
 open FSharpRefactor.Engine.RefactoringWorkflow
 open FSharpRefactor.Refactorings.AddArgument
 
@@ -70,3 +71,15 @@ type AddArgumentModule() =
         let bindingRange = mkRange "/home/lewis/test.fs" (mkPos 1 4) (mkPos 1 15)
 
         Assert.AreEqual("f", findFunctionName source tree bindingRange)
+
+    [<Test>]
+    member this.``Can find a sensible default binding range for a given position``() =
+        let source = "let f a b =\n  let x = 3+4+5"
+        let tree = (Ast.Parse source).Value
+        let position1 = mkPos 1 25
+        let position2 = mkPos 1 22
+        let expected1 = "x = 3+4+5"
+        let expected2 = "f a b =\n  let x = 3+4+5"
+
+        Assert.AreEqual(expected1, CodeTransforms.TextOfRange source (DefaultBindingRange source tree position1).Value)
+        Assert.AreEqual(expected2, CodeTransforms.TextOfRange source (DefaultBindingRange source tree position2).Value)
