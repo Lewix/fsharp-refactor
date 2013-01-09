@@ -28,7 +28,7 @@ let findUnusedName (tree : Ast.AstNode) =
     generateWhileUsed ()
 
 let DefaultInScopeTree source (tree : Ast.AstNode) (expressionRange : range) =
-    let binding = FindBindingAroundRange expressionRange tree
+    let binding = TryFindBindingAroundRange expressionRange tree
     match binding with
         | Some(Ast.AstNode.Binding(SynBinding.Binding(_,_,_,_,_,_,_,_,_,expression,_,_))) ->
             Some(Ast.AstNode.Expression expression)
