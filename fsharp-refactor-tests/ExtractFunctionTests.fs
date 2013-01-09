@@ -50,9 +50,9 @@ type ExtractFunctionAnalysisModule() =
         let expected2 = "let x = 5*a + b"
 
         Assert.AreEqual(expected1,
-                        CodeTransforms.TextOfRange source1 (Ast.GetRange (DefaultInScopeTree source1 (Ast.Parse source1).Value expressionRange1)).Value)
+                        CodeTransforms.TextOfRange source1 (Ast.GetRange (DefaultInScopeTree source1 (Ast.Parse source1).Value expressionRange1).Value).Value)
         Assert.AreEqual(expected2,
-                        CodeTransforms.TextOfRange source2 (Ast.GetRange (DefaultInScopeTree source2 (Ast.Parse source2).Value expressionRange2)).Value)
+                        CodeTransforms.TextOfRange source2 (Ast.GetRange (DefaultInScopeTree source2 (Ast.Parse source2).Value expressionRange2).Value).Value)
 
 [<TestFixture>]
 type ExtractFunctionTransformModule() =
