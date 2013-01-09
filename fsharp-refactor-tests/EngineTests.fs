@@ -217,16 +217,16 @@ type RangeAnalysisModule() =
     [<Test>]
     member this.``Can find a declaration identifier from a usage or declaration position``() =
         let filename = "/home/lewis/test.fs"
-        let source = "let function a b c = a+b+c in function 1 2 3"
-        let aUsagePos = mkPos 1 14
+        let source = "let functio a b c = a+b+c in functio 1 2 3"
+        let aUsagePos = mkPos 1 13
         let fUsagePos = mkPos 1 32
-        let aDeclarationRange = mkRange "/home/lewis/test.fs" (mkPos 1 13) (mkPos 1 14)
-        let fDeclarationRange = mkRange "/home/lewis/test.fs" (mkPos 1 4) (mkPos 1 12)
+        let aDeclarationRange = mkRange "/home/lewis/test.fs" (mkPos 1 12) (mkPos 1 13)
+        let fDeclarationRange = mkRange "/home/lewis/test.fs" (mkPos 1 4) (mkPos 1 11)
 
-        Assert.AreEqual(aDeclarationRange, RangeAnalysis.FindDeclarationIdentifier filename source aUsagePos)
-        Assert.AreEqual(aDeclarationRange, RangeAnalysis.FindDeclarationIdentifier filename source aDeclarationRange.Start)
-        Assert.AreEqual(fDeclarationRange, RangeAnalysis.FindDeclarationIdentifier filename source fUsagePos)
-        Assert.AreEqual(fDeclarationRange, RangeAnalysis.FindDeclarationIdentifier filename source fDeclarationRange.Start)
+        Assert.AreEqual(("a", aDeclarationRange), RangeAnalysis.FindDeclarationIdentifier filename source aUsagePos)
+        Assert.AreEqual(("a", aDeclarationRange), RangeAnalysis.FindDeclarationIdentifier filename source aDeclarationRange.Start)
+        Assert.AreEqual(("functio", fDeclarationRange), RangeAnalysis.FindDeclarationIdentifier filename source fUsagePos)
+        Assert.AreEqual(("functio", fDeclarationRange), RangeAnalysis.FindDeclarationIdentifier filename source fDeclarationRange.Start)
     
     [<Test>]
     member this.``Can find the AstNode.Expression corresponding to a range``() =

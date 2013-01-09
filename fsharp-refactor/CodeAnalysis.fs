@@ -34,6 +34,12 @@ module ScopeAnalysis =
             | Declaration(is, ts) as d -> d::(List.collect ListNodes ts)
             | usage -> [usage]
 
+    let rec ListIdentifiers trees =
+        match trees with
+            | [] -> []
+            | Usage(name, range)::rest -> (name,range)::(ListIdentifiers rest)
+            | Declaration(is,ts)::rest -> List.append is (ListIdentifiers (List.append ts rest))
+
     let GetFreeIdentifiers (trees : ScopeTree list) (declared : Set<string>) =
         let rec freeIdentifiersInSingleTree foundFree declared tree =
             match tree with
@@ -190,4 +196,11 @@ module RangeAnalysis =
             | _ -> raise (new KeyNotFoundException("Couldn't find an identifier declaration at that range"))
 
     let FindDeclarationIdentifier filename source (position : pos) =
-        mkRange filename (mkPos 0 0) (mkPos 0 0)
+        let nameIfContainsPos (name,range) =
+            if rangeContainsPos range position then Some name else None
+
+        let trees = ScopeAnalysis.makeScopeTrees (Ast.Parse source).Value
+        trees
+        |> ScopeAnalysis.ListIdentifiers
+        |> List.pick nameIfContainsPos
+        |> ScopeAnalysis.FindIdentifierWithName trees
