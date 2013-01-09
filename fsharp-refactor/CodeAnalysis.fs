@@ -188,3 +188,6 @@ module RangeAnalysis =
         match pattern with
             | ScopeAnalysis.DeclaredIdent id -> id
             | _ -> raise (new KeyNotFoundException("Couldn't find an identifier declaration at that range"))
+
+    let FindDeclarationIdentifier filename source (position : pos) =
+        mkRange filename (mkPos 0 0) (mkPos 0 0)

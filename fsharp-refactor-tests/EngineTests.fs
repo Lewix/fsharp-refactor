@@ -215,6 +215,20 @@ type ScopeTreeModule() =
 [<TestFixture>]
 type RangeAnalysisModule() =
     [<Test>]
+    member this.``Can find a declaration identifier from a usage or declaration position``() =
+        let filename = "/home/lewis/test.fs"
+        let source = "let function a b c = a+b+c in function 1 2 3"
+        let aUsagePos = mkPos 1 14
+        let fUsagePos = mkPos 1 32
+        let aDeclarationRange = mkRange "/home/lewis/test.fs" (mkPos 1 13) (mkPos 1 14)
+        let fDeclarationRange = mkRange "/home/lewis/test.fs" (mkPos 1 4) (mkPos 1 12)
+
+        Assert.AreEqual(aDeclarationRange, RangeAnalysis.FindDeclarationIdentifier filename source aUsagePos)
+        Assert.AreEqual(aDeclarationRange, RangeAnalysis.FindDeclarationIdentifier filename source aDeclarationRange.Start)
+        Assert.AreEqual(fDeclarationRange, RangeAnalysis.FindDeclarationIdentifier filename source fUsagePos)
+        Assert.AreEqual(fDeclarationRange, RangeAnalysis.FindDeclarationIdentifier filename source fDeclarationRange.Start)
+    
+    [<Test>]
     member this.``Can find the AstNode.Expression corresponding to a range``() =
         let source = "let a = 1+(2+3)+4"
         let tree = (Ast.Parse source).Value
