@@ -58,5 +58,5 @@ module CodeTransforms =
         let _, after = takeAroundPos source (range.StartLine, range.StartColumn)
         let endPosInAfter =
             if range.StartLine = range.EndLine then (1, range.EndColumn-range.StartColumn)
-            else (range.EndLine - range.StartLine, range.EndColumn)
+            else (1 + range.EndLine - range.StartLine, range.EndColumn)
         fst (takeAroundPos after endPosInAfter)

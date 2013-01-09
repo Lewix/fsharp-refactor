@@ -62,7 +62,7 @@ type CodeTransformsModule() =
 
         let source = "let a = 1+(2\n+3)+4"
         let expected = "(2\n+3)"
-        let range = mkRange "/home/lewis/test.fs" (mkPos 1 10) (mkPos 1 16)
+        let range = mkRange "/home/lewis/test.fs" (mkPos 1 10) (mkPos 2 3)
 
         Assert.AreEqual(expected, CodeTransforms.TextOfRange source range)
 

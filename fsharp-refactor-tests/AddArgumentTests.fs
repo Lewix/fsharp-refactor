@@ -76,8 +76,8 @@ type AddArgumentModule() =
     member this.``Can find a sensible default binding range for a given position``() =
         let source = "let f a b =\n  let x = 3+4+5"
         let tree = (Ast.Parse source).Value
-        let position1 = mkPos 1 25
-        let position2 = mkPos 1 22
+        let position1 = mkPos 2 11
+        let position2 = mkPos 2 1
         let expected1 = "x = 3+4+5"
         let expected2 = "f a b =\n  let x = 3+4+5"
 

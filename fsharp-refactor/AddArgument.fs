@@ -9,7 +9,20 @@ open FSharpRefactor.Engine.CodeAnalysis.ScopeAnalysis
 open FSharpRefactor.Engine.RefactoringWorkflow
 
 let DefaultBindingRange source (tree : Ast.AstNode) (position : pos) =
-    Some (mkRange "/home/lewis/test.fs" (mkPos 1 0) (mkPos 1 0))
+    let range = mkRange "/home/lewis/test.fs" position position
+    let rec tryFindDeepestBinding trees =
+        let candidateBinding = List.tryPick (TryFindBindingAroundRange range) trees
+        if Option.isNone candidateBinding then None
+        else
+            let children = Ast.GetChildren candidateBinding.Value
+            if Option.isNone children then candidateBinding
+            else
+                let nestedBinding = tryFindDeepestBinding (Ast.GetChildren candidateBinding.Value).Value
+                if Option.isNone nestedBinding then candidateBinding else nestedBinding
+
+    let deepestBinding = tryFindDeepestBinding [tree]
+    if Option.isNone deepestBinding then None
+    else Ast.GetRange deepestBinding.Value
 
 let AddArgumentToBinding source (tree : Ast.AstNode) (bindingRange : range) (argumentName : string) =
     refactoring source Valid {
