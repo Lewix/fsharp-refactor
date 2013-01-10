@@ -27,14 +27,14 @@ let DefaultBindingRange source (tree : Ast.AstNode) (position : pos) =
 //TODO: Check this can add an argument to a value
 let AddArgumentToBinding source (tree : Ast.AstNode) (bindingRange : range) (argumentName : string) =
     refactoring source Valid {
-        let arguments =
+        let identEndRange =
             match FindBindingAtRange bindingRange tree with
                 | Ast.AstNode.Binding(SynBinding.Binding(_,_,_,_,_,_,_,
-                                                         SynPat.LongIdent(_,_,_,args,_,_),_,_,_,_)) -> args
-        
+                                                         SynPat.LongIdent(functionName,_,_,_,_,_),_,_,_,_)) -> functionName.Range.EndRange
+                | Ast.AstNode.Binding(SynBinding.Binding(_,_,_,_,_,_,_,
+                                                         SynPat.Named(_,valueName,_,_,_),_,_,_,_)) -> valueName.idRange.EndRange
                 | b -> raise (new NotImplementedException("Binding did not have the right form:" + (sprintf "%A" b)))
-        let firstArgRange = Ast.GetRange (Ast.AstNode.Pattern (List.head arguments))
-        if Option.isSome firstArgRange then yield (firstArgRange.Value.StartRange, argumentName + " ")
+        yield (identEndRange, " " + argumentName)
     }
 
 //TODO: Add brackets around usage if needed (if it's not an App)

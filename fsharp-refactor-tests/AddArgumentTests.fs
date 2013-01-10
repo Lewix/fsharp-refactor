@@ -20,6 +20,15 @@ type AddArgumentModule() =
         Assert.AreEqual(expected, RunRefactoring (AddArgumentToBinding source tree bindingRange "c"))
 
     [<Test>]
+    member this.``Can add an argument to a value binding``() =
+        let source = "let x = 1+2"
+        let tree = (Ast.Parse source).Value
+        let bindingRange = mkRange "/home/lewis/test.fs" (mkPos 1 4) (mkPos 1 11)
+        let expected = "let x arg = 1+2"
+
+        Assert.AreEqual(expected, RunRefactoring (AddArgumentToBinding source tree bindingRange "arg"))
+
+    [<Test>]
     member this.``Can add an argument to a function call``() =
         let source = "f a \"b\" 3"
         let tree = (Ast.Parse source).Value
