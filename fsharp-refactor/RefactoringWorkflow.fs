@@ -38,7 +38,8 @@ type RefactoringBuilder(source,validity) =
 
     member this.For(changes, changeFunc) =
         let refactorings = List.map changeFunc changes
-        List.reduce (fun r1 r2 -> this.Combine(r1,r2)) refactorings
+        if List.isEmpty refactorings then this.Zero()
+        else List.reduce (fun r1 r2 -> this.Combine(r1,r2)) refactorings
 
     member this.Zero() = Success(this.source,[])
 
