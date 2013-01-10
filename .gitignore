@@ -2,6 +2,7 @@
 \#*\#
 TAGS
 *.dll
+*.exe
 *.sigdata
 *.optdata
 TestResult.xml
