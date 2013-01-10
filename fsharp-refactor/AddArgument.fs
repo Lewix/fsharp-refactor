@@ -24,13 +24,15 @@ let DefaultBindingRange source (tree : Ast.AstNode) (position : pos) =
     if Option.isNone deepestBinding then None
     else Ast.GetRange deepestBinding.Value
 
+//TODO: Check this can add an argument to a value
 let AddArgumentToBinding source (tree : Ast.AstNode) (bindingRange : range) (argumentName : string) =
     refactoring source Valid {
         let arguments =
             match FindBindingAtRange bindingRange tree with
                 | Ast.AstNode.Binding(SynBinding.Binding(_,_,_,_,_,_,_,
                                                          SynPat.LongIdent(_,_,_,args,_,_),_,_,_,_)) -> args
-                | _ -> raise (new NotImplementedException "Binding did not have the right form")
+        
+                | b -> raise (new NotImplementedException("Binding did not have the right form:" + (sprintf "%A" b)))
         let firstArgRange = Ast.GetRange (Ast.AstNode.Pattern (List.head arguments))
         if Option.isSome firstArgRange then yield (firstArgRange.Value.StartRange, argumentName + " ")
     }

@@ -208,7 +208,7 @@ module RangeAnalysis =
             | ScopeAnalysis.DeclaredIdent id -> id
             | _ -> raise (new KeyNotFoundException("Couldn't find an identifier declaration at that range"))
 
-    let FindDeclarationIdentifier filename source (position : pos) =
+    let FindDeclarationIdentifier source (position : pos) =
         let nameIfContainsPos (name,range) =
             if rangeContainsPos range position then Some name else None
 

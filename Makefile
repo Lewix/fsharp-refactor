@@ -27,3 +27,6 @@ run-tests: FSharp.Refactor.Tests.dll
 
 tags: 
 	ctags -e $(SOURCES) $(TESTS)
+
+cli: Mono.Options/Options.dll FSharp.Refactor.dll
+	fsharpc -r:Mono.Options/Options.dll -r:FSharp.Refactor.dll fsharp-refactor/CommandLine.fs
