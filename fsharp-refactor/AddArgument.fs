@@ -24,7 +24,6 @@ let DefaultBindingRange source (tree : Ast.AstNode) (position : pos) =
     if Option.isNone deepestBinding then None
     else Ast.GetRange deepestBinding.Value
 
-//TODO: Check this can add an argument to a value
 let AddArgumentToBinding source (tree : Ast.AstNode) (bindingRange : range) (argumentName : string) =
     refactoring source Valid {
         let identEndRange =
