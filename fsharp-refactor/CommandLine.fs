@@ -42,6 +42,10 @@ let main(args : string[]) =
     let optionSet = new OptionSet()
     let printUsage () =
         printfn "Usage:"
+        printfn "  rename <filename> <position> <new_name>"
+        printfn "  extract-function <filename> <expression_range> <function_name>"
+        printfn "  add-argument <filename> <position> <argument_name> <default_value>"
+        
     let extra = optionSet.Parse(args)
 
     match extra.[0] with
