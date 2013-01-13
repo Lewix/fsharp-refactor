@@ -12,6 +12,7 @@ open FSharpRefactor.Refactorings.Rename
 open FSharpRefactor.Refactorings.ExtractFunction
 open FSharpRefactor.Refactorings.AddArgument
 
+//TODO: Don't block if no data in stdin
 let readFromStdin () =
     let stdin = Console.OpenStandardInput()
     let buffer : byte array = Array.zeroCreate 10000
