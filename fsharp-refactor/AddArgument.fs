@@ -65,7 +65,7 @@ let findFunctionName source (tree : Ast.AstNode) (bindingRange : range) =
             match Ast.AstNode.Pattern p with
                 | DeclaredIdent(i,r) -> i
                 | _ -> raise (new Exception("Binding was not a function"))
-        | _ -> raise (new Exception("No binding at the given range"))
+        | _ -> raise (new Exception("No binding found at the given range"))
 
 
 let CanAddArgument source (tree : Ast.AstNode) (bindingRange : range) (argumentName : string) (defaultValue : string) =
