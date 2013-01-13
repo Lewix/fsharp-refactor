@@ -43,9 +43,9 @@ let printUsage () =
     printfn "  add-argument <position> <argument_name> <default_value> [<filename>]"
     printfn ""
     printfn "Options:"
-    printfn "  -h, --help                           Display this message and exit"
-    printfn "  -i [SUFFIX], --in-place=[SUFFIX]     Modify the input file in-place (makes backup if extension supplied)"
-    printfn "  -o FILENAME, --output-file=FILENAME  Write result to FILENAME"
+    printfn "  -h, --help                          Display this message and exit"
+    printfn "  -i[SUFFIX], --in-place=[SUFFIX]     Modify the input file in-place (makes backup if extension supplied)"
+    printfn "  -oFILENAME, --output-file=FILENAME  Write result to FILENAME"
     
 
 exception ArgumentException of string
@@ -79,39 +79,59 @@ let parseAddArgumentArguments (args : string list) =
         | 4 -> (parsePos args.[0], args.[1], args.[2], Some args.[3])
         | _ -> raise (ArgumentException "Too many arguments")
 
-let refactorWithArguments args =
+let filenameAndActionFromArguments args =
     match args with
         | "rename"::rest ->
             let position, newName, filename =
                 parseRenameArguments rest
-            Rename filename position newName
+            (filename, fun () -> Rename filename position newName)
         | "extract-function"::rest ->
             let expressionRange, functionName, filename =
                 parseExtractFunctionArguments rest
-            ExtractFunction filename expressionRange functionName
+            (filename, fun () -> ExtractFunction filename expressionRange functionName)
         | "add-argument"::rest ->
             let position, argumentName, defaultValue, filename =
                 parseAddArgumentArguments rest
-            AddArgument filename position argumentName defaultValue
+            (filename, fun () -> AddArgument filename position argumentName defaultValue)
         | name::_ -> raise (ArgumentException (sprintf "%s is not a valid refactoring name" name))
         | [] -> raise (ArgumentException "Too few arguments")
 
+let refactorWithArguments args =
+    (snd (filenameAndActionFromArguments args)) ()
+
+let getFilename args =
+    let filename, _ = filenameAndActionFromArguments args
+    if Option.isSome filename then filename.Value
+    else raise (ArgumentException "No filename supplied")
+
 type Options() =
-    member this.Help = ref false
-    member this.InPlace = ref false
-    member this.OutputFile = ref None
-//TODO: Handle KeyNotFoundException sensible
+    let mutable m_help = false
+    let mutable m_inPlace = false
+    let mutable m_inPlaceSuffix = None
+    let mutable m_outputFile = None
+    
+    member this.Help with get() = m_help
+                     and set newHelp = m_help <- newHelp
+    member this.InPlace with get() = m_inPlace
+                        and set newInPlace = m_inPlace <- newInPlace
+    member this.InPlaceSuffix with get() = m_inPlaceSuffix
+                              and set newInPlaceSuffix = m_inPlaceSuffix <- newInPlaceSuffix
+    member this.OutputFile with get() = m_outputFile
+                           and set newOutputFile = m_outputFile <- newOutputFile
+                           
+//TODO: Handle KeyNotFoundException sensibly
 [<EntryPoint>]
 let main(args : string[]) =
     let options = new Options()
     let optionSet = new OptionSet()
-    //TODO: get the argument passed in with -i or -o
-    optionSet.Add("h|help", fun _ -> options.Help := true) |> ignore
-    optionSet.Add("i|in-place", fun s -> options.InPlace := true) |> ignore
-    optionSet.Add("o|output-file", fun f -> options.OutputFile := Some f) |> ignore
+    optionSet.Add("h|help", fun _ -> options.Help <- true) |> ignore
+    optionSet.Add("i:|in-place:",
+                  fun s -> options.InPlace <- true;
+                           options.InPlaceSuffix <- if s = null then None else Some s) |> ignore
+    optionSet.Add("o=|output-file=", fun f -> options.OutputFile <- Some f) |> ignore
     let extra = Seq.toList (optionSet.Parse(args))
 
-    if !options.Help then
+    if options.Help then
         printUsage ()
         0
     else
@@ -129,11 +149,15 @@ let main(args : string[]) =
         if Option.isNone resultCode then
             1
         else
-            if !options.InPlace then
-                //TODO: write resultCode back to the file after backing it up
-                ()
-            if Option.isSome !options.OutputFile then
-                //TODO: write resultCode to outputfile
-                ()
+            if options.InPlace then
+                let filename = getFilename extra
+                if Option.isSome options.InPlaceSuffix then
+                    File.WriteAllText(filename + "." + (options.InPlaceSuffix).Value,
+                                      File.ReadAllText(filename))
+                File.WriteAllText(filename, resultCode.Value)
+
+            if Option.isSome options.OutputFile then
+                File.WriteAllText((options.OutputFile).Value, resultCode.Value)
+
             printfn "%s" resultCode.Value
             0
