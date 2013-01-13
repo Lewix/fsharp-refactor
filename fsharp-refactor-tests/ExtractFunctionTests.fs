@@ -19,10 +19,10 @@ type ExtractFunctionAnalysisModule() =
         let inScopeTree =
             List.head (FindNodesWithRange (mkRange "/home/lewis/test.fs" (mkPos 1 0) (mkPos 1 11)) tree)
         let expressionRange = mkRange "/home/lewis/test.fs" (mkPos 1 4) (mkPos 1 6)
-        let valid = CanExtractFunction source inScopeTree expressionRange "f"
+        let valid = CanExtractFunction source tree inScopeTree expressionRange "f"
 
-        Assert.AreEqual(Invalid("No binding found at the given range"),
-                        CanExtractFunction source inScopeTree expressionRange "f",
+        Assert.AreEqual(Invalid("No expression found at the given range"),
+                        valid,
                         sprintf "Extract function validity was incorrect: %A" valid)
 
     [<Test>]
@@ -32,9 +32,11 @@ type ExtractFunctionAnalysisModule() =
         let inScopeTree =
             List.head (FindNodesWithRange (mkRange "/home/lewis/test.fs" (mkPos 1 0) (mkPos 1 5)) tree)
         let expressionRange = mkRange "/home/lewis/test.fs" (mkPos 1 6) (mkPos 1 11)
+        let valid = CanExtractFunction source tree inScopeTree expressionRange "f"
 
         Assert.AreEqual(Invalid("The expression is not contained within the specified scope"),
-                        CanExtractFunction source inScopeTree expressionRange "f")
+                        valid,
+                        sprintf "Extract function validity was incorrect: %A" valid)
 
     [<Test>]
     member this.``Cannot extract a function with a taken name``() =

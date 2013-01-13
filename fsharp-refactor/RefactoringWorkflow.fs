@@ -15,6 +15,12 @@ type RefactoringValidity =
     | Valid
     | Invalid of ErrorMessage
 
+let CombineValidity validity1 validity2 =
+    match validity1, validity2 with
+        | Valid, Valid -> Valid
+        | Invalid msg, _ -> Invalid msg
+        | _, Invalid msg -> Invalid msg
+
 exception RefactoringFailure of ErrorMessage
 
 type RefactoringBuilder(source,validity) =

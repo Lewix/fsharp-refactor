@@ -1,5 +1,6 @@
 module FSharpRefactor.Refactorings.ExtractFunction
 
+open System.Collections.Generic
 open Microsoft.FSharp.Compiler.Range
 open Microsoft.FSharp.Compiler.Ast
 open FSharpRefactor.Engine.Ast
@@ -51,12 +52,18 @@ let CallFunction source (functionName : string) (arguments : string list) =
         else yield (FunctionCall.ParameterRange, " " + (String.concat " " arguments))
     })
 
-let CanExtractFunction source (inScopeTree : Ast.AstNode) (expressionRange : range) (functionName : string) =
-    if rangeContainsRange (Ast.GetRange inScopeTree).Value expressionRange then Valid
-    else Invalid("The expression is not contained within the specified scope")
+let CanExtractFunction source (tree : Ast.AstNode) (inScopeTree : Ast.AstNode) (expressionRange : range) (functionName : string) =
+    let expressionRangeIsInInScopeTree =
+        if rangeContainsRange (Ast.GetRange inScopeTree).Value expressionRange then Valid
+        else Invalid("The expression is not contained within the specified scope")
+    let expressionRangeIsValid =
+        try FindExpressionAtRange expressionRange tree |> ignore; Valid with
+            | :? KeyNotFoundException -> Invalid("No expression found at the given range") 
 
-let ExtractTempFunction source (inScopeTree : Ast.AstNode) (expressionRange : range) (functionName : string) =
-    let valid = CanExtractFunction source inScopeTree expressionRange functionName
+    List.reduce CombineValidity [expressionRangeIsValid; expressionRangeIsInInScopeTree]
+
+let ExtractTempFunction source (tree : Ast.AstNode) (inScopeTree : Ast.AstNode) (expressionRange : range) (functionName : string) =
+    let valid = CanExtractFunction source tree inScopeTree expressionRange functionName
     refactoring source valid {
         let body = CodeTransforms.TextOfRange source expressionRange
         let bodyExpression = FindExpressionAtRange expressionRange inScopeTree
@@ -71,7 +78,7 @@ let ExtractTempFunction source (inScopeTree : Ast.AstNode) (expressionRange : ra
 
 let ExtractFunction source (tree : Ast.AstNode) (inScopeTree : Ast.AstNode) (expressionRange : range) (functionName : string) =
     let unusedName = findUnusedName tree
-    let sourceWithTempFunction = RunRefactoring (ExtractTempFunction source inScopeTree expressionRange unusedName)
+    let sourceWithTempFunction = RunRefactoring (ExtractTempFunction source tree inScopeTree expressionRange unusedName)
     let tree = (Ast.Parse sourceWithTempFunction).Value
     let identifier = FindIdentifierWithName (makeScopeTrees tree) unusedName
     Rename sourceWithTempFunction tree identifier functionName
