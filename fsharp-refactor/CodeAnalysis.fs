@@ -169,28 +169,25 @@ module RangeAnalysis =
         List.filter hasRange allNodes
 
 
-    let FindAstNodeAtRange range (tree : Ast.AstNode) isNode =
-        List.find isNode (FindNodesWithRange range tree)
-
     let FindExpressionAtRange range (tree : Ast.AstNode)  =
         let isExpression node =
             match node with
                 | Ast.AstNode.Expression _ -> true
                 | _ -> false
-        FindAstNodeAtRange range tree isExpression
+        List.find isExpression (FindNodesWithRange range tree)
 
-    let isBinding node  =
+    let chooseBinding node  =
         match node with
-            | Ast.AstNode.Binding _ -> true
-            | _ -> false
+            | Ast.AstNode.Binding b -> Some b
+            | _ -> None
                 
     let FindBindingAtRange range (tree : Ast.AstNode) =
-        FindAstNodeAtRange range tree isBinding
+        List.pick chooseBinding (FindNodesWithRange range tree)
 
     let rec TryFindBindingAroundRange range (tree : Ast.AstNode) =
         let treeContainsRange tree =
             rangeContainsRange (Ast.GetRange tree).Value range
-        if isBinding tree && treeContainsRange tree then Some tree
+        if Option.isSome (chooseBinding tree) && treeContainsRange tree then Some tree
         else
             match Ast.GetChildren tree with
                 | None -> None
@@ -202,8 +199,7 @@ module RangeAnalysis =
         let binding = FindBindingAtRange range tree
         let pattern =
             match binding with
-                | Ast.AstNode.Binding(SynBinding.Binding(_,_,_,_,_,_,_,pattern,_,_,_,_)) -> Ast.AstNode.Pattern pattern
-                | _ -> raise (new KeyNotFoundException("Couldn't find an identifier declaration at that range"))
+                | SynBinding.Binding(_,_,_,_,_,_,_,pattern,_,_,_,_) -> Ast.AstNode.Pattern pattern
         match pattern with
             | ScopeAnalysis.DeclaredIdent id -> id
             | _ -> raise (new KeyNotFoundException("Couldn't find an identifier declaration at that range"))

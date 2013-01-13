@@ -247,5 +247,5 @@ type RangeAnalysisModule() =
         let binding = RangeAnalysis.FindBindingAtRange bindingRange tree
 
         match binding with
-            | Ast.AstNode.Binding(_) -> ()
+            | SynBinding.Binding(_,_,_,_,_,_,_,SynPat.LongIdent(_,_,_,_,_,_),_,_,_,_) -> ()
             | _ -> Assert.Fail("The AstNode was not the one for the binding 'let f a b = a+b': " + (sprintf "%A" binding))
