@@ -29,11 +29,11 @@ let AddArgumentToBinding source (tree : Ast.AstNode) (bindingRange : range) (arg
     refactoring source Valid {
         let identEndRange =
             match FindBindingAtRange bindingRange tree with
-                | Ast.AstNode.Binding(SynBinding.Binding(_,_,_,_,_,_,_,
-                                                         SynPat.LongIdent(functionName,_,_,_,_,_),_,_,_,_)) -> functionName.Range.EndRange
-                | Ast.AstNode.Binding(SynBinding.Binding(_,_,_,_,_,_,_,
-                                                         SynPat.Named(_,valueName,_,_,_),_,_,_,_)) -> valueName.idRange.EndRange
-                | b -> raise (new NotImplementedException("Binding did not have the right form:" + (sprintf "%A" b)))
+                | SynBinding.Binding(_,_,_,_,_,_,_,
+                                     SynPat.LongIdent(functionName,_,_,_,_,_),_,_,_,_) -> functionName.Range.EndRange
+                | SynBinding.Binding(_,_,_,_,_,_,_,
+                                     SynPat.Named(_,valueName,_,_,_),_,_,_,_) -> valueName.idRange.EndRange
+                | b -> raise (new Exception("Binding did not have the right form:" + (sprintf "%A" b)))
         yield (identEndRange, " " + argumentName)
     }
 
@@ -62,11 +62,10 @@ let FindFunctionUsageRanges source (tree : Ast.AstNode) (bindingRange : range) (
 
 let findFunctionName source (tree : Ast.AstNode) (bindingRange : range) =
     match FindBindingAtRange bindingRange tree with
-        | Ast.AstNode.Binding(SynBinding.Binding(_,_,_,_,_,_,_,p,_,_,_,_)) ->
+        | SynBinding.Binding(_,_,_,_,_,_,_,p,_,_,_,_) ->
             match Ast.AstNode.Pattern p with
                 | DeclaredIdent(i,r) -> i
                 | _ -> raise (new Exception("Binding was not a function"))
-        | _ -> raise (new Exception("No binding found at the given range"))
 
 
 let CanAddArgument source (tree : Ast.AstNode) (bindingRange : range) (argumentName : string) (defaultValue : string) =
