@@ -12,10 +12,16 @@ open FSharpRefactor.Refactorings.Rename
 open FSharpRefactor.Refactorings.ExtractFunction
 open FSharpRefactor.Refactorings.AddArgument
 
+let readFromStdin () =
+    let stdin = Console.OpenStandardInput()
+    let buffer : byte array = Array.zeroCreate 10000
+    stdin.Read(buffer, 0, 10000) |> ignore
+    new String(Array.map char buffer)
+
 let getSource filename =
     match filename with
         | Some f -> File.ReadAllText f
-//TODO: read code from stdout
+        | None -> readFromStdin ()
 
 let Rename filename position newName =
     let source = getSource filename
