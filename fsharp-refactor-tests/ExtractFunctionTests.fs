@@ -17,7 +17,7 @@ type ExtractFunctionAnalysisModule() =
         let source = "(2+3)+(3+4)"
         let tree = (Ast.Parse source).Value
         let inScopeTree =
-            List.head (FindNodesWithRange (mkRange "/home/lewis/test.fs" (mkPos 1 0) (mkPos 1 5)) tree)
+            List.head (FindNodesWithRange (mkRange "/home/lewis/test.fs" (mkPos 1 0) (mkPos 1 11)) tree)
         let expressionRange = mkRange "/home/lewis/test.fs" (mkPos 1 4) (mkPos 1 6)
         let valid = CanExtractFunction source inScopeTree expressionRange "f"
 
