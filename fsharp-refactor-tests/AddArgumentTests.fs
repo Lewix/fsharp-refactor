@@ -92,3 +92,12 @@ type AddArgumentModule() =
 
         Assert.AreEqual(expected1, CodeTransforms.TextOfRange source (DefaultBindingRange source tree position1).Value)
         Assert.AreEqual(expected2, CodeTransforms.TextOfRange source (DefaultBindingRange source tree position2).Value)
+
+    [<Test>]
+    member this.``Cannot add an argument if there is no binding at the given range``() =
+        let source = "let f a b = a+b"
+        let tree = (Ast.Parse source).Value
+        let range = mkRange "/home/lewis/test.fs" (mkPos 1 3) (mkPos 1 5)
+
+        Assert.AreEqual(Invalid("No binding found at the given range"),
+                        CanAddArgument source tree range "c" "0")

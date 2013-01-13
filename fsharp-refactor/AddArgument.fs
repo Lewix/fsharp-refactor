@@ -68,6 +68,9 @@ let findFunctionName source (tree : Ast.AstNode) (bindingRange : range) =
         | _ -> raise (new Exception("No binding at that range"))
 
 
+let CanAddArgument source (tree : Ast.AstNode) (bindinRange : range) (argumentname : string) (defaultValue : string) =
+    Valid
+
 //TODO: Check arguments such as argumentName or defaultValue have a valid form
 let AddArgument source (tree : Ast.AstNode) (bindingRange : range) (argumentName : string) (defaultValue : string) =
     RunRefactoring (refactoring source Valid {
