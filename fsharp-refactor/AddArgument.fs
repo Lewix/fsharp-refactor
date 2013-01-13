@@ -1,6 +1,7 @@
 module FSharpRefactor.Refactorings.AddArgument
 
 open System
+open System.Collections.Generic
 open Microsoft.FSharp.Compiler.Ast
 open Microsoft.FSharp.Compiler.Range
 open FSharpRefactor.Engine.Ast
@@ -70,6 +71,7 @@ let findFunctionName source (tree : Ast.AstNode) (bindingRange : range) =
 
 let CanAddArgument source (tree : Ast.AstNode) (bindingRange : range) (argumentName : string) (defaultValue : string) =
     try findFunctionName source tree bindingRange |> ignore; Valid with
+        | :? KeyNotFoundException -> Invalid("No binding found at the given range")
         | e -> Invalid(e.Message)
 
 //TODO: Check arguments such as argumentName or defaultValue have a valid form

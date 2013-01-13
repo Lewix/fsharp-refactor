@@ -98,6 +98,8 @@ type AddArgumentModule() =
         let source = "let f a b = a+b"
         let tree = (Ast.Parse source).Value
         let range = mkRange "/home/lewis/test.fs" (mkPos 1 3) (mkPos 1 5)
+        let valid = CanAddArgument source tree range "c" "0"
 
         Assert.AreEqual(Invalid("No binding found at the given range"),
-                        CanAddArgument source tree range "c" "0")
+                        valid,
+                        sprintf "Extract function validity was incorrect: %A" valid)                       
