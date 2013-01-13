@@ -30,6 +30,7 @@ let Rename filename position newName =
     let declarationIdentifier = FindDeclarationIdentifier source position
     DoRename source tree declarationIdentifier newName
 
+//TODO: Raise ArgumentException if DefaultInScopeTree or DefaultBindingRange return None
 let ExtractFunction filename (startPosition,endPosition) functionName =
     let source = getSource filename
     let tree = (Ast.Parse source).Value
