@@ -13,6 +13,19 @@ open FSharpRefactor.Refactorings.ExtractFunction
 [<TestFixture>]
 type ExtractFunctionAnalysisModule() =
     [<Test>]
+    member this.``Cannot extract a function if there is no expression at expressionRange``() =
+        let source = "(2+3)+(3+4)"
+        let tree = (Ast.Parse source).Value
+        let inScopeTree =
+            List.head (FindNodesWithRange (mkRange "/home/lewis/test.fs" (mkPos 1 0) (mkPos 1 5)) tree)
+        let expressionRange = mkRange "/home/lewis/test.fs" (mkPos 1 4) (mkPos 1 6)
+        let valid = CanExtractFunction source inScopeTree expressionRange "f"
+
+        Assert.AreEqual(Invalid("No binding found at the given range"),
+                        CanExtractFunction source inScopeTree expressionRange "f",
+                        sprintf "Extract function validity was incorrect: %A" valid)
+
+    [<Test>]
     member this.``Cannot extract a function if expressionRange is not contained within inScopeTree``() =
         let source = "(1+2)+(3+4)"
         let tree = (Ast.Parse source).Value
