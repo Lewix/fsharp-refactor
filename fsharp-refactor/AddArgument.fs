@@ -65,15 +65,18 @@ let findFunctionName source (tree : Ast.AstNode) (bindingRange : range) =
             match Ast.AstNode.Pattern p with
                 | DeclaredIdent(i,r) -> i
                 | _ -> raise (new Exception("Binding was not a function"))
-        | _ -> raise (new Exception("No binding at that range"))
+        | _ -> raise (new Exception("No binding at the given range"))
 
 
-let CanAddArgument source (tree : Ast.AstNode) (bindinRange : range) (argumentname : string) (defaultValue : string) =
-    Valid
+let CanAddArgument source (tree : Ast.AstNode) (bindingRange : range) (argumentName : string) (defaultValue : string) =
+    try findFunctionName source tree bindingRange |> ignore; Valid with
+        | e -> Invalid(e.Message)
 
 //TODO: Check arguments such as argumentName or defaultValue have a valid form
+//TODO: Check argumentName is not already used in the binding
 let AddArgument source (tree : Ast.AstNode) (bindingRange : range) (argumentName : string) (defaultValue : string) =
-    RunRefactoring (refactoring source Valid {
+    let valid = CanAddArgument source tree bindingRange argumentName defaultValue
+    RunRefactoring (refactoring source valid {
         let identRanges =
             findFunctionName source tree bindingRange
             |> FindFunctionUsageRanges source tree bindingRange
