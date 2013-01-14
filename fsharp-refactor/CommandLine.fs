@@ -50,7 +50,7 @@ let AddArgument filename position argumentName defaultValue =
     if Option.isSome bindingRange then
         AddArgument source tree bindingRange.Value argumentName defaultValue
     else
-        raise (ArgumentException "Could not find a binding around the given position")
+        raise (ArgumentException "No binding found around the given position")
 
 let printUsage () =
     printfn "Usage:"
