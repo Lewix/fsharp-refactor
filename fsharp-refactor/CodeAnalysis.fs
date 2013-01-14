@@ -115,9 +115,12 @@ module ScopeAnalysis =
             match declarations with
                 | [] -> []
                 | d::ds ->
-                    let headScopeTree = makeScopeTrees d
-                    let tailScopeTree = makeNestedScopeTrees ds
-                    (addChildren (List.head headScopeTree) tailScopeTree)::(List.tail headScopeTree)
+                    let headScopeTrees = makeScopeTrees d
+                    let tailScopeTrees = makeNestedScopeTrees ds
+                    if List.isEmpty headScopeTree then
+                        tailScopeTrees
+                    else
+                        (addChildren (List.head headScopeTrees) tailScopeTrees)::(List.tail headScopeTrees)
 
         match tree with
             | Ast.ModuleOrNamespace(SynModuleOrNamespace.SynModuleOrNamespace(_,_,ds,_,_,_,_)) ->
