@@ -15,15 +15,16 @@ let DefaultBindingRange source (tree : Ast.AstNode) (position : pos) =
         let candidateBinding = List.tryPick (TryFindBindingAroundRange range) trees
         if Option.isNone candidateBinding then None
         else
-            let children = Ast.GetChildren candidateBinding.Value
+            let children = Ast.GetChildren (Ast.AstNode.Binding candidateBinding.Value)
             if Option.isNone children then candidateBinding
             else
-                let nestedBinding = tryFindDeepestBinding (Ast.GetChildren candidateBinding.Value).Value
+                let nestedBinding =
+                    tryFindDeepestBinding (Ast.GetChildren (Ast.AstNode.Binding candidateBinding.Value)).Value
                 if Option.isNone nestedBinding then candidateBinding else nestedBinding
 
     let deepestBinding = tryFindDeepestBinding [tree]
     if Option.isNone deepestBinding then None
-    else Ast.GetRange deepestBinding.Value
+    else Ast.GetRange (Ast.AstNode.Binding deepestBinding.Value)
 
 let AddArgumentToBinding source (tree : Ast.AstNode) (bindingRange : range) (argumentName : string) =
     refactoring source Valid {

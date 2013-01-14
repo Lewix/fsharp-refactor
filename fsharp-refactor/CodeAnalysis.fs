@@ -184,17 +184,24 @@ module RangeAnalysis =
     let FindBindingAtRange range (tree : Ast.AstNode) =
         List.pick chooseBinding (FindNodesWithRange range tree)
 
-    let rec TryFindBindingAroundRange range (tree : Ast.AstNode) =
+    let rec FindNodesAroundRange range (tree : Ast.AstNode) =
         let treeContainsRange tree =
-            rangeContainsRange (Ast.GetRange tree).Value range
-        if Option.isSome (chooseBinding tree) && treeContainsRange tree then Some tree
-        else
-            match Ast.GetChildren tree with
-                | None -> None
-                | Some(ts) ->
-                    List.tryPick (TryFindBindingAroundRange range) (List.filter treeContainsRange ts)
+            Option.isSome (Ast.GetRange tree) && rangeContainsRange (Ast.GetRange tree).Value range
+        ListNodes tree
+        |> List.filter treeContainsRange
 
+    let TryFindBindingAroundRange range (tree : Ast.AstNode) =
+        FindNodesAroundRange range tree
+        |> List.tryPick chooseBinding
 
+    let TryFindExpressionAroundRange range (tree : Ast.AstNode) =
+        let chooseExpression node =
+            match node with
+                | Ast.AstNode.Expression e -> Some e
+                | _ -> None
+        FindNodesAroundRange range tree
+        |> List.tryPick chooseExpression
+        
     let FindIdentifierAtRange range (tree : Ast.AstNode) =
         let binding = FindBindingAtRange range tree
         let pattern =

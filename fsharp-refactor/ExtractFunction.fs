@@ -29,11 +29,12 @@ let findUnusedName (tree : Ast.AstNode) =
     generateWhileUsed ()
 
 let DefaultInScopeTree source (tree : Ast.AstNode) (expressionRange : range) =
-    let binding = TryFindBindingAroundRange expressionRange tree
-    match binding with
-        | Some(Ast.AstNode.Binding(SynBinding.Binding(_,_,_,_,_,_,_,_,_,expression,_,_))) ->
-            Some(Ast.AstNode.Expression expression)
-        | _ -> None
+    let outermostBinding = TryFindBindingAroundRange expressionRange tree
+    let outermostExpression = TryFindExpressionAroundRange expressionRange tree
+    if Option.isSome outermostBinding then
+        match outermostBinding.Value with
+            | SynBinding.Binding(_,_,_,_,_,_,_,_,_,expression,_,_) -> Some(expression)
+    else outermostExpression
 
 let CreateFunction source (inScopeTree : Ast.AstNode) (functionName : string) (arguments : string list) (body : string) (isRecursive : bool) =
     RunRefactoring (refactoring FunctionDefinition.Template Valid {

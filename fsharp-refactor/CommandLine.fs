@@ -36,13 +36,14 @@ let ExtractFunction filename (startPosition,endPosition) functionName =
     let tree = (Ast.Parse source).Value
     let expressionRange = mkRange "/home/lewis/test.fs" startPosition endPosition
     let inScopeTree = (DefaultInScopeTree source tree expressionRange).Value
-    DoExtractFunction source tree inScopeTree expressionRange functionName
+    DoExtractFunction source tree inScopeTree.Value expressionRange functionName
 
 let AddArgument filename position argumentName defaultValue =
     let source = getSource filename
     let tree = (Ast.Parse source).Value
-    let bindingRange = (DefaultBindingRange source tree position).Value
-    AddArgument source tree bindingRange argumentName defaultValue
+    let bindingRange = DefaultBindingRange source tree position
+    if Option.isNone bindingRange then raise ArgumentException("Couldn't find a binding around the given position")
+    else AddArgument source tree bindingRange.Value argumentName defaultValue
 
 let printUsage () =
     printfn "Usage:"
