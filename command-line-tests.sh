@@ -39,7 +39,7 @@ testExtractFunction()
     assertEquals "Can extract an expression into a function"\
         "let f = 1+2+3+4 in (f)" "$result"
 
-    result=$(mono CommandLine.exe extract-function 1:0 1:3 g testfile/functioncode.fs)
+    result=$(mono CommandLine.exe extract-function 1:0 1:3 g testfiles/functioncode.fs)
     assertEquals "Can report an error when expression range does not contain an expresion"\
         "No expression found at the given range" "$result"
 
