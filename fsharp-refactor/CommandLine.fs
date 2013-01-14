@@ -55,7 +55,7 @@ let AddArgument filename position argumentName defaultValue =
 let printUsage () =
     printfn "Usage:"
     printfn "  rename <position> <new_name> [<filename>]"
-    Printfn "  Extract-Function <expression_range> <function_name> [<filename>]"
+    printfn "  extract-function  <expression_range> <function_name> [<filename>]"
     printfn "  add-argument <position> <argument_name> <default_value> [<filename>]"
     printfn ""
     printfn "Options:"
