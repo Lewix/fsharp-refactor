@@ -7,6 +7,7 @@ open Mono.Options
 open Microsoft.FSharp.Compiler.Range
 open FSharpRefactor.Engine.Ast
 open FSharpRefactor.Engine.CodeAnalysis.RangeAnalysis
+open FSharpRefactor.Engine.CodeAnalysis.ScopeAnalysis
 open FSharpRefactor.Engine.RefactoringWorkflow
 open FSharpRefactor.Refactorings.Rename
 open FSharpRefactor.Refactorings.ExtractFunction
@@ -35,9 +36,13 @@ let getSource filename =
 let Rename filename position newName =
     let source = getSource filename
     let tree = (Ast.Parse source).Value
-    let declarationIdentifier = FindDeclarationIdentifier source position
-    if Option.isSome declarationIdentifier then
-        DoRename source tree declarationIdentifier.Value newName
+    let identifierName = FindIdentifierName source position
+    if Option.isSome identifierName then
+        let declarationIdentifier = TryFindIdentifierWithName (makeScopeTrees tree) identifierName.Value
+        if Option.isSome declarationIdentifier then
+            DoRename source tree declarationIdentifier.Value newName
+        else
+            raise (ArgumentException "The specified identifier was not declared in the given source")
     else
         raise (ArgumentException "No identifier found at the given range")
 

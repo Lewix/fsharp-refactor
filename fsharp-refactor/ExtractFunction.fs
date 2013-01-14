@@ -81,7 +81,7 @@ let ExtractFunction source (tree : Ast.AstNode) (inScopeTree : Ast.AstNode) (exp
     let unusedName = findUnusedName tree
     let sourceWithTempFunction = RunRefactoring (ExtractTempFunction source tree inScopeTree expressionRange unusedName)
     let tree = (Ast.Parse sourceWithTempFunction).Value
-    let identifier = FindIdentifierWithName (makeScopeTrees tree) unusedName
+    let identifier = (TryFindIdentifierWithName (makeScopeTrees tree) unusedName).Value
     Rename sourceWithTempFunction tree identifier functionName
     
 

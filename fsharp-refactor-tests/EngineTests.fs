@@ -223,10 +223,10 @@ type RangeAnalysisModule() =
         let aDeclarationRange = mkRange "/home/lewis/test.fs" (mkPos 1 12) (mkPos 1 13)
         let fDeclarationRange = mkRange "/home/lewis/test.fs" (mkPos 1 4) (mkPos 1 11)
 
-        Assert.AreEqual(Some("a", aDeclarationRange), RangeAnalysis.FindDeclarationIdentifier source aUsagePos)
-        Assert.AreEqual(Some("a", aDeclarationRange), RangeAnalysis.FindDeclarationIdentifier source aDeclarationRange.Start)
-        Assert.AreEqual(Some("functio", fDeclarationRange), RangeAnalysis.FindDeclarationIdentifier source fUsagePos)
-        Assert.AreEqual(Some("functio", fDeclarationRange), RangeAnalysis.FindDeclarationIdentifier source fDeclarationRange.Start)
+        Assert.AreEqual(Some("a"), RangeAnalysis.FindIdentifierName source aUsagePos)
+        Assert.AreEqual(Some("a"), RangeAnalysis.FindIdentifierName source aDeclarationRange.Start)
+        Assert.AreEqual(Some("functio"), RangeAnalysis.FindIdentifierName source fUsagePos)
+        Assert.AreEqual(Some("functio"), RangeAnalysis.FindIdentifierName source fDeclarationRange.Start)
     
     [<Test>]
     member this.``Can find the AstNode.Expression corresponding to a range``() =

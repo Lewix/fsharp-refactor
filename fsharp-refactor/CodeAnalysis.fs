@@ -55,14 +55,14 @@ module ScopeAnalysis =
     let IsDeclared (name : string) (identifiers : Identifier list) =
         List.exists (fun (n,_) -> n = name) identifiers
 
-    let FindIdentifierWithName (trees : ScopeTree list) (name : string) =
+    let TryFindIdentifierWithName (trees : ScopeTree list) (name : string) =
         let rec tryFindIdentifierWithName tree =
             match tree with
                 | Declaration(is, ts) ->
                     if IsDeclared name is then Some (List.find (fun (n,r) -> n = name) is)
                     else List.tryPick tryFindIdentifierWithName ts
                 | _ -> None
-        List.pick tryFindIdentifierWithName trees
+        List.tryPick tryFindIdentifierWithName trees
 
     let GetDeclarations (trees : ScopeTree list) =
         let rec declarationsInSingleTree tree =
@@ -211,14 +211,11 @@ module RangeAnalysis =
             | ScopeAnalysis.DeclaredIdent id -> id
             | _ -> raise (new KeyNotFoundException("Couldn't find an identifier declaration at that range"))
 
-    let FindDeclarationIdentifier source (position : pos) =
+    let FindIdentifierName source (position : pos) =
         let nameIfContainsPos (name,range) =
             if rangeContainsPos range position then Some name else None
 
-        let trees = ScopeAnalysis.makeScopeTrees (Ast.Parse source).Value
-        let name =
-            trees
-            |> ScopeAnalysis.ListIdentifiers
-            |> List.tryPick nameIfContainsPos
-        if Option.isNone name then None
-        else Some(ScopeAnalysis.FindIdentifierWithName trees name.Value)
+        (Ast.Parse source).Value
+        |> ScopeAnalysis.makeScopeTrees
+        |> ScopeAnalysis.ListIdentifiers
+        |> List.tryPick nameIfContainsPos
