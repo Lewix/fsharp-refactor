@@ -3,6 +3,11 @@
 functioncode="let f a b = a+b"
 expressioncode="1+2+3+4"
 
+oneTimeSetUp()
+{
+    mkdir testfiles
+}
+
 setUp()
 {
     echo $functioncode > testfiles/functioncode.fs
@@ -12,6 +17,7 @@ setUp()
 oneTimeTearDown()
 {
     rm testfiles/functioncode.fs testfiles/expressioncode.fs
+    rmdir testfiles
 }
 
 testRename()
