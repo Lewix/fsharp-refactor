@@ -12,6 +12,8 @@ open FSharpRefactor.Refactorings.Rename
 open FSharpRefactor.Refactorings.ExtractFunction
 open FSharpRefactor.Refactorings.AddArgument
 
+exception ArgumentException of string
+
 //TODO: Don't block if no data in stdin
 let readFromStdin () =
     let stdin = Console.OpenStandardInput()
@@ -19,9 +21,15 @@ let readFromStdin () =
     stdin.Read(buffer, 0, 10000) |> ignore
     new String(Array.map char buffer)
 
+let readFromFile filename =
+    if File.Exists filename then
+        File.ReadAllText filename
+    else
+        raise (ArgumentException "The file does not exist")
+
 let getSource filename =
     match filename with
-        | Some f -> File.ReadAllText f
+        | Some f -> readFromFile f
         | None -> readFromStdin ()
 
 let Rename filename position newName =
@@ -64,7 +72,6 @@ let printUsage () =
     printfn "  -oFILENAME, --output-file=FILENAME  Write result to FILENAME"
     
 
-exception ArgumentException of string
 
 let parsePos (positionString : string) =
     let m = Regex.Match(positionString, "([0-9]+):([0-9]+)")
