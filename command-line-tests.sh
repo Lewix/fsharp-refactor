@@ -37,6 +37,10 @@ testRename()
     result=$(mono CommandLine.exe rename 1:1 c testfiles/doesntexist.fs | head -n 1)
     assertEquals "Can report an error when given a non-existant file"\
         "The file does not exist" "$result"
+
+    result=$(mono CommandLine.exe rename 1:13 c testfiles/functioncode.fs | head -n 1)
+    assertEquals "Can report an error when the specified identifier is not declared in the source"\
+        "The specified identifier was not declared in the given source" "$result"
 }
 
 testExtractFunction()
