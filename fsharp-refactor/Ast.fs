@@ -9,6 +9,8 @@ module Ast =
     type AstNode =
         | Expression of SynExpr
         | Pattern of SynPat
+        | SimplePatterns of SynSimplePats
+        | SimplePattern of SynSimplePat
         | ModuleOrNamespace of SynModuleOrNamespace
         | ModuleDeclaration of SynModuleDecl
         | Binding of SynBinding
@@ -52,7 +54,18 @@ module Ast =
                     | SynPat.Paren(p,_) -> Some([AstNode.Pattern p])
                     | SynPat.Tuple(ps,_) -> Some(List.map AstNode.Pattern ps)
                     | SynPat.Const(_,_) -> None
+                    | SynPat.Typed(p,_,_) -> Some([AstNode.Pattern p])
+                    | SynPat.ArrayOrList(_,ps,_) -> Some(List.map AstNode.Pattern ps)
                     | _ -> raise (new NotImplementedException("Add a new entry to pattern for Pattern: " + (string p)))
+            | SimplePattern(p) ->
+                match p with
+                    | SynSimplePat.Id(i,_,_,_,_,_) -> Some([AstNode.Ident i])
+                    | SynSimplePat.Typed(p,_,_) -> Some([AstNode.SimplePattern p])
+                    | SynSimplePat.Attrib(p,_,_) -> Some([AstNode.SimplePattern p])
+            | SimplePatterns(p) ->
+                match p with
+                    | SynSimplePats.SimplePats(ps,_) -> Some(List.map AstNode.SimplePattern ps)
+                    | SynSimplePats.Typed(p,_,_) -> Some([AstNode.SimplePatterns p])
             | ModuleOrNamespace(ns) ->
                 match ns with
                     | ModuleOrNamespaceChildren(modules) -> Some(List.map AstNode.ModuleDeclaration modules)
@@ -61,6 +74,7 @@ module Ast =
                 match m with
                     | SynModuleDecl.Let(_,bs,_) -> Some(List.map AstNode.Binding bs)
                     | SynModuleDecl.DoExpr(_,e,_) -> Some([AstNode.Expression e])
+                    | SynModuleDecl.Open(_,_) -> None
                     | _ -> raise (new NotImplementedException("Add a new entry to pattern for ModuleDeclaration: " + (string m)))
             | Binding(b) ->
                 match b with
@@ -68,20 +82,30 @@ module Ast =
 
             | Expression(e) ->
                 match e with
+                    | SynExpr.YieldOrReturn(_,e,_)
+                    | SynExpr.Paren(e,_,_,_)
+                    | SynExpr.ArrayOrListOfSeqExpr(_,e,_)
+                    | SynExpr.CompExpr(_,_,e,_) -> Some([AstNode.Expression e])
+                    | SynExpr.ArrayOrList(_,es,_)
+                    | SynExpr.Tuple(es,_,_) -> Some(List.map AstNode.Expression es)
                     | SynExpr.LetOrUse(_,_,bs,e,_) ->  Some(List.append (List.map AstNode.Binding bs) [AstNode.Expression e])
                     | SynExpr.Match(_,e,cs,_,_) -> Some((AstNode.Expression e)::(List.map AstNode.MatchClause cs))
                     | SynExpr.Const(_,_) -> None
                     | SynExpr.Ident _ -> None
                     | SynExpr.App(_,_,e1,e2,_) -> Some([AstNode.Expression e1;AstNode.Expression e2])
-                    | SynExpr.Paren(e,_,_,_) -> Some([AstNode.Expression e])
                     | SynExpr.ArbitraryAfterError(_,_) -> None
+                    | SynExpr.LongIdent(_,LongIdentWithDots(is,_),_,__) -> Some (List.map AstNode.Ident is)
+                    | SynExpr.Lambda(_,_,p,e,_) -> Some([AstNode.Expression e;AstNode.SimplePatterns p])
+                    | SynExpr.IfThenElse(e1,e2,None,_,_,_,_) -> Some([AstNode.Expression e1; AstNode.Expression e2])
+                    | SynExpr.IfThenElse(e1,e2,Some(e3),_,_,_,_) -> Some([AstNode.Expression e1; AstNode
+.Expression e2; AstNode.Expression e3])
+                    | SynExpr.ForEach(_,_,_,p,e1,e2,_) -> Some([AstNode.Expression e1; AstNode.Expression e2; AstNode.Pattern p])
                     | _ -> raise (new NotImplementedException("Add a new entry to pattern for Expression: " + (string e)))
             | Ident(i) -> None
             | MatchClause(Clause(p,we,e,_,_)) ->
                 if Option.isSome we
                 then Some([AstNode.Pattern p; AstNode.Expression we.Value; AstNode.Expression e])
                 else Some([AstNode.Pattern p; AstNode.Expression e])
-                    
             | _ -> raise (new NotImplementedException("Add a new entry to the active pattern for Children:" + (string node)))
 
     let (|Range|_|) (node : AstNode) =
