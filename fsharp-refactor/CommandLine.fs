@@ -183,8 +183,6 @@ let main(args : string[]) =
         with
             | ArgumentException message ->
                 printfn "%s" message
-                printfn ""
-                printUsage ()
                 1
             | RefactoringFailure message ->
                 printfn "%s" message
