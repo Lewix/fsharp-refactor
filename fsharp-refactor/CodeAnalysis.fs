@@ -117,7 +117,7 @@ module ScopeAnalysis =
                 | d::ds ->
                     let headScopeTrees = makeScopeTrees d
                     let tailScopeTrees = makeNestedScopeTrees ds
-                    if List.isEmpty headScopeTree then
+                    if List.isEmpty headScopeTrees then
                         tailScopeTrees
                     else
                         (addChildren (List.head headScopeTrees) tailScopeTrees)::(List.tail headScopeTrees)
