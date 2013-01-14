@@ -28,22 +28,29 @@ let Rename filename position newName =
     let source = getSource filename
     let tree = (Ast.Parse source).Value
     let declarationIdentifier = FindDeclarationIdentifier source position
-    DoRename source tree declarationIdentifier newName
+    if Option.isSome declarationIdentifier then
+        DoRename source tree declarationIdentifier.Value newName
+    else
+        raise (ArgumentException "No identifier found at the given range")
 
-//TODO: Raise ArgumentException if DefaultInScopeTree or DefaultBindingRange return None
 let ExtractFunction filename (startPosition,endPosition) functionName =
     let source = getSource filename
     let tree = (Ast.Parse source).Value
     let expressionRange = mkRange "/home/lewis/test.fs" startPosition endPosition
-    let inScopeTree = (DefaultInScopeTree source tree expressionRange).Value
-    DoExtractFunction source tree inScopeTree.Value expressionRange functionName
+    let inScopeTree = DefaultInScopeTree source tree expressionRange
+    if Option.isSome inScopeTree then
+        DoExtractFunction source tree (Ast.AstNode.Expression inScopeTree.Value) expressionRange functionName
+    else
+        raise (ArgumentException "Could not find a suitable expression to use as the function's scope")
 
 let AddArgument filename position argumentName defaultValue =
     let source = getSource filename
     let tree = (Ast.Parse source).Value
     let bindingRange = DefaultBindingRange source tree position
-    if Option.isNone bindingRange then raise ArgumentException("Couldn't find a binding around the given position")
-    else AddArgument source tree bindingRange.Value argumentName defaultValue
+    if Option.isSome bindingRange then
+        AddArgument source tree bindingRange.Value argumentName defaultValue
+    else
+        raise (ArgumentException "Could not find a binding around the given position")
 
 let printUsage () =
     printfn "Usage:"
@@ -144,29 +151,27 @@ let main(args : string[]) =
         printUsage ()
         0
     else
-        let resultCode =
-            try Some (refactorWithArguments extra) with
-                | ArgumentException message ->
-                    printfn "%s" message
-                    printfn ""
-                    printUsage ()
-                    None
-                | RefactoringFailure message ->
-                    printfn "%s" message
-                    None
+        try
+            let resultCode = refactorWithArguments extra
 
-        if Option.isNone resultCode then
-            1
-        else
             if options.InPlace then
                 let filename = getFilename extra
                 if Option.isSome options.InPlaceSuffix then
                     File.WriteAllText(filename + "." + (options.InPlaceSuffix).Value,
                                       File.ReadAllText(filename))
-                File.WriteAllText(filename, resultCode.Value)
+                File.WriteAllText(filename, resultCode)
 
             if Option.isSome options.OutputFile then
-                File.WriteAllText((options.OutputFile).Value, resultCode.Value)
+                File.WriteAllText((options.OutputFile).Value, resultCode)
 
-            printfn "%s" resultCode.Value
+            printfn "%s" resultCode
             0
+        with
+            | ArgumentException message ->
+                printfn "%s" message
+                printfn ""
+                printUsage ()
+                1
+            | RefactoringFailure message ->
+                printfn "%s" message
+                1

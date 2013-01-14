@@ -216,7 +216,9 @@ module RangeAnalysis =
             if rangeContainsPos range position then Some name else None
 
         let trees = ScopeAnalysis.makeScopeTrees (Ast.Parse source).Value
-        trees
-        |> ScopeAnalysis.ListIdentifiers
-        |> List.pick nameIfContainsPos
-        |> ScopeAnalysis.FindIdentifierWithName trees
+        let name =
+            trees
+            |> ScopeAnalysis.ListIdentifiers
+            |> List.tryPick nameIfContainsPos
+        if Option.isNone name then None
+        else Some(ScopeAnalysis.FindIdentifierWithName trees name.Value)
