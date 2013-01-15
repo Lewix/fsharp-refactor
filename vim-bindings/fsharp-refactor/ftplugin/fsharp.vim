@@ -40,7 +40,16 @@ function! RunWithErrors(command, input)
     return result
 endfunction
 
+function! SaveCursorPosition()
+    return {'line': line('.'), 'col': col('.')}
+endfunction
+
+function! RestoreCursorPosition(position)
+   execute "normal! gg".a:position.line."j".a:position.col."|"
+endfunction
+
 function! Refactor(command)
+    let position = SaveCursorPosition()
     let result = RunWithErrors(a:command, GetBufferContents())
     if result.has_errors
         redraw
@@ -48,6 +57,7 @@ function! Refactor(command)
     else
         call SetBufferContents(result.stdout)
     endif
+    call RestoreCursorPosition(position)
 endfunction
 
 
