@@ -83,7 +83,7 @@ let printUsage () =
     printfn "  -h, --help                          Display this message and exit"
     printfn "  -i[SUFFIX], --in-place=[SUFFIX]     Modify the input file in-place (makes backup if extension supplied)"
     printfn "  -oFILENAME, --output-file=FILENAME  Write result to FILENAME"
-    
+
 
 
 let parsePos (positionString : string) =
@@ -91,7 +91,7 @@ let parsePos (positionString : string) =
     if m.Success then
         let line = Int32.Parse m.Groups.[1].Value
         let column = Int32.Parse m.Groups.[2].Value
-        mkPos line column
+        mkPos line (column-1)
     else raise (ArgumentException (sprintf "%s is not a valid position" positionString))
 
 let parseRenameArguments (args : string list) =
