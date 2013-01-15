@@ -19,7 +19,7 @@ endfunction
 
 function! GetBufferContents()
     let old_a = @a
-    %yank a
+    silent %yank a
     let contents = @a
     let @a = old_a
     return contents
