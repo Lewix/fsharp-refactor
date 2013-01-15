@@ -172,12 +172,12 @@ module RangeAnalysis =
         List.filter hasRange allNodes
 
 
-    let FindExpressionAtRange range (tree : Ast.AstNode)  =
+    let TryFindExpressionAtRange range (tree : Ast.AstNode)  =
         let isExpression node =
             match node with
                 | Ast.AstNode.Expression _ -> true
                 | _ -> false
-        List.find isExpression (FindNodesWithRange range tree)
+        List.tryFind isExpression (FindNodesWithRange range tree)
 
     let chooseBinding node  =
         match node with

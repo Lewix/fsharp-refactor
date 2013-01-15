@@ -233,10 +233,10 @@ type RangeAnalysisModule() =
         let source = "let a = 1+(2+3)+4"
         let tree = (Ast.Parse source).Value
         let expressionRange = mkRange "/home/lewis/test.fs" (mkPos 1 10) (mkPos 1 15)
-        let expression = RangeAnalysis.FindExpressionAtRange expressionRange tree
+        let expression = RangeAnalysis.TryFindExpressionAtRange expressionRange tree
 
         match expression with
-            | Ast.AstNode.Expression(SynExpr.Paren(SynExpr.App(_,_,SynExpr.App(_,_,_,SynExpr.Const(_,_),_),SynExpr.Const(_,_),_),_,_,_)) -> ()
+            | Some(Ast.AstNode.Expression(SynExpr.Paren(SynExpr.App(_,_,SynExpr.App(_,_,_,SynExpr.Const(_,_),_),SynExpr.Const(_,_),_),_,_,_))) -> ()
             | _ -> Assert.Fail("The AstNode was not the one for (2+3): " + (sprintf "%A" expression))
 
     [<Test>]

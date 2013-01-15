@@ -56,6 +56,10 @@ testExtractFunction()
     result=$(mono CommandLine.exe extract-function 1:1 2:4 f testfiles/expressioncode.fs 2>&1)
     assertEquals "Can report an error when expression range is not withing the file"\
         "No expression found at the given range" "$result"
+
+    result=$(mono CommandLine.exe extract-function 1:4 1:4 f testfiles/expressioncode.fs 2>&1)
+    assertEquals "Can report an error when expression range is not a valid range"\
+        "No expression found at the given range" "$result"
 }
 
 testAddArgument()

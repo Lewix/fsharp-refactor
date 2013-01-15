@@ -58,8 +58,8 @@ let CanExtractFunction source (tree : Ast.AstNode) (inScopeTree : Ast.AstNode) (
         if rangeContainsRange (Ast.GetRange inScopeTree).Value expressionRange then Valid
         else Invalid("The expression is not contained within the specified scope")
     let expressionRangeIsValid =
-        try FindExpressionAtRange expressionRange tree |> ignore; Valid with
-            | :? KeyNotFoundException -> Invalid("No expression found at the given range") 
+        if Option.isSome (TryFindExpressionAtRange expressionRange tree) then Valid
+        else Invalid("No expression found at the given range") 
 
     List.reduce CombineValidity [expressionRangeIsValid; expressionRangeIsInInScopeTree]
 
@@ -67,10 +67,10 @@ let ExtractTempFunction source (tree : Ast.AstNode) (inScopeTree : Ast.AstNode) 
     let valid = CanExtractFunction source tree inScopeTree expressionRange functionName
     refactoring source valid {
         let body = CodeTransforms.TextOfRange source expressionRange
-        let bodyExpression = FindExpressionAtRange expressionRange inScopeTree
+        let bodyExpression = TryFindExpressionAtRange expressionRange inScopeTree
         let arguments =
             GetFreeIdentifiers (makeScopeTrees inScopeTree) DefaultDeclared
-            |> Set.difference (GetFreeIdentifiers (makeScopeTrees bodyExpression) DefaultDeclared)
+            |> Set.difference (GetFreeIdentifiers (makeScopeTrees bodyExpression.Value) DefaultDeclared)
             |> Set.toList
 
         yield ((Ast.GetRange inScopeTree).Value.StartRange, CreateFunction source inScopeTree functionName arguments body false)

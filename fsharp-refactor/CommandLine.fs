@@ -57,7 +57,7 @@ let ExtractFunction filename (startPosition,endPosition) functionName =
     let tree = (Ast.Parse source).Value
     let expressionRange = mkRange "/home/lewis/test.fs" startPosition endPosition
     let inScopeTree = DefaultInScopeTree source tree expressionRange
-    if Option.isNone (TryFindExpressionAroundRange expressionRange tree) then
+    if Option.isNone (TryFindExpressionAtRange expressionRange tree) then
         raise (ArgumentException "No expression found at the given range")
     elif Option.isNone inScopeTree then
         raise (ArgumentException "Could not find a suitable expression to use as the function's scope")

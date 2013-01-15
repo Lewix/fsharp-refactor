@@ -123,6 +123,6 @@ type CreateFunctionModule() =
         let expected = "let f a b = a+b in "
         let tree = (Ast.Parse source).Value
         let oneRange = mkRange "/home/lewis/test.fs" (mkPos 1 8) (mkPos 1 9)
-        let expression = FindExpressionAtRange oneRange tree
+        let expression = (TryFindExpressionAtRange oneRange tree).Value
 
         Assert.AreEqual(expected, CreateFunction source expression "f" ["a";"b"] "a+b" false)
