@@ -55,6 +55,23 @@ module ScopeAnalysis =
     let IsDeclared (name : string) (identifiers : Identifier list) =
         List.exists (fun (n,_) -> n = name) identifiers
 
+    let TryFindIdentifierDeclaration (trees : ScopeTree list) ((name, range) : Identifier) =
+        let isDeclaration (n,r) = n = name && r = range
+        let isSameName (n,r) = n = name
+            
+        let rec tryFindIdentifierAndDeclaration previousDeclaration tree =
+            match tree with
+                | Usage(n,r) -> if n = name && r = range then previousDeclaration else None
+                | Declaration(is, ts) ->
+                    if List.exists isDeclaration is then
+                        List.tryFind isDeclaration is
+                    elif List.exists isSameName is then
+                        List.tryPick (tryFindIdentifierAndDeclaration (List.tryFind isSameName is)) ts
+                    else
+                        List.tryPick (tryFindIdentifierAndDeclaration previousDeclaration) ts
+
+        List.tryPick (tryFindIdentifierAndDeclaration None) trees
+
     let TryFindIdentifierWithName (trees : ScopeTree list) (name : string) =
         let rec tryFindIdentifierWithName tree =
             match tree with
@@ -214,11 +231,10 @@ module RangeAnalysis =
             | ScopeAnalysis.DeclaredIdent id -> id
             | _ -> raise (new KeyNotFoundException("Couldn't find an identifier declaration at that range"))
 
-    let FindIdentifierName source (position : pos) =
-        let nameIfContainsPos (name,range) =
-            if rangeContainsPos range position then Some name else None
+    let FindIdentifier source (position : pos) =
+        let containsPos (name,range) = rangeContainsPos range position
 
         (Ast.Parse source).Value
         |> ScopeAnalysis.makeScopeTrees
         |> ScopeAnalysis.ListIdentifiers
-        |> List.tryPick nameIfContainsPos
+        |> List.tryFind containsPos

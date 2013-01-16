@@ -42,9 +42,10 @@ let getSource filename =
 let Rename filename position newName =
     let source = getSource filename
     let tree = (Ast.Parse source).Value
-    let identifierName = FindIdentifierName source position
-    if Option.isSome identifierName then
-        let declarationIdentifier = TryFindIdentifierWithName (makeScopeTrees tree) identifierName.Value
+    let identifier = FindIdentifier source position
+    if Option.isSome identifier then
+        let declarationIdentifier =
+            TryFindIdentifierDeclaration (makeScopeTrees tree) identifier.Value
         if Option.isSome declarationIdentifier then
             DoRename source tree declarationIdentifier.Value newName
         else

@@ -104,6 +104,15 @@ type ScopeAnalysisModule() =
 
         Assert.AreEqual(expected, ScopeAnalysis.GetDeclarations tree)
 
+    [<Test>]
+    member this.``Can find the declaration identifier from a given identifier``() =
+        let source = "let f a b c = a"
+        let usageIdentifier = ("a", mkRange "/home/lewis/test.fs" (mkPos 1 14) (mkPos 1 15))
+        let expected = Some("a", mkRange "/home/lewis/test.fs" (mkPos 1 6) (mkPos 1 7))
+        let trees = getTrees source
+
+        Assert.AreEqual(expected, ScopeAnalysis.TryFindIdentifierDeclaration trees usageIdentifier)
+
 [<TestFixture>]
 type ScopeTreeModule() =
     static member getScopeTrees source =
