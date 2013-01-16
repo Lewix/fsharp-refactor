@@ -60,7 +60,6 @@ type RenameTransformModule() =
 
         Assert.AreEqual(expected, DoRename source (Ast.Parse source).Value ("a", declarationRange) "c")
 
-        
     [<Test>]
     member this.``Can carry out rename on a match expression``() =
         let source = "match a with (a,b) -> a"
@@ -68,7 +67,6 @@ type RenameTransformModule() =
         let declarationRange = mkRange "/home/lewis/test.fs" (mkPos 1 15) (mkPos 1 15)
 
         Assert.AreEqual(expected, DoRename source (Ast.Parse source).Value ("a", declarationRange) "c")
-
         
     [<Test>]
     member this.``Can rename a function and its arguments``() =

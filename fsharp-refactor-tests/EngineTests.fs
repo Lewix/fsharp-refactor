@@ -78,7 +78,7 @@ type CodeTransformsModule() =
 [<TestFixture>]
 type ScopeAnalysisModule() =
     let getTrees source = ScopeAnalysis.makeScopeTrees (Ast.Parse source).Value
-    
+
     [<Test>]
     member this.``Can get all the free identifiers names in a ScopeTree``() =
         let source1 = "let a = b in f(c + a + b)"
