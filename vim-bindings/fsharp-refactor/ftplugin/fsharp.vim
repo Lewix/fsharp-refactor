@@ -45,7 +45,7 @@ function! SaveCursorPosition()
 endfunction
 
 function! RestoreCursorPosition(position)
-   execute "normal! gg".a:position.line."j".a:position.col."|"
+   execute "normal! gg".a:position.line."jk".a:position.col."|"
 endfunction
 
 function! Refactor(command)
