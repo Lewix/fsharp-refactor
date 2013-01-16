@@ -224,18 +224,14 @@ type ScopeTreeModule() =
 [<TestFixture>]
 type RangeAnalysisModule() =
     [<Test>]
-    member this.``Can find a declaration identifier from a usage or declaration position``() =
+    member this.``Can find identifier a position``() =
         let filename = "/home/lewis/test.fs"
         let source = "let functio a b c = a+b+c in functio 1 2 3"
-        let aUsagePos = mkPos 1 13
-        let fUsagePos = mkPos 1 32
         let aDeclarationRange = mkRange "/home/lewis/test.fs" (mkPos 1 12) (mkPos 1 13)
         let fDeclarationRange = mkRange "/home/lewis/test.fs" (mkPos 1 4) (mkPos 1 11)
 
-        Assert.AreEqual(Some("a"), RangeAnalysis.FindIdentifierName source aUsagePos)
-        Assert.AreEqual(Some("a"), RangeAnalysis.FindIdentifierName source aDeclarationRange.Start)
-        Assert.AreEqual(Some("functio"), RangeAnalysis.FindIdentifierName source fUsagePos)
-        Assert.AreEqual(Some("functio"), RangeAnalysis.FindIdentifierName source fDeclarationRange.Start)
+        Assert.AreEqual(Some("a",aDeclarationRange), RangeAnalysis.FindIdentifier source aDeclarationRange.Start)
+        Assert.AreEqual(Some("functio",fDeclarationRange), RangeAnalysis.FindIdentifier source fDeclarationRange.Start)
     
     [<Test>]
     member this.``Can find the AstNode.Expression corresponding to a range``() =
