@@ -159,6 +159,21 @@ type ScopeTreeModule() =
                                (sprintf "%A" scopeTrees))
 
     [<Test>]
+    member this.``Can create scope trees for a match clause with a LongIdent``() =
+        let scopeTrees1 = ScopeTreeModule.getScopeTrees "match a with Tag(id) -> id"
+        let scopeTrees2 = ScopeTreeModule.getScopeTrees "match a with Tag(id)::_ -> id"
+        let doMatch scopeTrees =
+            match scopeTrees with
+                | [ScopeAnalysis.Usage("a",_);
+                   ScopeAnalysis.Declaration(["id",_],
+                                             [ScopeAnalysis.Usage("id",_)])] -> ()
+                | _ -> Assert.Fail("The scope tree for 'match a with Tag(id) -> id' was incorrect:\n" +
+                                   (sprintf "%A" scopeTrees))
+
+        doMatch scopeTrees1
+        doMatch scopeTrees2
+
+    [<Test>]
     member this.``Can create a scope tree for a function declaration``() =
         let scopeTrees = ScopeTreeModule.getScopeTrees "let f a b c = a in f 1"
         match scopeTrees with
