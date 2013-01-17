@@ -76,7 +76,6 @@ let CanAddArgument source (tree : Ast.AstNode) (bindingRange : range) (argumentN
         | e -> Invalid(e.Message)
 
 //TODO: Check arguments such as argumentName or defaultValue have a valid form
-//TODO: Check argumentName is not already used in the binding
 let AddTempArgument source (tree : Ast.AstNode) (bindingRange : range) (argumentName : string) (defaultValue : string) =
     let valid = CanAddArgument source tree bindingRange argumentName defaultValue
     refactoring source valid {
