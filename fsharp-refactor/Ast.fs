@@ -117,6 +117,7 @@ module Ast =
             | Binding b -> Some(b.RangeOfBindingAndRhs)
             | Expression e -> Some(e.Range)
             | Ident i -> Some(i.idRange)
+            | MatchClause c -> Some(c.Range)
             | _ -> raise (new NotImplementedException("Add a new entry to the active pattern for Range:" + (string node)))
 
     // Utility functions to avoid having to match patterns to get children or range
