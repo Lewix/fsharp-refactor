@@ -107,13 +107,13 @@ type AddArgumentModule() =
     [<Test>]
     member this.``Cannot add an argument if there is already on with the same name``() =
         let source1 = "let f a b = a+b"
-        let source2 = "let rec f a b = a+b"
+        let source2 = "let rec f a b = f(a+b)"
         let tree1 = (Ast.Parse source1).Value
         let tree2 = (Ast.Parse source2).Value
         
-        let range1 = mkRange "/home/lewis/test.fs" (mkPos 1 4) (mkPos 1 16)
-        let range2 = mkRange "/home/lewis/test.fs" (mkPos 1 8) (mkPos 1 20)
+        let range1 = mkRange "/home/lewis/test.fs" (mkPos 1 4) (mkPos 1 15)
+        let range2 = mkRange "/home/lewis/test.fs" (mkPos 1 8) (mkPos 1 22)
 
-        Assert.AreEqual(Valid, CanAddArgument source1 tree1 range1 "f" "0")
-        Assert.AreEqual(Invalid(""), CanAddArgument source1 tree1 range1 "a" "0")
-        Assert.AreEqual(Invalid(""), CanAddArgument source2 tree2 range2 "f" "0")
+        Assert.AreEqual("let f f a b = a+b", DoAddArgument source1 tree1 range1 "f" "0")
+        Assert.Throws<RefactoringFailure>(fun () -> ignore (DoAddArgument source1 tree1 range1 "a" "0")) |> ignore
+        Assert.Throws<RefactoringFailure>(fun () -> ignore (DoAddArgument source2 tree2 range2 "f" "0")) |> ignore
