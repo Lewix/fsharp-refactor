@@ -25,6 +25,8 @@ module ScopeAnalysis =
             //TODO: Make everything work with LongIdentWithDots
             | Ast.Pattern(SynPat.LongIdent(LongIdentWithDots(i::_,_),_,_,_,_,_)) ->
                 Some(i.idText, i.idRange)
+            | Ast.SimplePattern(SynSimplePat.Id(i,_,_,_,_,_)) ->
+                Some(i.idText, i.idRange)
             | _ -> None
 
     let DefaultDeclared = Set ["op_Addition"]
@@ -143,13 +145,22 @@ module ScopeAnalysis =
                     | _ -> []
             declarationsFromAstNode (Ast.AstNode.Pattern pattern)
 
-        let rec declarationsFromFunctionPatterns patterns =
-            let rec getDeclarations pattern =
-                match pattern with
-                    | DeclaredIdent(text, range) -> [(text, range)]
-                    | Ast.Children cs -> List.collect getDeclarations cs
-                    | _ -> []
+        let rec getDeclarations pattern =
+            match pattern with
+                | DeclaredIdent(text, range) -> [(text, range)]
+                | Ast.Children cs -> List.collect getDeclarations cs
+                | _ -> []
+
+        let declarationsFromFunctionPatterns patterns =
             List.collect getDeclarations (List.map Ast.AstNode.Pattern patterns)
+
+        let declarationsFromSimplePatterns patterns =
+            List.collect getDeclarations (List.map Ast.AstNode.SimplePattern patterns)
+
+        let rec flattenSimplePatterns patterns =
+            match patterns with
+                | SynSimplePats.SimplePats(ps,_) -> ps
+                | SynSimplePats.Typed(ps,_,_) -> flattenSimplePatterns ps
 
         match tree with
             | Ast.ModuleOrNamespace(SynModuleOrNamespace.SynModuleOrNamespace(_,_,ds,_,_,_,_)) ->
@@ -170,6 +181,11 @@ module ScopeAnalysis =
                 let bindingScopeTree = mergeBindings scopeTreesFromBindings
                 let expressionScopeTrees = makeScopeTrees (Ast.AstNode.Expression e)
                 [addChildren bindingScopeTree expressionScopeTrees]
+            | Ast.AstNode.Expression(SynExpr.Lambda(_,_,ps,e,_)) ->
+                let simplePatterns = flattenSimplePatterns ps
+                let idsDeclaredInPatterns = declarationsFromSimplePatterns simplePatterns
+                [Declaration(idsDeclaredInPatterns,
+                             makeScopeTrees (Ast.AstNode.Expression e))]
             | Ast.AstNode.MatchClause(Clause(p,we,e,_,_)) ->
                 [Declaration(declarationsFromMatchPattern p,
                              makeScopeTrees (Ast.AstNode.Expression e))]
