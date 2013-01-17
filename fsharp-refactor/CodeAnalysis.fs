@@ -186,6 +186,18 @@ module ScopeAnalysis =
             | UsedIdent(text, range) -> [Usage(text, range)]
             | _ -> []
 
+    let FindUnusedName (tree : Ast.AstNode) =
+        let scopeTrees = makeScopeTrees tree
+        let usedNames = GetDeclarations scopeTrees
+        let randomNumberGenerator = new System.Random()
+
+        let rec generateWhileUsed () =
+            let name = "tmpFunction" + string (randomNumberGenerator.Next())
+            if Set.contains name usedNames then generateWhileUsed ()
+            else name
+
+        generateWhileUsed ()
+
 
 module RangeAnalysis =
     let rec ListNodes (tree : Ast.AstNode) =

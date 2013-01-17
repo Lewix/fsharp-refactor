@@ -16,18 +16,6 @@ let rec stripBrackets (body : string) =
     then stripBrackets (body.[1..(String.length body)-2])
     else body
 
-let findUnusedName (tree : Ast.AstNode) =
-    let scopeTrees = makeScopeTrees tree
-    let usedNames = GetDeclarations scopeTrees
-    let randomNumberGenerator = new System.Random()
-
-    let rec generateWhileUsed () =
-        let name = "tmpFunction" + string (randomNumberGenerator.Next())
-        if Set.contains name usedNames then generateWhileUsed ()
-        else name
-
-    generateWhileUsed ()
-
 let DefaultInScopeTree source (tree : Ast.AstNode) (expressionRange : range) =
     let outermostBinding = TryFindBindingAroundRange expressionRange tree
     let outermostExpression = TryFindExpressionAroundRange expressionRange tree
@@ -78,7 +66,7 @@ let ExtractTempFunction source (tree : Ast.AstNode) (inScopeTree : Ast.AstNode) 
     }
 
 let ExtractFunction source (tree : Ast.AstNode) (inScopeTree : Ast.AstNode) (expressionRange : range) (functionName : string) =
-    let unusedName = findUnusedName tree
+    let unusedName = FindUnusedName tree
     let sourceWithTempFunction = RunRefactoring (ExtractTempFunction source tree inScopeTree expressionRange unusedName)
     let tree = (Ast.Parse sourceWithTempFunction).Value
     let identifier = (TryFindIdentifierWithName (makeScopeTrees tree) unusedName).Value

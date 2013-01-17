@@ -49,13 +49,6 @@ type ExtractFunctionAnalysisModule() =
         ignore (Assert.Throws<RefactoringFailure>(fun () -> ignore (DoExtractFunction source tree inScopeTree expressionRange "f")))
 
     [<Test>]
-    member this.``Can find an unused name``() =
-        let source = "let f a b c = 1\nlet g = 3"
-        let tree = (Ast.Parse source).Value
-        
-        Assert.IsFalse(Set.contains (findUnusedName tree) (Set ["f";"a";"b";"c";"g"]))
-
-    [<Test>]
     member this.``Can find a suitable default inScopeTree from expressionRange``() =
         let source1 = "let f a b = 5*a + b"
         let source2 = "let f a b =\n  let x = 5*a + b"

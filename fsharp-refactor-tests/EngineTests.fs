@@ -80,6 +80,13 @@ type ScopeAnalysisModule() =
     let getTrees source = ScopeAnalysis.makeScopeTrees (Ast.Parse source).Value
 
     [<Test>]
+    member this.``Can find an unused name``() =
+        let source = "let f a b c = 1\nlet g = 3"
+        let tree = (Ast.Parse source).Value
+        
+        Assert.IsFalse(Set.contains (ScopeAnalysis.FindUnusedName tree) (Set ["f";"a";"b";"c";"g"]))
+
+    [<Test>]
     member this.``Can get all the free identifiers names in a ScopeTree``() =
         let source1 = "let a = b in f(c + a + b)"
         let source2 = "let a = b in let b = 1"
