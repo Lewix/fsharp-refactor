@@ -70,7 +70,7 @@ let AddArgument filename position argumentName defaultValue =
     let tree = (Ast.Parse source).Value
     let bindingRange = DefaultBindingRange source tree position
     if Option.isSome bindingRange then
-        AddArgument source tree bindingRange.Value argumentName defaultValue
+        DoAddArgument source tree bindingRange.Value argumentName defaultValue
     else
         raise (ArgumentException "No binding found around the given position")
 

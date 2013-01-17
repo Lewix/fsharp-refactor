@@ -62,7 +62,7 @@ type AddArgumentModule() =
         let bindingRange = mkRange "/home/lewis/test.fs" (mkPos 1 5) (mkPos 1 16)
         let expected = "(let f arg a b c = 1 in (f 0 1 2 3) + ((f 0 2) 2) + (1 + (2 + (f 0 3 3 4)))) + (f 1)"
 
-        Assert.AreEqual(expected, AddArgument source tree bindingRange "arg" "0")
+        Assert.AreEqual(expected, DoAddArgument source tree bindingRange "arg" "0")
 
     [<Test>]
     member this.``Can add an argument to a function, even if it is not being applied``() =
@@ -71,7 +71,7 @@ type AddArgumentModule() =
         let bindingRange = mkRange "/home/lewis/test.fs" (mkPos 1 4) (mkPos 1 11)
         let expected = "let f arg a = 1 in let g a = f \"value\" in g 1 1"
 
-        Assert.AreEqual(expected, AddArgument source tree bindingRange "arg" "\"value\"")
+        Assert.AreEqual(expected, DoAddArgument source tree bindingRange "arg" "\"value\"")
         
     [<Test>]
     member this.``Can find the name of a function given its binding's range``() =
@@ -103,3 +103,17 @@ type AddArgumentModule() =
         Assert.AreEqual(Invalid("No binding found at the given range"),
                         valid,
                         sprintf "Extract function validity was incorrect: %A" valid)                       
+
+    [<Test>]
+    member this.``Cannot add an argument if there is already on with the same name``() =
+        let source1 = "let f a b = a+b"
+        let source2 = "let rec f a b = a+b"
+        let tree1 = (Ast.Parse source1).Value
+        let tree2 = (Ast.Parse source2).Value
+        
+        let range1 = mkRange "/home/lewis/test.fs" (mkPos 1 4) (mkPos 1 16)
+        let range2 = mkRange "/home/lewis/test.fs" (mkPos 1 8) (mkPos 1 20)
+
+        Assert.AreEqual(Valid, CanAddArgument source1 tree1 range1 "f" "0")
+        Assert.AreEqual(Invalid(""), CanAddArgument source1 tree1 range1 "a" "0")
+        Assert.AreEqual(Invalid(""), CanAddArgument source2 tree2 range2 "f" "0")

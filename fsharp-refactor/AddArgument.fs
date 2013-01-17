@@ -8,6 +8,7 @@ open FSharpRefactor.Engine.Ast
 open FSharpRefactor.Engine.CodeAnalysis.RangeAnalysis
 open FSharpRefactor.Engine.CodeAnalysis.ScopeAnalysis
 open FSharpRefactor.Engine.RefactoringWorkflow
+open FSharpRefactor.Refactorings.Rename
 
 let DefaultBindingRange source (tree : Ast.AstNode) (position : pos) =
     let range = mkRange "/home/lewis/test.fs" position position
@@ -76,14 +77,23 @@ let CanAddArgument source (tree : Ast.AstNode) (bindingRange : range) (argumentN
 
 //TODO: Check arguments such as argumentName or defaultValue have a valid form
 //TODO: Check argumentName is not already used in the binding
-let AddArgument source (tree : Ast.AstNode) (bindingRange : range) (argumentName : string) (defaultValue : string) =
+let AddTempArgument source (tree : Ast.AstNode) (bindingRange : range) (argumentName : string) (defaultValue : string) =
     let valid = CanAddArgument source tree bindingRange argumentName defaultValue
-    RunRefactoring (refactoring source valid {
+    refactoring source valid {
         let identRanges =
             findFunctionName source tree bindingRange
             |> FindFunctionUsageRanges source tree bindingRange
         yield! (AddArgumentToBinding source tree bindingRange argumentName)
         for identRange in identRanges do
             yield! (AddArgumentToFunctionUsage source tree identRange defaultValue)
-    })
-    
+    }
+
+let AddArgument source (tree : Ast.AstNode) (bindingRange : range) (argumentName : string) (defaultValue : string) =
+    let unusedName = FindUnusedName tree
+    let sourceWithTempArgument = RunRefactoring (AddTempArgument source tree bindingRange unusedName defaultValue)
+    let tree = (Ast.Parse sourceWithTempArgument).Value
+    let identifier = (TryFindIdentifierWithName (makeScopeTrees tree) unusedName).Value
+    Rename sourceWithTempArgument tree identifier argumentName
+
+let DoAddArgument source (tree : Ast.AstNode) (bindingRange : range) (argumentName : string) (defaultValue : string) =
+    RunRefactoring (AddArgument source tree bindingRange argumentName defaultValue)
