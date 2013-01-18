@@ -17,8 +17,8 @@ type ExtractFunctionAnalysisModule() =
         let source = "(2+3)+(3+4)"
         let tree = (Ast.Parse source).Value
         let inScopeTree =
-            List.head (FindNodesWithRange (mkRange "/home/lewis/test.fs" (mkPos 1 0) (mkPos 1 11)) tree)
-        let expressionRange = mkRange "/home/lewis/test.fs" (mkPos 1 4) (mkPos 1 6)
+            List.head (FindNodesWithRange (mkRange "test.fs" (mkPos 1 0) (mkPos 1 11)) tree)
+        let expressionRange = mkRange "test.fs" (mkPos 1 4) (mkPos 1 6)
         let valid = CanExtractFunction source tree inScopeTree expressionRange "f"
 
         Assert.AreEqual(Invalid("No expression found at the given range"),
@@ -30,8 +30,8 @@ type ExtractFunctionAnalysisModule() =
         let source = "(1+2)+(3+4)"
         let tree = (Ast.Parse source).Value
         let inScopeTree =
-            List.head (FindNodesWithRange (mkRange "/home/lewis/test.fs" (mkPos 1 0) (mkPos 1 5)) tree)
-        let expressionRange = mkRange "/home/lewis/test.fs" (mkPos 1 6) (mkPos 1 11)
+            List.head (FindNodesWithRange (mkRange "test.fs" (mkPos 1 0) (mkPos 1 5)) tree)
+        let expressionRange = mkRange "test.fs" (mkPos 1 6) (mkPos 1 11)
         let valid = CanExtractFunction source tree inScopeTree expressionRange "f"
 
         Assert.AreEqual(Invalid("The expression is not contained within the specified scope"),
@@ -43,8 +43,8 @@ type ExtractFunctionAnalysisModule() =
         let source = "let f a = 1 in (f 1)+(1+2)"
         let tree = (Ast.Parse source).Value
         let inScopeTree =
-            List.head (FindNodesWithRange (mkRange "/home/lewis/test.fs" (mkPos 1 15) (mkPos 1 26)) tree)
-        let expressionRange = mkRange "/home/lewis/test.fs" (mkPos 1 21) (mkPos 1 26)
+            List.head (FindNodesWithRange (mkRange "test.fs" (mkPos 1 15) (mkPos 1 26)) tree)
+        let expressionRange = mkRange "test.fs" (mkPos 1 21) (mkPos 1 26)
 
         ignore (Assert.Throws<RefactoringFailure>(fun () -> ignore (DoExtractFunction source tree inScopeTree expressionRange "f")))
 
@@ -52,8 +52,8 @@ type ExtractFunctionAnalysisModule() =
     member this.``Can find a suitable default inScopeTree from expressionRange``() =
         let source1 = "let f a b = 5*a + b"
         let source2 = "let f a b =\n  let x = 5*a + b"
-        let expressionRange1 = mkRange "/home/lewis/test.fs" (mkPos 1 13) (mkPos 1 16)
-        let expressionRange2 = mkRange "/home/lewis/test.fs" (mkPos 1 24) (mkPos 1 27)
+        let expressionRange1 = mkRange "test.fs" (mkPos 1 13) (mkPos 1 16)
+        let expressionRange2 = mkRange "test.fs" (mkPos 1 24) (mkPos 1 27)
         let expected1 = "5*a + b"
         let expected2 = "let x = 5*a + b"
 
@@ -66,7 +66,7 @@ type ExtractFunctionAnalysisModule() =
     member this.``Can find a default inScopeTree if there are no bindings in the source``() =
         let source = "1+2+3"
         let tree = (Ast.Parse source).Value
-        let expressionRange = mkRange "/home/lewis/test.fs" (mkPos 1 0) (mkPos 1 5)
+        let expressionRange = mkRange "test.fs" (mkPos 1 0) (mkPos 1 5)
 
         Assert.AreEqual(source,
                         CodeTransforms.TextOfRange source (Ast.GetRange (Ast.AstNode.Expression (DefaultInScopeTree source tree expressionRange).Value)).Value)
@@ -79,9 +79,9 @@ type ExtractFunctionTransformModule() =
         let expected = "let a = 1+3+4+4 in (a)"
         let tree = (Ast.Parse source).Value
         let letTree =
-            List.head (FindNodesWithRange (mkRange "/home/lewis/test.fs" (mkPos 1 0) (mkPos 1 7)) tree)
+            List.head (FindNodesWithRange (mkRange "test.fs" (mkPos 1 0) (mkPos 1 7)) tree)
 
-        let expressionRange = mkRange "/home/lewis/test.fs" (mkPos 1 0) (mkPos 1 7)
+        let expressionRange = mkRange "test.fs" (mkPos 1 0) (mkPos 1 7)
 
         Assert.AreEqual(expected, DoExtractFunction source tree letTree expressionRange "a")
     
@@ -91,8 +91,8 @@ type ExtractFunctionTransformModule() =
         let expected = "let c = 1 in let f b = b+c in let a b = 1+(f b)+4"
         let tree = (Ast.Parse source).Value
         let letTree =
-            List.head (FindNodesWithRange (mkRange "/home/lewis/test.fs" (mkPos 1 13) (mkPos 1 32)) tree)
-        let expressionRange = mkRange "/home/lewis/test.fs" (mkPos 1 25) (mkPos 1 30)
+            List.head (FindNodesWithRange (mkRange "test.fs" (mkPos 1 13) (mkPos 1 32)) tree)
+        let expressionRange = mkRange "test.fs" (mkPos 1 25) (mkPos 1 30)
 
         Assert.AreEqual(expected, DoExtractFunction source tree letTree expressionRange "f")
         
@@ -102,8 +102,8 @@ type ExtractFunctionTransformModule() =
         let expected = "let double b = b+b in let a b = (double b)"
         let tree = (Ast.Parse source).Value
         let letTree =
-            List.head (FindNodesWithRange (mkRange "/home/lewis/test.fs" (mkPos 1 0) (mkPos 1 13)) tree)
-        let expressionRange = mkRange "/home/lewis/test.fs" (mkPos 1 10) (mkPos 1 13)
+            List.head (FindNodesWithRange (mkRange "test.fs" (mkPos 1 0) (mkPos 1 13)) tree)
+        let expressionRange = mkRange "test.fs" (mkPos 1 10) (mkPos 1 13)
 
         Assert.AreEqual(expected, DoExtractFunction source tree letTree expressionRange "double")
         
@@ -115,7 +115,7 @@ type CreateFunctionModule() =
         let source = "let a = 1"
         let expected = "let f a b = a+b in "
         let tree = (Ast.Parse source).Value
-        let oneRange = mkRange "/home/lewis/test.fs" (mkPos 1 8) (mkPos 1 9)
+        let oneRange = mkRange "test.fs" (mkPos 1 8) (mkPos 1 9)
         let expression = (TryFindExpressionAtRange oneRange tree).Value
 
         Assert.AreEqual(expected, CreateFunction source expression "f" ["a";"b"] "a+b" false)

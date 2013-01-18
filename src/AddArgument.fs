@@ -11,7 +11,7 @@ open FSharpRefactor.Engine.RefactoringWorkflow
 open FSharpRefactor.Refactorings.Rename
 
 let DefaultBindingRange source (tree : Ast.AstNode) (position : pos) =
-    let range = mkRange "/home/lewis/test.fs" position position
+    let range = mkRange "test.fs" position position
     let rec tryFindDeepestBinding trees =
         let candidateBinding = List.tryPick (TryFindBindingAroundRange range) trees
         if Option.isNone candidateBinding then None

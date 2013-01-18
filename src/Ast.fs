@@ -25,7 +25,7 @@ module Ast =
 
     let getParseTree source = 
         let checker = InteractiveChecker.Create(NotifyFileTypeCheckStateIsDirty(fun _ -> ()))
-        let filename = "/home/lewis/test.fs"
+        let filename = "test.fs"
         let options source = checker.GetCheckOptionsFromScriptRoot(filename, source, DateTime.Now, [| |])
         checker.UntypedParse(filename, source, options source).ParseTree
         

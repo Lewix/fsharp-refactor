@@ -56,13 +56,13 @@ type CodeTransformsModule() =
     member this.``Can get text at a given range``() =
         let source = "let a = 1+(2+3)+4"
         let expected = "(2+3)"
-        let range = mkRange "/home/lewis/test.fs" (mkPos 1 10) (mkPos 1 15)
+        let range = mkRange "test.fs" (mkPos 1 10) (mkPos 1 15)
         
         Assert.AreEqual(expected, CodeTransforms.TextOfRange source range)
 
         let source = "let a = 1+(2\n+3)+4"
         let expected = "(2\n+3)"
-        let range = mkRange "/home/lewis/test.fs" (mkPos 1 10) (mkPos 2 3)
+        let range = mkRange "test.fs" (mkPos 1 10) (mkPos 2 3)
 
         Assert.AreEqual(expected, CodeTransforms.TextOfRange source range)
 
@@ -70,8 +70,8 @@ type CodeTransformsModule() =
     member this.``Can change text for two ranges with same start point, if one is of length 0``() =
         let source = "1"
         let expected = "5+2"
-        let range1= mkRange "/home/lewis/test.fs" (mkPos 1 0) (mkPos 1 1)
-        let range2 = mkRange "/home/lewis/test.fs" (mkPos 1 0) (mkPos 1 0)
+        let range1= mkRange "test.fs" (mkPos 1 0) (mkPos 1 1)
+        let range2 = mkRange "test.fs" (mkPos 1 0) (mkPos 1 0)
 
         Assert.AreEqual(expected, CodeTransforms.ChangeTextOf source [(range2,"5+");(range1,"2")])
 
@@ -114,8 +114,8 @@ type ScopeAnalysisModule() =
     [<Test>]
     member this.``Can find the declaration identifier from a given identifier``() =
         let source = "let f a b c = a"
-        let usageIdentifier = ("a", mkRange "/home/lewis/test.fs" (mkPos 1 14) (mkPos 1 15))
-        let expected = Some("a", mkRange "/home/lewis/test.fs" (mkPos 1 6) (mkPos 1 7))
+        let usageIdentifier = ("a", mkRange "test.fs" (mkPos 1 14) (mkPos 1 15))
+        let expected = Some("a", mkRange "test.fs" (mkPos 1 6) (mkPos 1 7))
         let trees = getTrees source
 
         Assert.AreEqual(expected, ScopeAnalysis.TryFindIdentifierDeclaration trees usageIdentifier)
@@ -259,10 +259,10 @@ type ScopeTreeModule() =
 type RangeAnalysisModule() =
     [<Test>]
     member this.``Can find identifier a position``() =
-        let filename = "/home/lewis/test.fs"
+        let filename = "test.fs"
         let source = "let functio a b c = a+b+c in functio 1 2 3"
-        let aDeclarationRange = mkRange "/home/lewis/test.fs" (mkPos 1 12) (mkPos 1 13)
-        let fDeclarationRange = mkRange "/home/lewis/test.fs" (mkPos 1 4) (mkPos 1 11)
+        let aDeclarationRange = mkRange "test.fs" (mkPos 1 12) (mkPos 1 13)
+        let fDeclarationRange = mkRange "test.fs" (mkPos 1 4) (mkPos 1 11)
 
         Assert.AreEqual(Some("a",aDeclarationRange), RangeAnalysis.FindIdentifier source aDeclarationRange.Start)
         Assert.AreEqual(Some("functio",fDeclarationRange), RangeAnalysis.FindIdentifier source fDeclarationRange.Start)
@@ -271,7 +271,7 @@ type RangeAnalysisModule() =
     member this.``Can find the AstNode.Expression corresponding to a range``() =
         let source = "let a = 1+(2+3)+4"
         let tree = (Ast.Parse source).Value
-        let expressionRange = mkRange "/home/lewis/test.fs" (mkPos 1 10) (mkPos 1 15)
+        let expressionRange = mkRange "test.fs" (mkPos 1 10) (mkPos 1 15)
         let expression = RangeAnalysis.TryFindExpressionAtRange expressionRange tree
 
         match expression with
@@ -282,7 +282,7 @@ type RangeAnalysisModule() =
     member this.``Can find the binding from the binding's range``() =
         let source = "let f a b = a+b"
         let tree = (Ast.Parse source).Value
-        let bindingRange = mkRange "/home/lewis/test.fs" (mkPos 1 4) (mkPos 1 15)
+        let bindingRange = mkRange "test.fs" (mkPos 1 4) (mkPos 1 15)
         let binding = RangeAnalysis.FindBindingAtRange bindingRange tree
 
         match binding with
