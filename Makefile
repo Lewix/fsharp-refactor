@@ -30,7 +30,7 @@ bin/FSharpRefactor.exe: libs/Options.dll libs/FSharp.Refactor.dll src/CommandLin
 	fsharpc $(OPTS) $(REFS) --target:exe -o:bin/FSharpRefactor.exe -r:libs/FSharp.Refactor.dll src/CommandLine.fs
 
 run-tests: libs/FSharp.Refactor.Tests.dll bin/FSharpRefactor.exe tests/command-line-tests.sh
-	mono /usr/lib/nunit/nunit-console.exe libs/FSharp.Refactor.Tests.dll
+	mono /usr/lib/nunit/nunit-console.exe -noresult libs/FSharp.Refactor.Tests.dll
 	export MONO_PATH=libs; tests/command-line-tests.sh
 
 tags: 
