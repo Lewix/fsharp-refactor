@@ -23,7 +23,7 @@ FSharp.Refactor.Tests.dll: FSharp.Refactor.dll $(TESTS)
 	fsharpc $(OPTS) -o:FSharp.Refactor.Tests.dll -r:FSharp.Refactor.dll $(REFS) $(TESTS)
 
 CommandLine.exe: Mono.Options/Options.dll FSharp.Refactor.dll src/CommandLine.fs
-	fsharpc -r:Mono.Options/Options.dll -r:FSharp.Refactor.dll src/CommandLine.fs
+	fsharpc -o:FSharpRefactor.exe -r:Mono.Options/Options.dll -r:FSharp.Refactor.dll src/CommandLine.fs
 
 run-tests: FSharp.Refactor.Tests.dll CommandLine.exe command-line-tests.sh
 	mono /usr/lib/nunit/nunit-console.exe -nologo FSharp.Refactor.Tests.dll

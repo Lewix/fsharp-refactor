@@ -68,7 +68,7 @@ function! s:FSharpRename(name)
         let new_name = a:name
     endif
     let position = line(".").":".col(".")
-    let command = "mono /mnt/media/bookmarks/p/CommandLine.exe rename ".position." ".new_name
+    let command = "mono /mnt/media/bookmarks/p/FSharpRefactor.exe rename ".position." ".new_name
     call Refactor(command)
 endfunction
 
@@ -80,7 +80,7 @@ function! s:FSharpExtractFunction(name)
     endif
     let start_position = line("'<").":".col("'<")
     let end_position = line("'>").":".col("'>")
-    let command = "mono /mnt/media/bookmarks/p/CommandLine.exe extract-function ".start_position." ".end_position." ".function_name
+    let command = "mono /mnt/media/bookmarks/p/FSharpRefactor.exe extract-function ".start_position." ".end_position." ".function_name
     call Refactor(command)
 endfunction
 
@@ -99,6 +99,6 @@ function! s:FSharpAddArgument(args)
     endif
 
     let position = line(".").":".col(".")
-    let command = "mono /mnt/media/bookmarks/p/CommandLine.exe add-argument ".position." ".argument_name." ".default_value
+    let command = "mono /mnt/media/bookmarks/p/FSharpRefactor.exe add-argument ".position." ".argument_name." ".default_value
     call Refactor(command)
 endfunction
