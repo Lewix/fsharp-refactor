@@ -35,7 +35,7 @@ let AddArgumentToBinding source (tree : Ast.AstNode) (bindingRange : range) (arg
                                      SynPat.LongIdent(functionName,_,_,_,_,_),_,_,_,_) -> functionName.Range.EndRange
                 | SynBinding.Binding(_,_,_,_,_,_,_,
                                      SynPat.Named(_,valueName,_,_,_),_,_,_,_) -> valueName.idRange.EndRange
-                | b -> raise (new Exception("Binding did not have the right form:" + (sprintf "%A" b)))
+                | b -> raise (RefactoringFailure("Binding did not have the right form:" + (sprintf "%A" b)))
         yield (identEndRange, " " + argumentName)
     }
 
@@ -67,13 +67,13 @@ let findFunctionName source (tree : Ast.AstNode) (bindingRange : range) =
         | SynBinding.Binding(_,_,_,_,_,_,_,p,_,_,_,_) ->
             match Ast.AstNode.Pattern p with
                 | DeclaredIdent(i,r) -> i
-                | _ -> raise (new Exception("Binding was not a function"))
+                | _ -> raise (RefactoringFailure("Binding was not a function"))
 
 
 let CanAddArgument source (tree : Ast.AstNode) (bindingRange : range) (argumentName : string) (defaultValue : string) =
     try findFunctionName source tree bindingRange |> ignore; Valid with
         | :? KeyNotFoundException -> Invalid("No binding found at the given range")
-        | e -> Invalid(e.Message)
+        | RefactoringFailure(m) -> Invalid(m)
 
 //TODO: Check arguments such as argumentName or defaultValue have a valid form
 let AddTempArgument source (tree : Ast.AstNode) (bindingRange : range) (argumentName : string) (defaultValue : string) =
