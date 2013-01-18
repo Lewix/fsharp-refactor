@@ -29,9 +29,9 @@ libs/FSharp.Refactor.Tests.dll: libs/FSharp.Refactor.dll $(TESTS)
 bin/FSharpRefactor.exe: libs/Options.dll libs/FSharp.Refactor.dll src/CommandLine.fs
 	fsharpc $(OPTS) $(REFS) --target:exe -o:bin/FSharpRefactor.exe -r:libs/FSharp.Refactor.dll src/CommandLine.fs
 
-run-tests: libs/FSharp.Refactor.Tests.dll bin/FSharpRefactor.exe command-line-tests.sh
+run-tests: libs/FSharp.Refactor.Tests.dll bin/FSharpRefactor.exe tests/command-line-tests.sh
 	mono /usr/lib/nunit/nunit-console.exe libs/FSharp.Refactor.Tests.dll
-	export MONO_PATH=libs; ./command-line-tests.sh
+	export MONO_PATH=libs; tests/command-line-tests.sh
 
 tags: 
 	ctags -e $(SOURCES) $(TESTS)
