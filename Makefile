@@ -1,6 +1,9 @@
-REFS=-r:/mnt/media/git/university/personalproj/fsharp-refactor/FSharp.Compiler.dll \
-	-r:/usr/lib/nunit/nunit.framework.dll
-OPTS=--target:library --nologo
+REFS=-r:libs/FSharp.Compiler.dll \
+	-r:/usr/lib/nunit/nunit.framework.dll \
+	-r:libs/Options.dll
+
+OPTS=--target:library --nologo --lib:libs
+
 SOURCES=src/Ast.fs \
 	src/CodeTransforms.fs \
 	src/CodeAnalysis.fs \
@@ -9,27 +12,26 @@ SOURCES=src/Ast.fs \
     src/Rename.fs \
 	src/ExtractFunction.fs \
 	src/AddArgument.fs
+
 TESTS=tests/EngineTests.fs \
       tests/RenameTests.fs \
       tests/ExtractFunctionTests.fs \
       tests/AddArgumentTests.fs
 
-all: FSharp.Refactor.dll FSharp.Refactor.Tests.dll
+all: libs/FSharp.Refactor.dll libs/FSharp.Refactor.Tests.dll bin/FSharpRefactor.exe
 
-FSharp.Refactor.dll: $(SOURCES)
-	fsharpc $(OPTS) -o:FSharp.Refactor.dll $(REFS) $(SOURCES)
+libs/FSharp.Refactor.dll: $(SOURCES)
+	fsharpc $(OPTS) -o:libs/FSharp.Refactor.dll $(REFS) $(SOURCES)
 
-FSharp.Refactor.Tests.dll: FSharp.Refactor.dll $(TESTS)
-	fsharpc $(OPTS) -o:FSharp.Refactor.Tests.dll -r:FSharp.Refactor.dll $(REFS) $(TESTS)
+libs/FSharp.Refactor.Tests.dll: libs/FSharp.Refactor.dll $(TESTS)
+	fsharpc $(OPTS) -o:libs/FSharp.Refactor.Tests.dll -r:libs/FSharp.Refactor.dll $(REFS) $(TESTS)
 
-CommandLine.exe: Mono.Options/Options.dll FSharp.Refactor.dll src/CommandLine.fs
-	fsharpc -o:FSharpRefactor.exe -r:Mono.Options/Options.dll -r:FSharp.Refactor.dll src/CommandLine.fs
+bin/FSharpRefactor.exe: libs/Options.dll libs/FSharp.Refactor.dll src/CommandLine.fs
+	fsharpc $(OPTS) $(REFS) --target:exe -o:bin/FSharpRefactor.exe -r:libs/FSharp.Refactor.dll src/CommandLine.fs
 
-run-tests: FSharp.Refactor.Tests.dll CommandLine.exe command-line-tests.sh
-	mono /usr/lib/nunit/nunit-console.exe -nologo FSharp.Refactor.Tests.dll
-	./command-line-tests.sh
+run-tests: libs/FSharp.Refactor.Tests.dll bin/FSharpRefactor.exe command-line-tests.sh
+	mono /usr/lib/nunit/nunit-console.exe libs/FSharp.Refactor.Tests.dll
+	export MONO_PATH=libs; ./command-line-tests.sh
 
 tags: 
 	ctags -e $(SOURCES) $(TESTS)
-
-cli: CommandLine.exe
