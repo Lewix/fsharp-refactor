@@ -113,9 +113,13 @@ module ScopeAnalysis =
     let mergeBindings (bindingTrees : ScopeTree list list) =
         let rec mergeDeclarations declarations =
             match declarations with
-                | [d] -> d
+                | [] -> Declaration([],[])
+                | [Declaration(_,_) as d] -> d
                 | Declaration(is1, ts1)::Declaration(is2, ts2)::ts ->
                     mergeDeclarations (Declaration(List.append is1 is2, List.append ts1 ts2)::ts)
+                | Usage(_,_)::ts -> mergeDeclarations ts
+                | (Declaration(_,_) as d)::Usage(_,_)::ts ->
+                    mergeDeclarations (d::ts)
 
         let mainDeclarations = List.map List.head bindingTrees
         let rest = List.concat (List.map List.tail bindingTrees)
