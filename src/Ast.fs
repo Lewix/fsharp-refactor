@@ -113,7 +113,6 @@ module Ast =
                 if Option.isSome we
                 then Some([AstNode.Pattern p; AstNode.Expression we.Value; AstNode.Expression e])
                 else Some([AstNode.Pattern p; AstNode.Expression e])
-            | _ -> raise (new NotImplementedException("Add a new entry to the active pattern for Children:" + (string node)))
 
     let (|Range|_|) (node : AstNode) =
         match node with
@@ -131,7 +130,6 @@ module Ast =
             | SimplePattern p ->
                 let SynSimplePat.Id(_,_,_,_,_,r) | SynSimplePat.Typed(_,_,r) | SynSimplePat.Attrib(_,_,r) = p
                 Some r
-            | _ -> raise (new NotImplementedException("Add a new entry to the active pattern for Range:" + (string node)))
 
     // Utility functions to avoid having to match patterns to get children or range
     let GetChildren (node : AstNode) =
