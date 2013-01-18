@@ -29,7 +29,7 @@ module Ast =
         let options source = checker.GetCheckOptionsFromScriptRoot(filename, source, DateTime.Now, [| |])
         checker.UntypedParse(filename, source, options source).ParseTree
         
-    let Parse filename source = MakeAstNode (getParseTree source)
+    let Parse source = MakeAstNode (getParseTree source)
 
     // Active patterns to make dealing with the syntax tree more convenient
     let (|ModuleOrNamespaceChildren|_|) (expression : SynModuleOrNamespace) =
