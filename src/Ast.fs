@@ -29,7 +29,7 @@ module Ast =
         let options source = checker.GetCheckOptionsFromScriptRoot(filename, source, DateTime.Now, [| |])
         checker.UntypedParse(filename, source, options source).ParseTree
         
-    let Parse source = MakeAstNode (getParseTree source)
+    let Parse filename source = MakeAstNode (getParseTree source)
 
     // Active patterns to make dealing with the syntax tree more convenient
     let (|ModuleOrNamespaceChildren|_|) (expression : SynModuleOrNamespace) =
@@ -48,6 +48,7 @@ module Ast =
             | File(ParsedImplFileInput(_,_,_,_,_,ns,_)) -> Some(List.map AstNode.ModuleOrNamespace ns)
             | Pattern(p) ->
                 match p with
+                    | SynPat.Or(p1,p2,_) -> Some [Pattern p1; Pattern p2]
                     | SynPat.Named(p2,_,_,_,_) -> Some [Pattern(p2)]
                     | SynPat.Wild(_) -> None
                     | SynPat.LongIdent(LongIdentWithDots(is,_),_,_,ps,_,_) -> Some(List.append (List.map AstNode.Ident is) (List.map AstNode.Pattern ps))
@@ -75,6 +76,8 @@ module Ast =
                     | SynModuleDecl.Let(_,bs,_) -> Some(List.map AstNode.Binding bs)
                     | SynModuleDecl.DoExpr(_,e,_) -> Some([AstNode.Expression e])
                     | SynModuleDecl.Open(_,_) -> None
+                    | SynModuleDecl.NestedModule(_,ds,_,_) -> Some(List.map AstNode.ModuleDeclaration ds)
+                    | SynModuleDecl.Types(_,_) -> None
                     | _ -> raise (new NotImplementedException("Add a new entry to pattern for ModuleDeclaration: " + (string m)))
             | Binding(b) ->
                 match b with
@@ -85,6 +88,8 @@ module Ast =
                     | SynExpr.YieldOrReturn(_,e,_)
                     | SynExpr.Paren(e,_,_,_)
                     | SynExpr.ArrayOrListOfSeqExpr(_,e,_)
+                    | SynExpr.New(_,_,e,_)
+                    | SynExpr.DotGet(e,_,_,_)
                     | SynExpr.CompExpr(_,_,e,_) -> Some([AstNode.Expression e])
                     | SynExpr.ArrayOrList(_,es,_)
                     | SynExpr.Tuple(es,_,_) -> Some(List.map AstNode.Expression es)
@@ -96,6 +101,7 @@ module Ast =
                     | SynExpr.ArbitraryAfterError(_,_) -> None
                     | SynExpr.LongIdent(_,LongIdentWithDots(is,_),_,__) -> Some (List.map AstNode.Ident is)
                     | SynExpr.Lambda(_,_,p,e,_) -> Some([AstNode.Expression e;AstNode.SimplePatterns p])
+                    | SynExpr.Sequential(_,_,e1,e2,_)
                     | SynExpr.IfThenElse(e1,e2,None,_,_,_,_) -> Some([AstNode.Expression e1; AstNode.Expression e2])
                     | SynExpr.IfThenElse(e1,e2,Some(e3),_,_,_,_) -> Some([AstNode.Expression e1; AstNode
 .Expression e2; AstNode.Expression e3])
@@ -119,6 +125,12 @@ module Ast =
             | Expression e -> Some(e.Range)
             | Ident i -> Some(i.idRange)
             | MatchClause c -> Some(c.Range)
+            | SimplePatterns ps ->
+                let SynSimplePats.SimplePats(_,r) | SynSimplePats.Typed(_,_,r) = ps
+                Some r
+            | SimplePattern p ->
+                let SynSimplePat.Id(_,_,_,_,_,r) | SynSimplePat.Typed(_,_,r) | SynSimplePat.Attrib(_,_,r) = p
+                Some r
             | _ -> raise (new NotImplementedException("Add a new entry to the active pattern for Range:" + (string node)))
 
     // Utility functions to avoid having to match patterns to get children or range
