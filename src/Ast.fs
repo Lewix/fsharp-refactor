@@ -17,6 +17,9 @@ module Ast =
         | File of ParsedImplFileInput
         | Ident of Ident
         | MatchClause of SynMatchClause
+        | TypeDefinition of SynTypeDefn
+        | TypeDefinitionRepresentation of SynTypeDefnRepr
+        | MemberDefinition of SynMemberDefn
 
     let MakeAstNode (tree : ParsedInput option) =
         match tree with
@@ -77,7 +80,7 @@ module Ast =
                     | SynModuleDecl.DoExpr(_,e,_) -> Some([AstNode.Expression e])
                     | SynModuleDecl.Open(_,_) -> None
                     | SynModuleDecl.NestedModule(_,ds,_,_) -> Some(List.map AstNode.ModuleDeclaration ds)
-                    | SynModuleDecl.Types(_,_) -> None
+                    | SynModuleDecl.Types(ts,_) -> Some(List.map AstNode.TypeDefinition ts)
                     | _ -> raise (new NotImplementedException("Add a new entry to pattern for ModuleDeclaration: " + (string m)))
             | Binding(b) ->
                 match b with
@@ -113,7 +116,18 @@ module Ast =
                 if Option.isSome we
                 then Some([AstNode.Pattern p; AstNode.Expression we.Value; AstNode.Expression e])
                 else Some([AstNode.Pattern p; AstNode.Expression e])
-
+            //TODO: Update makeScopeTrees to know about types
+            | TypeDefinition(SynTypeDefn.TypeDefn(_,r,ms,_)) ->
+                Some((AstNode.TypeDefinitionRepresentation r)::(List.map AstNode.MemberDefinition ms))
+            | TypeDefinitionRepresentation(r) ->
+                match r with
+                    | SynTypeDefnRepr.ObjectModel(_,ms,_) -> Some (List.map AstNode.MemberDefinition ms)
+                    | SynTypeDefnRepr.Simple(_,_) -> None
+            | MemberDefinition(m) ->
+                match m with
+                    | SynMemberDefn.Member(b,_) -> Some [AstNode.Binding b]
+                    | SynMemberDefn.LetBindings(bs,_,_,_) -> Some(List.map AstNode.Binding bs)
+                    | d -> raise (new NotImplementedException("Add a new entry to pattern for MemberDefinition: " + (string d)))
     let (|Range|_|) (node : AstNode) =
         match node with
             | File _ -> None
@@ -130,6 +144,9 @@ module Ast =
             | SimplePattern p ->
                 let SynSimplePat.Id(_,_,_,_,_,r) | SynSimplePat.Typed(_,_,r) | SynSimplePat.Attrib(_,_,r) = p
                 Some r
+            | TypeDefinition d -> Some(d.Range)
+            | TypeDefinitionRepresentation r -> Some(r.Range)
+            | MemberDefinition m -> Some(m.Range)
 
     // Utility functions to avoid having to match patterns to get children or range
     let GetChildren (node : AstNode) =
