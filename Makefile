@@ -16,15 +16,19 @@ SOURCES=src/Ast.fs \
 TESTS=tests/EngineTests.fs \
       tests/RenameTests.fs \
       tests/ExtractFunctionTests.fs \
-      tests/AddArgumentTests.fs
+      tests/AddArgumentTests.fs \
+      tests/EvaluatorTests.fs
 
-all: libs/FSharp.Refactor.dll libs/FSharp.Refactor.Tests.dll bin/FSharpRefactor.exe
+all: libs/FSharp.Refactor.dll libs/FSharp.Refactor.Tests.dll bin/FSharpRefactor.exe libs/FSharp.Refactor.Evaluator.dll
+
+libs/FSharp.Refactor.Evaluator.dll: src/evaluator/BehaviourChecker.fs
+	fsharpc $(OPTS) -o:libs/FSharp.Refactor.Evaluator.dll $(REFS) src/evaluator/BehaviourChecker.fs
 
 libs/FSharp.Refactor.dll: $(SOURCES)
 	fsharpc $(OPTS) -o:libs/FSharp.Refactor.dll $(REFS) $(SOURCES)
 
 libs/FSharp.Refactor.Tests.dll: libs/FSharp.Refactor.dll $(TESTS)
-	fsharpc $(OPTS) -o:libs/FSharp.Refactor.Tests.dll -r:libs/FSharp.Refactor.dll $(REFS) $(TESTS)
+	fsharpc $(OPTS) -o:libs/FSharp.Refactor.Tests.dll -r:libs/FSharp.Refactor.dll -r:libs/FSharp.Refactor.Evaluator.dll $(REFS) $(TESTS)
 
 bin/FSharpRefactor.exe: libs/Options.dll libs/FSharp.Refactor.dll src/CommandLine.fs
 	fsharpc $(OPTS) $(REFS) --target:exe -o:bin/FSharpRefactor.exe -r:libs/FSharp.Refactor.dll src/CommandLine.fs
