@@ -88,6 +88,7 @@ module Ast =
 
             | Expression(e) ->
                 match e with
+                    | SynExpr.Typed(e,_,_)
                     | SynExpr.YieldOrReturn(_,e,_)
                     | SynExpr.Paren(e,_,_,_)
                     | SynExpr.ArrayOrListOfSeqExpr(_,e,_)
@@ -98,6 +99,7 @@ module Ast =
                     | SynExpr.Tuple(es,_,_) -> Some(List.map AstNode.Expression es)
                     | SynExpr.LetOrUse(_,_,bs,e,_) ->  Some(List.append (List.map AstNode.Binding bs) [AstNode.Expression e])
                     | SynExpr.Match(_,e,cs,_,_) -> Some((AstNode.Expression e)::(List.map AstNode.MatchClause cs))
+                    | SynExpr.Null(_) -> None
                     | SynExpr.Const(_,_) -> None
                     | SynExpr.Ident _ -> None
                     | SynExpr.App(_,_,e1,e2,_) -> Some([AstNode.Expression e1;AstNode.Expression e2])
