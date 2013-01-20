@@ -28,7 +28,7 @@ libs/FSharp.Refactor.Evaluator.dll: src/evaluator/BehaviourChecker.fs
 libs/FSharp.Refactor.dll: $(SOURCES)
 	fsharpc $(OPTS) -o:libs/FSharp.Refactor.dll $(REFS) $(SOURCES)
 
-libs/FSharp.Refactor.Tests.dll: libs/FSharp.Refactor.dll $(TESTS)
+libs/FSharp.Refactor.Tests.dll: libs/FSharp.Refactor.Evaluator.dll libs/FSharp.Refactor.dll $(TESTS)
 	fsharpc $(OPTS) -o:libs/FSharp.Refactor.Tests.dll -r:libs/FSharp.Refactor.dll -r:libs/FSharp.Refactor.Evaluator.dll $(REFS) $(TESTS)
 
 bin/FSharpRefactor.exe: libs/Options.dll libs/FSharp.Refactor.dll src/CommandLine.fs
