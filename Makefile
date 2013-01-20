@@ -1,6 +1,7 @@
 REFS=-r:libs/FSharp.Compiler.dll \
 	-r:/usr/lib/nunit/nunit.framework.dll \
-	-r:libs/Options.dll
+	-r:libs/Options.dll \
+	-r:libs/FSharp.Compiler.CodeDom.dll
 
 OPTS=--target:library --nologo --lib:libs
 
