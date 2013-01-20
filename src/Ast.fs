@@ -89,6 +89,7 @@ module Ast =
             | Expression(e) ->
                 match e with
                     | SynExpr.Typed(e,_,_)
+                    | SynExpr.Downcast(e,_,_)
                     | SynExpr.YieldOrReturn(_,e,_)
                     | SynExpr.Paren(e,_,_,_)
                     | SynExpr.ArrayOrListOfSeqExpr(_,e,_)
