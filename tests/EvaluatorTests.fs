@@ -18,4 +18,12 @@ type BehaviourCheckerModule() =
 
     [<Test>]
     member this.``Can conjecture out that behaviour is unchanged when both programs are valid``() =
-        Assert.IsFalse(hasChanged "let f (a:int) = a" "let f (a:int) = a")
+        Assert.IsFalse(hasChanged "let f (a:int) = a" "let f (a:int) = 0 + 5*a - a*4")
+
+    [<Test>]
+    member this.``Can figure out that behaviour is unchanged when neither program is valid``() =
+        Assert.IsFalse(hasChanged "let f (a:int) = 1+\"a\"" "let f (a:int) = 1.0 + 1")
+
+    [<Test>]
+    member this.``Can figure out that behaviour has changed if only one program is valid``() =
+        Assert.IsTrue(hasChanged "let f (a:int) = 1 + 1" "let f (a:int) = 1 + 1.0")
