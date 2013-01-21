@@ -275,7 +275,10 @@ module RangeAnalysis =
             | _ -> raise (new KeyNotFoundException("Couldn't find an identifier declaration at that range"))
 
     let FindIdentifier source (position : pos) =
-        let containsPos (name,range) = rangeContainsPos range position
+        let containsPos (name,range) =
+            // Identifiers' ranges extend past the end of the text
+            // so avoid range.End for cases like b in a+b
+            rangeContainsPos range position && range.End <> position
 
         (Ast.Parse source).Value
         |> ScopeAnalysis.makeScopeTrees
