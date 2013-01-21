@@ -7,14 +7,13 @@ open System.CodeDom.Compiler
 open Microsoft.FSharp.Compiler.CodeDom
 
 // Get beforeSource:
-// let f a = a in f arg
+// let f (a:int) = a in f arg
 //
 // Add some stuff around it:
 //
-// module beforeModule
+// module Evaluator
 //
-// let before arg =
-//     let f a = a in f arg
+// let f (a:int) = a in f arg
 
 let defaultModule = "Evaluator"
 
