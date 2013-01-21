@@ -5,7 +5,7 @@ open FSharpRefactor.Evaluator.BehaviourChecker
 
 [<TestFixture>]
 type BehaviourCheckerModule() =
-    let hasChanged source1 source2 = BehaviourHasChanged "arg" source1 source2
+    let hasChanged source1 source2 = BehaviourHasChanged "f" source1 source2
 
     [<Test>]
     member this.``Can compile some source code without errors``() =
@@ -14,4 +14,8 @@ type BehaviourCheckerModule() =
 
     [<Test>]
     member this.``Can figure out that behaviour is different when both programs are valid``() =
-        Assert.IsFalse(hasChanged "let f a = a" "let f a = arg")
+        Assert.IsTrue(hasChanged "let f (a:int) = a" "let f (a:int) = 1")
+
+    [<Test>]
+    member this.``Can conjecture out that behaviour is unchanged when both programs are valid``() =
+        Assert.IsFalse(hasChanged "let f (a:int) = a" "let f (a:int) = a")

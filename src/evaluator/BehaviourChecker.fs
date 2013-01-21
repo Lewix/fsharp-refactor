@@ -21,7 +21,10 @@ let defaultModule = "Evaluator"
 let loadFunction assemblyPath moduleName methodName : (int -> int) =
     let assembly = Assembly.LoadFrom(assemblyPath)
     let methodClosure arg =
-        assembly.GetModule(assemblyPath).GetType(moduleName).GetMethod(methodName).Invoke(null,[|arg|]) :?> int
+        assembly.GetModule(Path.GetFileName(assemblyPath))
+                .GetType(moduleName)
+                .GetMethod(methodName)
+                .Invoke(null,[|arg|]) :?> int
     methodClosure
 
 let padSource (source : string) =
