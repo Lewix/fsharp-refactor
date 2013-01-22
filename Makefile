@@ -20,6 +20,8 @@ TESTS=tests/EngineTests.fs \
       tests/AddArgumentTests.fs \
       tests/EvaluatorTests.fs
 
+INTEGRATION_TESTS=tests/integration_tests/CompilerTests.fs
+
 all: libs/FSharp.Refactor.dll libs/FSharp.Refactor.Tests.dll bin/FSharpRefactor.exe libs/FSharp.Refactor.Evaluator.dll
 
 libs/FSharp.Refactor.Evaluator.dll: src/evaluator/BehaviourChecker.fs
@@ -31,11 +33,17 @@ libs/FSharp.Refactor.dll: $(SOURCES)
 libs/FSharp.Refactor.Tests.dll: libs/FSharp.Refactor.Evaluator.dll libs/FSharp.Refactor.dll $(TESTS)
 	fsharpc $(OPTS) -o:libs/FSharp.Refactor.Tests.dll -r:libs/FSharp.Refactor.dll -r:libs/FSharp.Refactor.Evaluator.dll $(REFS) $(TESTS)
 
+libs/FSharp.Refactor.IntegrationTests.dll: libs/FSharp.Refactor.Evaluator.dll
+	fsharpc $(OPTS) -o:libs/FSharp.Refactor.IntegrationTests.dll -r:libs/FSharp.Refactor.Evaluator.dll $(REFS) $(INTEGRATION_TESTS)
+
 bin/FSharpRefactor.exe: libs/Options.dll libs/FSharp.Refactor.dll src/CommandLine.fs
 	fsharpc $(OPTS) $(REFS) --target:exe -o:bin/FSharpRefactor.exe -r:libs/FSharp.Refactor.dll src/CommandLine.fs
 
-run-tests: libs/FSharp.Refactor.Tests.dll bin/FSharpRefactor.exe tests/command-line-tests.sh
+unit-tests: libs/FSharp.Refactor.Tests.dll
 	mono /usr/lib/nunit/nunit-console.exe -noresult libs/FSharp.Refactor.Tests.dll
+
+tests: libs/FSharp.Refactor.Tests.dll libs/FSharp.Refactor.IntegrationTests.dll bin/FSharpRefactor.exe tests/command-line-tests.sh
+	mono /usr/lib/nunit/nunit-console.exe -noresult libs/FSharp.Refactor.Tests.dll libs/FSharp.Refactor.IntegrationTests.dll
 	export MONO_PATH=libs; tests/command-line-tests.sh
 
 tags: 

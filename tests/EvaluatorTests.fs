@@ -22,13 +22,13 @@ type BehaviourCheckerModule() =
 
     [<Test>]
     member this.``Can figure out that behaviour is different when both programs are valid``() =
-        Assert.IsTrue(hasChanged (noErrors, "../tests/compilerTests/success1.dll")
-                                 (noErrors, "../tests/compilerTests/success2.dll"))
+        Assert.IsTrue(hasChanged (noErrors, "../tests/compiler_tests/success1.dll")
+                                 (noErrors, "../tests/compiler_tests/success2.dll"))
 
     [<Test>]
     member this.``Can conjecture out that behaviour is unchanged when both programs are valid``() =
-        Assert.IsFalse(hasChanged (noErrors, "../tests/compilerTests/success1.dll")
-                                 (noErrors, "../tests/compilerTests/success1b.dll"))
+        Assert.IsFalse(hasChanged (noErrors, "../tests/compiler_tests/success1.dll")
+                                 (noErrors, "../tests/compiler_tests/success1b.dll"))
 
     [<Test>]
     member this.``Can figure out that behaviour is unchanged when neither program is valid``() =
@@ -36,4 +36,4 @@ type BehaviourCheckerModule() =
 
     [<Test>]
     member this.``Can figure out that behaviour has changed if only one program is valid``() =
-        Assert.IsTrue(hasChanged (noErrors, "../mnt/media/git/university/personalproj/fsharp-refactor/tests/compilerTests/success1.dll") (errors, ""))
+        Assert.IsTrue(hasChanged (noErrors, "../mnt/media/git/university/personalproj/fsharp-refactor/tests/compiler_tests/success1.dll") (errors, ""))
