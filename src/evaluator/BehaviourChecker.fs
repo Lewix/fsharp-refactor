@@ -17,6 +17,17 @@ open Microsoft.FSharp.Compiler.CodeDom
 
 let defaultModule = "Evaluator"
 
+let padSource (source : string) =
+    "module " + defaultModule + "\n\n" + source
+
+let compile source =
+    let codeProvider = new FSharpCodeProvider()
+    let path = Path.GetTempFileName() + ".dll"
+
+    let parameters = new CompilerParameters()
+    parameters.OutputAssembly <- path
+    codeProvider.CompileAssemblyFromSource(parameters, padSource source), path
+
 let loadFunction assemblyPath moduleName methodName : (int -> int) =
     let assembly = Assembly.LoadFrom(assemblyPath)
     let methodClosure arg =
@@ -25,9 +36,6 @@ let loadFunction assemblyPath moduleName methodName : (int -> int) =
                 .GetMethod(methodName)
                 .Invoke(null,[|arg|]) :?> int
     methodClosure
-
-let padSource (source : string) =
-    "module " + defaultModule + "\n\n" + source
 
 let functionBehaviourHasChanged before after =
     Seq.init 100000 (fun i -> i)
@@ -39,19 +47,11 @@ let assemblyBehaviourHasChanged entryFunction beforePath afterPath =
     let after = loadFunction afterPath defaultModule entryFunction
     functionBehaviourHasChanged before after
 
-let compile source =
-    let codeProvider = new FSharpCodeProvider()
-    let path = Path.GetTempFileName() + ".dll"
-
-    let parameters = new CompilerParameters()
-    parameters.OutputAssembly <- path
-    path, codeProvider.CompileAssemblyFromSource(parameters, padSource source)
-
-let BehaviourHasChanged entryFunction (beforeSource : string) (afterSource : string) =
-    let beforeAssembly, results1 = compile beforeSource
-    let afterAssembly, results2 = compile afterSource
-
-    match results1.Errors.HasErrors, results2.Errors.HasErrors with
+let resultsBehaviourHasChanged entryFunction (afterResults : CompilerResults, afterAssembly) (beforeResults : CompilerResults, beforeAssembly) =
+    match afterResults.Errors.HasErrors, beforeResults.Errors.HasErrors with
         | true, true -> false
         | false, false -> assemblyBehaviourHasChanged entryFunction beforeAssembly afterAssembly
         | _ -> true
+
+let BehaviourHasChanged entryFunction (beforeSource : string) (afterSource : string) =
+    resultsBehaviourHasChanged entryFunction (compile afterSource) (compile beforeSource)
