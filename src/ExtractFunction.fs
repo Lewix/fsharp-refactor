@@ -48,8 +48,12 @@ let CanExtractFunction source (tree : Ast.AstNode) (inScopeTree : Ast.AstNode) (
     let expressionRangeIsValid =
         if Option.isSome (TryFindExpressionAtRange expressionRange tree) then Valid
         else Invalid("No expression found at the given range") 
-
-    List.reduce CombineValidity [expressionRangeIsValid; expressionRangeIsInInScopeTree]
+    let expressionIsInfix =
+        match TryFindExpressionAtRange expressionRange tree with
+            | Some(Ast.AstNode.Expression(SynExpr.App(_,true,_,_,_))) -> Invalid("The expression is a partial application of an infix function")
+            | _ -> Valid
+    List.reduce CombineValidity
+                [expressionRangeIsValid; expressionRangeIsInInScopeTree; expressionIsInfix]
 
 let ExtractTempFunction source (tree : Ast.AstNode) (inScopeTree : Ast.AstNode) (expressionRange : range) (functionName : string) =
     let valid = CanExtractFunction source tree inScopeTree expressionRange functionName

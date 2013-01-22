@@ -39,6 +39,19 @@ type ExtractFunctionAnalysisModule() =
                         sprintf "Extract function validity was incorrect: %A" valid)
 
     [<Test>]
+    member this.``Cannot extract an expression which is an application of an infix expression``() =
+        let source = "1+2+3"
+        let tree = (Ast.Parse source).Value
+        let inScopeTree =
+            List.head (FindNodesWithRange (mkRange "test.fs" (mkPos 1 0) (mkPos 1 5)) tree)
+        let expressionRange = mkRange "test.fs" (mkPos 1 0) (mkPos 1 4)
+        let valid = CanExtractFunction source tree inScopeTree expressionRange "f"
+
+        Assert.AreEqual(Invalid("The expression is a partial application of an infix function"),
+                        valid,
+                        sprintf "Extract function validity was incorrect: %A" valid)
+
+    [<Test>]
     member this.``Cannot extract a function with a taken name``() =
         let source = "let f a = 1 in (f 1)+(1+2)"
         let tree = (Ast.Parse source).Value
