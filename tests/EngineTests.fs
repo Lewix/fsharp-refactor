@@ -34,6 +34,12 @@ type AstModule() =
 [<TestFixture>]
 type CodeTransformsModule() =
     [<Test>]
+    member this.``Can indent a string``() =
+        Assert.AreEqual("    hello", CodeTransforms.Indent "hello")
+        Assert.AreEqual("    \n    ", CodeTransforms.Indent "\n")
+        Assert.AreEqual("    line one\n    line two\n    ", CodeTransforms.Indent "line one\nline two\n")
+
+    [<Test>]
     member this.``Can change the text corresponding to an ast node``() =
         let source = "let a = 1\n\n"
         let tree = (Ast.Parse source).Value

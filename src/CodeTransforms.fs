@@ -3,6 +3,7 @@ namespace FSharpRefactor.Engine.CodeTransforms
 open System
 open Microsoft.FSharp.Compiler.Range
 open FSharpRefactor.Engine.Ast
+open FSharpRefactor.Engine.CodeAnalysis.RangeAnalysis
 
 module CodeTransforms =
     exception InvalidRange
@@ -23,6 +24,12 @@ module CodeTransforms =
         let before,after = takeAroundPosSeq "" source (line, column)
         makeString before, makeString after
 
+    let Indent (body : string) =
+        let indentString = "    "
+        let indentLine body line =
+            let before, after = takeAroundPos body (line, 0)
+            before + indentString + after
+        List.fold indentLine body [1..(CountLines body)]
 
     let replaceRange (source : string) (range : range, replacementText : string) =
         let before, _ = takeAroundPos source (range.StartLine, range.StartColumn)

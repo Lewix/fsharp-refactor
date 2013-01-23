@@ -129,12 +129,6 @@ type CreateFunctionModule() =
         Assert.AreEqual(expected, CreateFunction "f" ["a";"b"] "a+b" false)
 
     [<Test>]
-    member this.``Can indent a string``() =
-        Assert.AreEqual("    hello", indent "hello")
-        Assert.AreEqual("    \n    ", indent "\n")
-        Assert.AreEqual("    line one\n    line two\n    ", indent "line one\nline two\n")
-
-    [<Test>]
     member this.``Can add a function with multiple lines in its body to an expression``() =
         let expected = "let f a b =\n    match a,b with\n        | (a,b) -> 1\n"
         Assert.AreEqual(expected, CreateFunction "f" ["a";"b"] "match a,b with\n    | (a,b) -> 1" false)

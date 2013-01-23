@@ -6,8 +6,8 @@ REFS=-r:libs/FSharp.Compiler.dll \
 OPTS=--target:library --nologo --lib:libs
 
 SOURCES=src/Ast.fs \
-	src/CodeTransforms.fs \
 	src/CodeAnalysis.fs \
+	src/CodeTransforms.fs \
 	src/RefactoringWorkflow.fs \
 	src/CodeTemplates.fs \
     src/Rename.fs \

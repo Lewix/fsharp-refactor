@@ -225,6 +225,9 @@ module RangeAnalysis =
             | Ast.Children cs -> tree::(List.concat (Seq.map ListNodes cs))
             | _ -> [tree]
             
+    let CountLines body =
+        1+(String.length (String.collect (fun c -> if c = '\n' then "\n" else "") body))
+
     let rec FindNodesWithRange range (tree : Ast.AstNode) =
         let allNodes = ListNodes tree
         let hasRange node =
