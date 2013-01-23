@@ -92,7 +92,7 @@ function! s:FSharpAddArgument(args)
         let argument_name = input("Argument name:")
         let default_value = input("Default value:")
     elseif nargs == 1
-        let argument_name = args
+        let argument_name = args[0]
         let default_value = input("Default value:")
     elseif nargs == 2
         let argument_name = args[0]
