@@ -24,23 +24,19 @@ let DefaultInScopeTree (tree : Ast.AstNode) (expressionRange : range) =
             | SynBinding.Binding(_,_,_,_,_,_,_,_,_,expression,_,_) -> Some(expression)
     else outermostExpression
 
-let CreateFunction (functionName : string) (arguments : string list) (body : string) (isRecursive : bool) =
-    let lines = CountLines body
-    RunRefactoring (refactoring (FunctionDefinition.Template lines) Valid {
-        if isRecursive then
-            yield (FunctionDefinition.RecRange lines, FunctionDefinition.RecTemplate lines)
-
-        yield (FunctionDefinition.NameRange lines, functionName)
+let CreateFunction (functionName : string) (arguments : string list) (body : string) (isMultiLine : bool) =
+    RunRefactoring (refactoring (FunctionDefinition.Template isMultiLine) Valid {
+        yield (FunctionDefinition.NameRange isMultiLine, functionName)
         
         if List.isEmpty arguments then
-            yield (FunctionDefinition.ParameterRange lines, "")
+            yield (FunctionDefinition.ParameterRange isMultiLine, "")
         else
-            yield (FunctionDefinition.ParameterRange lines, " " + (String.concat " " arguments))
+            yield (FunctionDefinition.ParameterRange isMultiLine, " " + (String.concat " " arguments))
 
-        if lines = 1 then
-            yield (FunctionDefinition.BodyRange lines, stripBrackets body)
+        if isMultiLine then
+            yield (FunctionDefinition.BodyRange isMultiLine, CodeTransforms.Indent (stripBrackets body) "    ")
         else
-            yield (FunctionDefinition.BodyRange lines, CodeTransforms.Indent (stripBrackets body))
+            yield (FunctionDefinition.BodyRange isMultiLine, stripBrackets body)
     })
     
 let CallFunction (functionName : string) (arguments : string list) =
@@ -74,7 +70,21 @@ let ExtractTempFunction source (tree : Ast.AstNode) (inScopeTree : Ast.AstNode) 
             GetFreeIdentifiers (makeScopeTrees inScopeTree) DefaultDeclared
             |> Set.difference (GetFreeIdentifiers (makeScopeTrees bodyExpression.Value) DefaultDeclared)
             |> Set.toList
-        yield ((Ast.GetRange inScopeTree).Value.StartRange, CreateFunction functionName arguments body false)
+
+        let inScopeRange = (Ast.GetRange inScopeTree).Value
+        if inScopeRange.EndLine = inScopeRange.StartLine then
+            let functionDefinition = CreateFunction functionName arguments body false
+            yield ((Ast.GetRange inScopeTree).Value.StartRange, functionDefinition)
+        else
+            let unindentedBody = 
+                (String.replicate (expressionRange.StartColumn) " ") + body
+                |> CodeTransforms.RemoveLeading ' '
+            let functionDefinition = CreateFunction functionName arguments unindentedBody true
+            let inScopeTreeStart = (Ast.GetRange inScopeTree).Value.StartRange
+            let startOfLine = mkRange "test.fs" (mkPos inScopeTreeStart.StartLine 0) inScopeTreeStart.End
+            let indentString = String.replicate inScopeTreeStart.StartColumn " "
+            yield (startOfLine, CodeTransforms.Indent functionDefinition indentString)
+
         yield (expressionRange, CallFunction functionName arguments)
     }
 

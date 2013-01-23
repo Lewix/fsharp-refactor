@@ -35,9 +35,16 @@ type AstModule() =
 type CodeTransformsModule() =
     [<Test>]
     member this.``Can indent a string``() =
-        Assert.AreEqual("    hello", CodeTransforms.Indent "hello")
-        Assert.AreEqual("    \n    ", CodeTransforms.Indent "\n")
-        Assert.AreEqual("    line one\n    line two\n    ", CodeTransforms.Indent "line one\nline two\n")
+        let indent body = CodeTransforms.Indent body "    "
+        Assert.AreEqual("    hello", indent "hello")
+        Assert.AreEqual("    \n    ", indent "\n")
+        Assert.AreEqual("    line one\n    line two\n    ", indent "line one\nline two\n")
+        Assert.AreEqual("aaaaahello", CodeTransforms.Indent "hello" "aaaaa")
+
+    [<Test>]
+    member this.``Can remove leading characters from lines if they all the same``() =
+        Assert.AreEqual(" Hello\nWorld", CodeTransforms.RemoveLeading ' ' "    Hello\n   World")
+        Assert.AreEqual("Hello\nWorld", CodeTransforms.RemoveLeading ' ' "Hello\nWorld")
 
     [<Test>]
     member this.``Can change the text corresponding to an ast node``() =

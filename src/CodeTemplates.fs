@@ -24,21 +24,21 @@ type MultilineFunctionDefinition =
     static member BodyRange = mkRange "test.fs" (mkPos 2 0) (mkPos 2 4)
 
 type FunctionDefinition =
-    static member Template lines =
-        if lines = 1 then SingleLineFunctionDefinition.Template
-        else MultilineFunctionDefinition.Template
-    static member RecRange lines =
-        if lines = 1 then SingleLineFunctionDefinition.RecRange
-        else MultilineFunctionDefinition.RecRange
-    static member RecTemplate lines =
-        if lines = 1 then SingleLineFunctionDefinition.RecTemplate
-        else MultilineFunctionDefinition.RecTemplate
-    static member NameRange lines =
-        if lines = 1 then SingleLineFunctionDefinition.NameRange
-        else MultilineFunctionDefinition.NameRange
-    static member ParameterRange lines =
-        if lines = 1 then SingleLineFunctionDefinition.ParameterRange
-        else MultilineFunctionDefinition.ParameterRange
-    static member BodyRange lines =
-        if lines = 1 then SingleLineFunctionDefinition.BodyRange
-        else MultilineFunctionDefinition.BodyRange
+    static member Template isMultiLine =
+        if isMultiLine then MultilineFunctionDefinition.Template
+        else SingleLineFunctionDefinition.Template
+    static member RecRange isMultiLine =
+        if isMultiLine then MultilineFunctionDefinition.RecRange
+        else SingleLineFunctionDefinition.RecRange
+    static member RecTemplate isMultiLine =
+        if isMultiLine then MultilineFunctionDefinition.RecTemplate
+        else SingleLineFunctionDefinition.RecTemplate
+    static member NameRange isMultiLine =
+        if isMultiLine then MultilineFunctionDefinition.NameRange
+        else SingleLineFunctionDefinition.NameRange
+    static member ParameterRange isMultiLine =
+        if isMultiLine then MultilineFunctionDefinition.ParameterRange
+        else SingleLineFunctionDefinition.ParameterRange
+    static member BodyRange isMultiLine =
+        if isMultiLine then MultilineFunctionDefinition.BodyRange
+        else SingleLineFunctionDefinition.BodyRange

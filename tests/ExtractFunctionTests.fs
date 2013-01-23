@@ -120,6 +120,18 @@ type ExtractFunctionTransformModule() =
 
         Assert.AreEqual(expected, DoExtractFunction source tree letTree expressionRange "double")
         
+    [<Test>]
+    member this.``Can indent a multiline function definition before inserting it``() =
+        let source = "let f a =\n    match a with\n        | Some(x) -> x\n        | None -> 0"
+        let expected = "let f a =\n    let g =\n        match a with\n            | Some(x) -> x\n            | None -> 0\n    (g)"
+        let tree = (Ast.Parse source).Value
+        let matchTree =
+            List.head (FindNodesWithRange (mkRange "test.fs" (mkPos 2 4) (mkPos 4 19)) tree)
+        let expressionRange = mkRange "test.fs" (mkPos 2 4) (mkPos 4 19)
+        let result = DoExtractFunction source tree matchTree expressionRange "g"
+
+        Assert.AreEqual(expected, result,
+                        sprintf "The resulting string was: %s" result)
 
 [<TestFixture>]
 type CreateFunctionModule() =
@@ -131,4 +143,4 @@ type CreateFunctionModule() =
     [<Test>]
     member this.``Can add a function with multiple lines in its body to an expression``() =
         let expected = "let f a b =\n    match a,b with\n        | (a,b) -> 1\n"
-        Assert.AreEqual(expected, CreateFunction "f" ["a";"b"] "match a,b with\n    | (a,b) -> 1" false)
+        Assert.AreEqual(expected, CreateFunction "f" ["a";"b"] "match a,b with\n    | (a,b) -> 1" true)

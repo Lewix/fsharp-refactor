@@ -24,12 +24,22 @@ module CodeTransforms =
         let before,after = takeAroundPosSeq "" source (line, column)
         makeString before, makeString after
 
-    let Indent (body : string) =
-        let indentString = "    "
+    let Indent (body : string) indentString =
         let indentLine body line =
             let before, after = takeAroundPos body (line, 0)
             before + indentString + after
         List.fold indentLine body [1..(CountLines body)]
+
+    let rec RemoveLeading (character : char) (body : string) =
+        let removeFromLine body line =
+            if Option.isSome body then 
+                let before, after = takeAroundPos body.Value (line, 0)
+                if after.[0] = character then Some(before + after.[1..]) else None
+            else
+                None
+
+        let removedOne = List.fold removeFromLine (Some body) [1..(CountLines body)]
+        if Option.isSome removedOne then RemoveLeading character removedOne.Value else body
 
     let replaceRange (source : string) (range : range, replacementText : string) =
         let before, _ = takeAroundPos source (range.StartLine, range.StartColumn)
