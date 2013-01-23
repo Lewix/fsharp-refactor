@@ -16,6 +16,16 @@ let rec stripBrackets (body : string) =
     then stripBrackets (body.[1..(String.length body)-2])
     else body
 
+let countLines body =
+    1+(String.length (String.collect (fun c -> if c = '\n' then "\n" else "") body))
+
+let indent (body : string) =
+    let indentString = "    "
+    let indentLine body line =
+        let before, after = CodeTransforms.takeAroundPos body (line, 0)
+        before + indentString + after
+    List.fold indentLine body [1..(countLines body)]
+
 let DefaultInScopeTree (tree : Ast.AstNode) (expressionRange : range) =
     let outermostBinding = TryFindBindingAroundRange expressionRange tree
     let outermostExpression = TryFindExpressionAroundRange expressionRange tree
@@ -25,12 +35,22 @@ let DefaultInScopeTree (tree : Ast.AstNode) (expressionRange : range) =
     else outermostExpression
 
 let CreateFunction (functionName : string) (arguments : string list) (body : string) (isRecursive : bool) =
-    RunRefactoring (refactoring FunctionDefinition.Template Valid {
-        if isRecursive then yield (FunctionDefinition.RecRange, FunctionDefinition.RecTemplate)
-        yield (FunctionDefinition.NameRange, functionName)
-        if List.isEmpty arguments then yield (FunctionDefinition.ParameterRange, "")
-        else yield (FunctionDefinition.ParameterRange, " " + (String.concat " " arguments))
-        yield (FunctionDefinition.BodyRange, stripBrackets body)
+    let lines = countLines body
+    RunRefactoring (refactoring (FunctionDefinition.Template lines) Valid {
+        if isRecursive then
+            yield (FunctionDefinition.RecRange lines, FunctionDefinition.RecTemplate lines)
+
+        yield (FunctionDefinition.NameRange lines, functionName)
+        
+        if List.isEmpty arguments then
+            yield (FunctionDefinition.ParameterRange lines, "")
+        else
+            yield (FunctionDefinition.ParameterRange lines, " " + (String.concat " " arguments))
+
+        if lines = 1 then
+            yield (FunctionDefinition.BodyRange lines, stripBrackets body)
+        else
+            yield (FunctionDefinition.BodyRange lines, indent (stripBrackets body))
     })
     
 let CallFunction (functionName : string) (arguments : string list) =
@@ -64,7 +84,6 @@ let ExtractTempFunction source (tree : Ast.AstNode) (inScopeTree : Ast.AstNode) 
             GetFreeIdentifiers (makeScopeTrees inScopeTree) DefaultDeclared
             |> Set.difference (GetFreeIdentifiers (makeScopeTrees bodyExpression.Value) DefaultDeclared)
             |> Set.toList
-
         yield ((Ast.GetRange inScopeTree).Value.StartRange, CreateFunction functionName arguments body false)
         yield (expressionRange, CallFunction functionName arguments)
     }
