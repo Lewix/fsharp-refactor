@@ -19,7 +19,7 @@ type ExtractFunctionAnalysisModule() =
         let inScopeTree =
             List.head (FindNodesWithRange (mkRange "test.fs" (mkPos 1 0) (mkPos 1 11)) tree)
         let expressionRange = mkRange "test.fs" (mkPos 1 4) (mkPos 1 6)
-        let valid = CanExtractFunction source tree inScopeTree expressionRange "f"
+        let valid = CanExtractFunction tree inScopeTree expressionRange "f"
 
         Assert.AreEqual(Invalid("No expression found at the given range"),
                         valid,
@@ -32,7 +32,7 @@ type ExtractFunctionAnalysisModule() =
         let inScopeTree =
             List.head (FindNodesWithRange (mkRange "test.fs" (mkPos 1 0) (mkPos 1 5)) tree)
         let expressionRange = mkRange "test.fs" (mkPos 1 6) (mkPos 1 11)
-        let valid = CanExtractFunction source tree inScopeTree expressionRange "f"
+        let valid = CanExtractFunction tree inScopeTree expressionRange "f"
 
         Assert.AreEqual(Invalid("The expression is not contained within the specified scope"),
                         valid,
@@ -45,7 +45,7 @@ type ExtractFunctionAnalysisModule() =
         let inScopeTree =
             List.head (FindNodesWithRange (mkRange "test.fs" (mkPos 1 0) (mkPos 1 5)) tree)
         let expressionRange = mkRange "test.fs" (mkPos 1 0) (mkPos 1 4)
-        let valid = CanExtractFunction source tree inScopeTree expressionRange "f"
+        let valid = CanExtractFunction tree inScopeTree expressionRange "f"
 
         Assert.AreEqual(Invalid("The expression is a partial application of an infix function"),
                         valid,
@@ -71,9 +71,9 @@ type ExtractFunctionAnalysisModule() =
         let expected2 = "let x = 5*a + b"
 
         Assert.AreEqual(expected1,
-                        CodeTransforms.TextOfRange source1 (Ast.GetRange (Ast.AstNode.Expression (DefaultInScopeTree source1 (Ast.Parse source1).Value expressionRange1).Value)).Value)
+                        CodeTransforms.TextOfRange source1 (Ast.GetRange (Ast.AstNode.Expression (DefaultInScopeTree (Ast.Parse source1).Value expressionRange1).Value)).Value)
         Assert.AreEqual(expected2,
-                        CodeTransforms.TextOfRange source2 (Ast.GetRange (Ast.AstNode.Expression (DefaultInScopeTree source2 (Ast.Parse source2).Value expressionRange2).Value)).Value)
+                        CodeTransforms.TextOfRange source2 (Ast.GetRange (Ast.AstNode.Expression (DefaultInScopeTree (Ast.Parse source2).Value expressionRange2).Value)).Value)
 
     [<Test>]
     member this.``Can find a default inScopeTree if there are no bindings in the source``() =
@@ -82,7 +82,7 @@ type ExtractFunctionAnalysisModule() =
         let expressionRange = mkRange "test.fs" (mkPos 1 0) (mkPos 1 5)
 
         Assert.AreEqual(source,
-                        CodeTransforms.TextOfRange source (Ast.GetRange (Ast.AstNode.Expression (DefaultInScopeTree source tree expressionRange).Value)).Value)
+                        CodeTransforms.TextOfRange source (Ast.GetRange (Ast.AstNode.Expression (DefaultInScopeTree tree expressionRange).Value)).Value)
 
 [<TestFixture>]
 type ExtractFunctionTransformModule() =
@@ -131,4 +131,4 @@ type CreateFunctionModule() =
         let oneRange = mkRange "test.fs" (mkPos 1 8) (mkPos 1 9)
         let expression = (TryFindExpressionAtRange oneRange tree).Value
 
-        Assert.AreEqual(expected, CreateFunction source expression "f" ["a";"b"] "a+b" false)
+        Assert.AreEqual(expected, CreateFunction expression "f" ["a";"b"] "a+b" false)

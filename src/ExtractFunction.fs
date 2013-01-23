@@ -16,7 +16,7 @@ let rec stripBrackets (body : string) =
     then stripBrackets (body.[1..(String.length body)-2])
     else body
 
-let DefaultInScopeTree source (tree : Ast.AstNode) (expressionRange : range) =
+let DefaultInScopeTree (tree : Ast.AstNode) (expressionRange : range) =
     let outermostBinding = TryFindBindingAroundRange expressionRange tree
     let outermostExpression = TryFindExpressionAroundRange expressionRange tree
     if Option.isSome outermostBinding then
@@ -24,7 +24,7 @@ let DefaultInScopeTree source (tree : Ast.AstNode) (expressionRange : range) =
             | SynBinding.Binding(_,_,_,_,_,_,_,_,_,expression,_,_) -> Some(expression)
     else outermostExpression
 
-let CreateFunction source (inScopeTree : Ast.AstNode) (functionName : string) (arguments : string list) (body : string) (isRecursive : bool) =
+let CreateFunction (inScopeTree : Ast.AstNode) (functionName : string) (arguments : string list) (body : string) (isRecursive : bool) =
     RunRefactoring (refactoring FunctionDefinition.Template Valid {
         if isRecursive then yield (FunctionDefinition.RecRange, FunctionDefinition.RecTemplate)
         yield (FunctionDefinition.NameRange, functionName)
@@ -33,7 +33,7 @@ let CreateFunction source (inScopeTree : Ast.AstNode) (functionName : string) (a
         yield (FunctionDefinition.BodyRange, stripBrackets body)
     })
     
-let CallFunction source (functionName : string) (arguments : string list) =
+let CallFunction (functionName : string) (arguments : string list) =
     //TODO: don't always put brackets around function body
     RunRefactoring (refactoring FunctionCall.Template Valid {
         yield (FunctionCall.NameRange, functionName)
@@ -41,7 +41,7 @@ let CallFunction source (functionName : string) (arguments : string list) =
         else yield (FunctionCall.ParameterRange, " " + (String.concat " " arguments))
     })
 
-let CanExtractFunction source (tree : Ast.AstNode) (inScopeTree : Ast.AstNode) (expressionRange : range) (functionName : string) =
+let CanExtractFunction (tree : Ast.AstNode) (inScopeTree : Ast.AstNode) (expressionRange : range) (functionName : string) =
     let expressionRangeIsInInScopeTree =
         if rangeContainsRange (Ast.GetRange inScopeTree).Value expressionRange then Valid
         else Invalid("The expression is not contained within the specified scope")
@@ -56,7 +56,7 @@ let CanExtractFunction source (tree : Ast.AstNode) (inScopeTree : Ast.AstNode) (
                 [expressionRangeIsValid; expressionRangeIsInInScopeTree; expressionIsInfix]
 
 let ExtractTempFunction source (tree : Ast.AstNode) (inScopeTree : Ast.AstNode) (expressionRange : range) (functionName : string) =
-    let valid = CanExtractFunction source tree inScopeTree expressionRange functionName
+    let valid = CanExtractFunction tree inScopeTree expressionRange functionName
     refactoring source valid {
         let body = CodeTransforms.TextOfRange source expressionRange
         let bodyExpression = TryFindExpressionAtRange expressionRange inScopeTree
@@ -65,8 +65,8 @@ let ExtractTempFunction source (tree : Ast.AstNode) (inScopeTree : Ast.AstNode) 
             |> Set.difference (GetFreeIdentifiers (makeScopeTrees bodyExpression.Value) DefaultDeclared)
             |> Set.toList
 
-        yield ((Ast.GetRange inScopeTree).Value.StartRange, CreateFunction source inScopeTree functionName arguments body false)
-        yield (expressionRange, CallFunction source functionName arguments)
+        yield ((Ast.GetRange inScopeTree).Value.StartRange, CreateFunction inScopeTree functionName arguments body false)
+        yield (expressionRange, CallFunction functionName arguments)
     }
 
 let ExtractFunction source (tree : Ast.AstNode) (inScopeTree : Ast.AstNode) (expressionRange : range) (functionName : string) =
