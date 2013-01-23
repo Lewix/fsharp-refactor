@@ -125,10 +125,5 @@ type ExtractFunctionTransformModule() =
 type CreateFunctionModule() =
     [<Test>]
     member this.``Can add a function to an expression``() =
-        let source = "let a = 1"
         let expected = "let f a b = a+b in "
-        let tree = (Ast.Parse source).Value
-        let oneRange = mkRange "test.fs" (mkPos 1 8) (mkPos 1 9)
-        let expression = (TryFindExpressionAtRange oneRange tree).Value
-
-        Assert.AreEqual(expected, CreateFunction expression "f" ["a";"b"] "a+b" false)
+        Assert.AreEqual(expected, CreateFunction "f" ["a";"b"] "a+b" false)

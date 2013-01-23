@@ -24,7 +24,7 @@ let DefaultInScopeTree (tree : Ast.AstNode) (expressionRange : range) =
             | SynBinding.Binding(_,_,_,_,_,_,_,_,_,expression,_,_) -> Some(expression)
     else outermostExpression
 
-let CreateFunction (inScopeTree : Ast.AstNode) (functionName : string) (arguments : string list) (body : string) (isRecursive : bool) =
+let CreateFunction (functionName : string) (arguments : string list) (body : string) (isRecursive : bool) =
     RunRefactoring (refactoring FunctionDefinition.Template Valid {
         if isRecursive then yield (FunctionDefinition.RecRange, FunctionDefinition.RecTemplate)
         yield (FunctionDefinition.NameRange, functionName)
@@ -65,7 +65,7 @@ let ExtractTempFunction source (tree : Ast.AstNode) (inScopeTree : Ast.AstNode) 
             |> Set.difference (GetFreeIdentifiers (makeScopeTrees bodyExpression.Value) DefaultDeclared)
             |> Set.toList
 
-        yield ((Ast.GetRange inScopeTree).Value.StartRange, CreateFunction inScopeTree functionName arguments body false)
+        yield ((Ast.GetRange inScopeTree).Value.StartRange, CreateFunction functionName arguments body false)
         yield (expressionRange, CallFunction functionName arguments)
     }
 
