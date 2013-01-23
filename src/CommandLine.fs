@@ -57,7 +57,7 @@ let ExtractFunction filename (startPosition,endPosition) functionName =
     let source = getSource filename
     let tree = (Ast.Parse source).Value
     let expressionRange = mkRange "test.fs" startPosition endPosition
-    let inScopeTree = DefaultInScopeTree source tree expressionRange
+    let inScopeTree = DefaultInScopeTree tree expressionRange
     if Option.isNone (TryFindExpressionAtRange expressionRange tree) then
         raise (ArgumentException "No expression found at the given range")
     elif Option.isNone inScopeTree then
