@@ -14,6 +14,9 @@ SOURCES=src/Ast.fs \
 	src/ExtractFunction.fs \
 	src/AddArgument.fs
 
+EVALUATOR_SOURCES=src/evaluator/BehaviourChecker.fs \
+				  src/evaluator/CodeGenerator.fs
+
 TESTS=tests/EngineTests.fs \
       tests/RenameTests.fs \
       tests/ExtractFunctionTests.fs \
@@ -24,8 +27,8 @@ INTEGRATION_TESTS=tests/integration_tests/CompilerTests.fs
 
 all: libs/FSharp.Refactor.dll libs/FSharp.Refactor.Tests.dll bin/FSharpRefactor.exe libs/FSharp.Refactor.Evaluator.dll
 
-libs/FSharp.Refactor.Evaluator.dll: src/evaluator/BehaviourChecker.fs
-	fsharpc $(OPTS) -o:libs/FSharp.Refactor.Evaluator.dll $(REFS) src/evaluator/BehaviourChecker.fs
+libs/FSharp.Refactor.Evaluator.dll: $(EVALUATOR_SOURCES)
+	fsharpc $(OPTS) -o:libs/FSharp.Refactor.Evaluator.dll $(REFS) $(EVALUATOR_SOURCES)
 
 libs/FSharp.Refactor.dll: $(SOURCES)
 	fsharpc $(OPTS) -o:libs/FSharp.Refactor.dll $(REFS) $(SOURCES)
