@@ -43,5 +43,10 @@ type BehaviourCheckerModule() =
 type CodeGenerationModule() =
     [<Test>]
     member this.``Can generate identifier and integer terminals``() =
-        Assert.AreEqual("10", generateInteger (seq [110]))
-        Assert.AreEqual("ident10", generateIdent (seq [110]))
+        Assert.AreEqual("10", fst (generateInteger (seq [110])))
+        Assert.AreEqual("ident10", fst (generateIdent (seq [110])))
+
+    [<Test>]
+    member this.``Can generate lists if identifiers for functions``() =
+        Assert.AreEqual("ident5", fst (generateIdentList (seq [0;5])))
+        Assert.AreEqual("ident1 ident5 ident11", fst (generateIdentList (seq [2;101;5;11;1])))
