@@ -4,6 +4,7 @@ open System.IO
 open System.CodeDom.Compiler
 open NUnit.Framework
 open FSharpRefactor.Evaluator.BehaviourChecker
+open FSharpRefactor.Evaluator.CodeGenerator
 
 [<TestFixture>]
 type BehaviourCheckerModule() =
@@ -37,3 +38,10 @@ type BehaviourCheckerModule() =
     [<Test>]
     member this.``Can figure out that behaviour has changed if only one program is valid``() =
         Assert.IsTrue(hasChanged (noErrors, "../mnt/media/git/university/personalproj/fsharp-refactor/tests/compiler_tests/success1.dll") (errors, ""))
+
+[<TestFixture>]
+type CodeGenerationModule() =
+    [<Test>]
+    member this.``Can generate identifier and integer terminals``() =
+        Assert.AreEqual("10", generateInteger (seq [110]))
+        Assert.AreEqual("ident10", generateIdent (seq [110]))
