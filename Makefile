@@ -6,13 +6,13 @@ REFS=-r:libs/FSharp.Compiler.dll \
 OPTS=--target:library --nologo --lib:libs
 
 SOURCES=src/Ast.fs \
-	src/CodeAnalysis.fs \
-	src/CodeTransforms.fs \
-	src/RefactoringWorkflow.fs \
-	src/CodeTemplates.fs \
-    src/Rename.fs \
-	src/ExtractFunction.fs \
-	src/AddArgument.fs
+		src/CodeAnalysis.fs \
+		src/CodeTransforms.fs \
+		src/RefactoringWorkflow.fs \
+		src/CodeTemplates.fs \
+		src/Rename.fs \
+		src/ExtractFunction.fs \
+		src/AddArgument.fs
 
 EVALUATOR_SOURCES=src/evaluator/BehaviourChecker.fs \
 				  src/evaluator/CodeGenerator.fs
