@@ -29,3 +29,5 @@ and generateIdentList (randomNumbers : seq<int>) =
     else
         let arguments, randomNumbers = generateIdentList (Seq.append (seq [remaining-1]) randomNumbers)
         ident + " " + arguments, randomNumbers
+
+and generateExpression (randomNumbers : seq<int>) = "", randomNumbers

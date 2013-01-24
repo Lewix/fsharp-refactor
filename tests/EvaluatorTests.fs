@@ -50,3 +50,12 @@ type CodeGenerationModule() =
     member this.``Can generate lists if identifiers for functions``() =
         Assert.AreEqual("ident5", fst (generateIdentList (seq [0;5])))
         Assert.AreEqual("ident1 ident5 ident11", fst (generateIdentList (seq [2;101;5;11;1])))
+
+    [<Test>]
+    member this.``Can generate an expression``() =
+        // 0 : int, 1 : ident, 2 : e + e, 3 : (ident ident_list), 4 : let ident_list = e in e
+        Assert.AreEqual("1", fst (generateExpression (seq [0;1])))
+        Assert.AreEqual("ident5", fst (generateExpression (seq [1;5])))
+        Assert.AreEqual("1 + 2", fst (generateExpression (seq [2;0;1;0;2])))
+        Assert.AreEqual("(ident0 ident2 ident 3)", fst (generateExpression (seq [3;0;1;2;3])))
+        Assert.AreEqual("(let ident0 = 1 in 2)", fst (generateExpression (seq [4;0;0;0;1;0;2])))
