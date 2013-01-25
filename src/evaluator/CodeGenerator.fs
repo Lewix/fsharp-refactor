@@ -28,6 +28,18 @@ and generateIdent (randomNumbers : seq<int>) =
         |> (+) "ident"
     ident, Seq.skip 1 randomNumbers
 
+and generateDeclaredIdent (state : Set<string>) (randomNumbers : seq<int>) =
+    let availableIdents =
+        List.choose (fun i -> state.tryFind ("ident"+(string i))) [0..GenerationConfig.IdentThreshold]
+    if List.length availableIdents = 0 then
+        None, randomNumbers
+    else
+        let ident =
+            List.length availableIdents
+            |> (%) (Seq.head randomNumbers)
+            |> List.nth availableIdents
+        Some ident, Seq.skip 1 randomNumbers
+
 and generateIdentList (randomNumbers : seq<int>) =
     let remaining = (Seq.head randomNumbers) % GenerationConfig.IdentListLengthThreshold
     let randomNumbers = Seq.skip 1 randomNumbers

@@ -62,6 +62,12 @@ type CodeGenerationModule() =
         Assert.AreEqual("1", fst (generateExpression (seq [10;1])))
 
     [<Test>]
+    member this.``Can generate declared identifier``() =
+        Assert.AreEqual(Some "ident5", fst (generateDeclaredIdent (Set ["ident0"; "ident3"; "ident5"])
+                                                                  (seq [11])))
+        Assert.AreEqual(None, fst (generatDeclaredIdent (Set []) (seq [5])))
+
+    [<Test>]
     member this.``Can avoid using idents which aren't declared``() =
         Assert.AreEqual("(let ident0 = 1 in ident0)", fst (generateExpression (seq [4;0;0;0;1;1;2])),
                         "Don't use ident2, use ident0 because it's the only available one")
