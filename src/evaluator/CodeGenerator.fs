@@ -38,7 +38,6 @@ and generateIdentList (randomNumbers : seq<int>) =
         let arguments, randomNumbers = generateIdentList (Seq.append (seq [remaining-1]) randomNumbers)
         ident + " " + arguments, randomNumbers
 
-//TODO: threshold expression form
 and generateExpression (randomNumbers : seq<int>) =
     let expressionForm, randomNumbers =
         enum<ExpressionForm>(Seq.head randomNumbers), Seq.skip 1 randomNumbers
