@@ -13,62 +13,64 @@ type ExpressionForm =
     | Application = 3
     | Let = 4
 
-let rec generateInteger (randomNumbers : seq<int>) =
+let rec generateInteger state (randomNumbers : seq<int>) =
     let integer =
         GenerationConfig.IntegerThreshold
         |> (%) (Seq.head randomNumbers)
         |> string
-    integer, Seq.skip 1 randomNumbers
+    integer, state, Seq.skip 1 randomNumbers
 
-and generateIdent (randomNumbers : seq<int>) =
+and generateIdent (state : Set<string>) (randomNumbers : seq<int>) =
     let ident =
         GenerationConfig.IdentThreshold
         |> (%) (Seq.head randomNumbers)
         |> string
         |> (+) "ident"
-    ident, Seq.skip 1 randomNumbers
+    ident, state.Add ident, Seq.skip 1 randomNumbers
 
 and generateDeclaredIdent (state : Set<string>) (randomNumbers : seq<int>) =
-    let availableIdents =
-        List.choose (fun i -> state.tryFind ("ident"+(string i))) [0..GenerationConfig.IdentThreshold]
-    if List.length availableIdents = 0 then
-        None, randomNumbers
+    if state.Count = 0 then
+        None, state, randomNumbers
     else
-        let ident =
-            List.length availableIdents
-            |> (%) (Seq.head randomNumbers)
-            |> List.nth availableIdents
-        Some ident, Seq.skip 1 randomNumbers
+        let ident = Seq.nth ((Seq.head randomNumbers) % state.Count) state
+        Some ident, state, Seq.skip 1 randomNumbers
 
-and generateIdentList (randomNumbers : seq<int>) =
+and generateIdentList state (randomNumbers : seq<int>) =
     let remaining = (Seq.head randomNumbers) % GenerationConfig.IdentListLengthThreshold
     let randomNumbers = Seq.skip 1 randomNumbers
-    let ident, randomNumbers = generateIdent randomNumbers
+    let ident, state, randomNumbers = generateIdent state randomNumbers
     if remaining = 0 then
-        ident, randomNumbers
+        ident, state, randomNumbers
     else
-        let arguments, randomNumbers = generateIdentList (Seq.append (seq [remaining-1]) randomNumbers)
-        ident + " " + arguments, randomNumbers
+        let arguments, state, randomNumbers =
+            generateIdentList state (Seq.append (seq [remaining-1]) randomNumbers)
+        ident + " " + arguments, state, randomNumbers
 
-and generateExpression (randomNumbers : seq<int>) =
+and generateExpression state (randomNumbers : seq<int>) =
     let expressionForm, randomNumbers =
         enum<ExpressionForm>(Seq.head randomNumbers), Seq.skip 1 randomNumbers
     match expressionForm with
-        | ExpressionForm.Integer -> generateInteger randomNumbers
-        | ExpressionForm.Ident -> generateIdent randomNumbers
+        | ExpressionForm.Integer -> generateInteger state randomNumbers
+        | ExpressionForm.Ident ->
+            let i, state, randomNumbers = generateDeclaredIdent state randomNumbers
+            if Option.isSome i then
+                i.Value, state, randomNumbers
+            else
+                generateExpression state (Seq.skip 1 randomNumbers)
         | ExpressionForm.Addition ->
-            let e1, randomNumbers = generateExpression randomNumbers
-            let e2, randomNumbers = generateExpression randomNumbers
-            sprintf "%s + %s" e1 e2, randomNumbers
+            let e1, _, randomNumbers = generateExpression state randomNumbers
+            let e2, _, randomNumbers = generateExpression state randomNumbers
+            sprintf "%s + %s" e1 e2, state, randomNumbers
         | ExpressionForm.Application ->
-            let ident, randomNumbers = generateIdent randomNumbers
-            let identList, randomNumbers = generateIdentList randomNumbers
-            sprintf "(%s %s)" ident identList, randomNumbers
+        //TODO: use expressions instead of idents
+            let ident, _, randomNumbers = generateIdent state randomNumbers
+            let identList, _, randomNumbers = generateIdentList state randomNumbers
+            sprintf "(%s %s)" ident identList, state, randomNumbers
         | ExpressionForm.Let ->
-            let identList, randomNumbers = generateIdentList randomNumbers
-            let e1, randomNumbers = generateExpression randomNumbers
-            let e2, randomNumbers = generateExpression randomNumbers
-            sprintf "(let %s = %s in %s)" identList e1 e2, randomNumbers
+            let identList, new_state, randomNumbers = generateIdentList state randomNumbers
+            let e1, _, randomNumbers = generateExpression new_state randomNumbers
+            let e2, _, randomNumbers = generateExpression new_state randomNumbers
+            sprintf "(let %s = %s in %s)" identList e1 e2, new_state, randomNumbers
         | _ ->
             let newExpressionForm = (int expressionForm) % GenerationConfig.ExpressionFormsCount 
-            generateExpression (Seq.append (seq [newExpressionForm]) randomNumbers)
+            generateExpression state (Seq.append (seq [newExpressionForm]) randomNumbers)
