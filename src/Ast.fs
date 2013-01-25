@@ -90,6 +90,7 @@ module Ast =
                 match e with
                     | SynExpr.LongIdentSet(_,e,_)
                     | SynExpr.Typed(e,_,_)
+                    | SynExpr.TypeApp(e,_,_,_,_,_,_)
                     | SynExpr.Downcast(e,_,_)
                     | SynExpr.YieldOrReturn(_,e,_)
                     | SynExpr.Paren(e,_,_,_)
