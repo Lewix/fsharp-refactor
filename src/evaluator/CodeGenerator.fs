@@ -6,6 +6,7 @@ type GenerationConfig =
     static member IdentListLengthThreshold = 5
     static member ExpressionFormsCount = 5
     static member ExpressionListLengthThreshold = 5
+    static member CutoffDepth = 5
 
 type ExpressionForm =
     | Integer = 0
@@ -53,12 +54,18 @@ and generateList state (randomNumbers : seq<int>) generationFunction lengthThres
 and generateIdentList state (randomNumbers : seq<int>) =
     generateList state randomNumbers generateIdent GenerationConfig.IdentListLengthThreshold
 
-and generateExpressionList state (randomNumbers : seq<int>) =
-    generateList state randomNumbers generateExpression GenerationConfig.ExpressionListLengthThreshold
+and generateExpressionList depth state (randomNumbers : seq<int>) =
+    generateList state randomNumbers (generateExpression depth) GenerationConfig.ExpressionListLengthThreshold
 
-and generateExpression state (randomNumbers : seq<int>) =
+and generateExpression depth state (randomNumbers : seq<int>) =
     let expressionForm, randomNumbers =
         enum<ExpressionForm>(Seq.head randomNumbers), Seq.skip 1 randomNumbers
+    let expressionForm =
+        if depth >= GenerationConfig.CutoffDepth then
+            enum<ExpressionForm> ((int expressionForm) % 2)
+        else
+            expressionForm
+    let depth = depth+1
     match expressionForm with
         | ExpressionForm.Integer -> generateInteger state randomNumbers
         | ExpressionForm.Ident ->
@@ -66,25 +73,24 @@ and generateExpression state (randomNumbers : seq<int>) =
             if Option.isSome i then
                 i.Value, state, randomNumbers
             else
-                generateExpression state randomNumbers
+                generateExpression depth state randomNumbers
         | ExpressionForm.Addition ->
-            let e1, _, randomNumbers = generateExpression state randomNumbers
-            let e2, _, randomNumbers = generateExpression state randomNumbers
+            let e1, _, randomNumbers = generateExpression depth state randomNumbers
+            let e2, _, randomNumbers = generateExpression depth state randomNumbers
             sprintf "%s + %s" e1 e2, state, randomNumbers
         | ExpressionForm.Application ->
-            let expression, _, randomNumbers = generateExpression state randomNumbers
-            let expressionList, _, randomNumbers = generateExpressionList state randomNumbers
+            let expression, _, randomNumbers = generateExpression depth state randomNumbers
+            let expressionList, _, randomNumbers = generateExpressionList depth state randomNumbers
             sprintf "(%s %s)" expression expressionList, state, randomNumbers
         | ExpressionForm.Let ->
-        //TODO: Add the args to e1's state and the function to e1's
             let ident, inScopeState, randomNumbers = generateIdent state randomNumbers
             let identList, bodyState, randomNumbers = generateIdentList state randomNumbers
-            let e1, _, randomNumbers = generateExpression bodyState randomNumbers
-            let e2, _, randomNumbers = generateExpression inScopeState randomNumbers
+            let e1, _, randomNumbers = generateExpression depth bodyState randomNumbers
+            let e2, _, randomNumbers = generateExpression depth inScopeState randomNumbers
             if identList = "" then
                 sprintf "(let %s = %s in %s)" ident e1 e2, state, randomNumbers
             else
                 sprintf "(let %s %s = %s in %s)" ident identList e1 e2, state, randomNumbers
         | _ ->
             let newExpressionForm = (int expressionForm) % GenerationConfig.ExpressionFormsCount 
-            generateExpression state (Seq.append (seq [newExpressionForm]) randomNumbers)
+            generateExpression depth state (Seq.append (seq [newExpressionForm]) randomNumbers)

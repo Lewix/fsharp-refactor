@@ -44,7 +44,7 @@ type CodeGenerationModule() =
     let generateInteger = generateInteger (Set<string> [])
     let generateIdent = generateIdent (Set<string> [])
     let generateIdentList = generateIdentList (Set<string> [])
-    let generateExpressionEmpty = generateExpression (Set<string> [])
+    let generateExpressionEmpty = generateExpression 1 (Set<string> [])
 
     let getString (s,_,_) = s
 
@@ -63,18 +63,18 @@ type CodeGenerationModule() =
     member this.``Can generate an expression``() =
         // 0 : int, 1 : ident, 2 : e + e, 3 : (ident ident_list), 4 : let ident_list = e in e
         Assert.AreEqual("1", getString (generateExpressionEmpty (seq [0;1])))
-        Assert.AreEqual("ident5", getString (generateExpression (Set ["ident5"]) (seq [1;5])))
+        Assert.AreEqual("ident5", getString (generateExpression 1 (Set ["ident5"]) (seq [1;5])))
         Assert.AreEqual("1 + 2", getString (generateExpressionEmpty (seq [2;0;1;0;2])))
         Assert.AreEqual("(ident0 ident2 ident3)",
-                        getString (generateExpression 
+                        getString (generateExpression 1
                             (Set ["ident0";"ident1";"ident2";"ident3"]) (seq [3;1;0;2;1;2;1;3])))
         Assert.AreEqual("(let ident0 = 1 in 2)", getString (generateExpressionEmpty (seq [4;0;0;0;1;0;2])))
         Assert.AreEqual("1", getString (generateExpressionEmpty (seq [10;1])))
 
     [<Test>]
     member this.``Can generate a list of expressions``() =
-        Assert.AreEqual("1 2 3", getString (generateExpressionList (Set<string> []) (seq [3;0;1;0;2;0;3])))
-        Assert.AreEqual("ident2", getString (generateExpressionList (Set<string> ["ident2"]) (seq [1;1;3])))
+        Assert.AreEqual("1 2 3", getString (generateExpressionList 0 (Set<string> []) (seq [3;0;1;0;2;0;3])))
+        Assert.AreEqual("ident2", getString (generateExpressionList 0 (Set<string> ["ident2"]) (seq [1;1;3])))
 
     [<Test>]
     member this.``Can generate declared identifier``() =
@@ -88,3 +88,7 @@ type CodeGenerationModule() =
                         "Don't use ident2, use ident0 because it's the only available one")
         Assert.AreEqual("(let ident0 = 1 in ident0)", getString (generateExpressionEmpty (seq [4;0;0;1;0;1;1;5])),
                         "If a number indicates an ident should be used when state is empty, just discard that number")
+
+    [<Test>]
+    member this.``Can cutoff at a certain depth to avoid exponential growth``() =
+        Assert.AreEqual("1 + 1 + 1 + 1 + 1", getString (generateExpressionEmpty (seq [2;0;1;2;0;1;2;0;1;2;0;1;2;1])))
