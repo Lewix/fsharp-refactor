@@ -76,10 +76,11 @@ and generateExpression state (randomNumbers : seq<int>) =
             sprintf "(%s %s)" expression expressionList, state, randomNumbers
         | ExpressionForm.Let ->
         //TODO: Add the args to e1's state and the function to e1's
-            let identList, new_state, randomNumbers = generateIdentList state randomNumbers
-            let e1, _, randomNumbers = generateExpression new_state randomNumbers
-            let e2, _, randomNumbers = generateExpression new_state randomNumbers
-            sprintf "(let %s = %s in %s)" identList e1 e2, new_state, randomNumbers
+            let ident, inScopeState, randomNumbers = generateIdent state randomNumbers
+            let identList, bodyState, randomNumbers = generateIdentList state randomNumbers
+            let e1, _, randomNumbers = generateExpression bodyState randomNumbers
+            let e2, _, randomNumbers = generateExpression inScopeState randomNumbers
+            sprintf "(let %s = %s in %s)" identList e1 e2, state, randomNumbers
         | _ ->
             let newExpressionForm = (int expressionForm) % GenerationConfig.ExpressionFormsCount 
             generateExpression state (Seq.append (seq [newExpressionForm]) randomNumbers)
