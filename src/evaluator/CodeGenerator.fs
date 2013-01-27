@@ -37,16 +37,17 @@ and generateDeclaredIdent (state : Set<string>) (randomNumbers : seq<int>) =
         Some ident, state, Seq.skip 1 randomNumbers
 
 and generateList state (randomNumbers : seq<int>) generationFunction lengthThreshold =
-    let remaining = (Seq.head randomNumbers) % lengthThreshold
+    let length = (Seq.head randomNumbers) % (lengthThreshold+1)
     let randomNumbers = Seq.skip 1 randomNumbers
     let item, state, randomNumbers = generationFunction state randomNumbers
-    if remaining = 0 then
+    if length = 0 then
+        "", state, randomNumbers
+    elif length = 1 then
         item, state, randomNumbers
     else
-        let arguments, state, randomNumbers =
-            generateList state (Seq.append (seq [remaining-1]) randomNumbers) generationFunction lengthThreshold
-        item + " " + arguments, state, randomNumbers
-
+        let items, state, randomNumbers =
+            generateList state (Seq.append (seq [length-1]) randomNumbers) generationFunction lengthThreshold
+        item + " " + items, state, randomNumbers
 
 and generateIdentList state (randomNumbers : seq<int>) =
     generateList state randomNumbers generateIdent GenerationConfig.IdentListLengthThreshold

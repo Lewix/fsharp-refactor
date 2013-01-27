@@ -54,9 +54,10 @@ type CodeGenerationModule() =
         Assert.AreEqual("ident10", getString (generateIdent (seq [110])))
 
     [<Test>]
-    member this.``Can generate lists if identifiers for functions``() =
-        Assert.AreEqual("ident5", getString (generateIdentList (seq [0;5])))
-        Assert.AreEqual("ident1 ident5 ident11", getString (generateIdentList (seq [2;101;5;11;1])))
+    member this.``Can generate lists of identifiers for functions``() =
+        Assert.AreEqual("", getString (generateIdentList (seq [0;12;34;5])))
+        Assert.AreEqual("ident5", getString (generateIdentList (seq [1;5])))
+        Assert.AreEqual("ident1 ident5 ident11", getString (generateIdentList (seq [3;101;5;11;1])))
 
     [<Test>]
     member this.``Can generate an expression``() =
@@ -66,14 +67,14 @@ type CodeGenerationModule() =
         Assert.AreEqual("1 + 2", getString (generateExpressionEmpty (seq [2;0;1;0;2])))
         Assert.AreEqual("(ident0 ident2 ident3)",
                         getString (generateExpression 
-                            (Set ["ident0";"ident1";"ident2";"ident3"]) (seq [3;1;0;1;1;2;1;3])))
-        Assert.AreEqual("(let ident0 = 1 in 2)", getString (generateExpressionEmpty (seq [4;0;0;0;1;0;2])))
+                            (Set ["ident0";"ident1";"ident2";"ident3"]) (seq [3;1;0;2;1;2;1;3])))
+        Assert.AreEqual("(let ident0 = 1 in 2)", getString (generateExpressionEmpty (seq [4;1;0;0;1;0;2])))
         Assert.AreEqual("1", getString (generateExpressionEmpty (seq [10;1])))
 
     [<Test>]
     member this.``Can generate a list of expressions``() =
-        Assert.AreEqual("1 2 3", getString (generateExpressionList (Set<string> []) (seq [2;0;1;0;2;0;3])))
-        Assert.AreEqual("ident2", getString (generateExpressionList (Set<string> ["ident2"]) (seq [0;1;3])))
+        Assert.AreEqual("1 2 3", getString (generateExpressionList (Set<string> []) (seq [3;0;1;0;2;0;3])))
+        Assert.AreEqual("ident2", getString (generateExpressionList (Set<string> ["ident2"]) (seq [1;1;3])))
 
     [<Test>]
     member this.``Can generate declared identifier``() =
@@ -83,7 +84,7 @@ type CodeGenerationModule() =
 
     [<Test>]
     member this.``Can avoid using idents which aren't declared``() =
-        Assert.AreEqual("(let ident0 = 1 in ident0)", getString (generateExpressionEmpty (seq [4;0;0;0;1;1;2])),
+        Assert.AreEqual("(let ident0 = 1 in ident0)", getString (generateExpressionEmpty (seq [4;1;0;0;1;1;2])),
                         "Don't use ident2, use ident0 because it's the only available one")
-        Assert.AreEqual("(let ident0 = 1 in ident0)", getString (generateExpressionEmpty (seq [4;0;0;1;0;1;1;5])),
+        Assert.AreEqual("(let ident0 = 1 in ident0)", getString (generateExpressionEmpty (seq [4;1;0;1;0;1;1;5])),
                         "If a number indicates an ident should be used when state is empty, just discard that number")
