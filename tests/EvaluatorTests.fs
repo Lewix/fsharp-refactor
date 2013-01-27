@@ -71,6 +71,11 @@ type CodeGenerationModule() =
         Assert.AreEqual("1", getString (generateExpressionEmpty (seq [10;1])))
 
     [<Test>]
+    member this.``Can generate a list of expressions``() =
+        Assert.AreEqual("1 2 3", getString (generateExpressionList (Set<string> []) (seq [2;0;1;0;2;0;3])))
+        Assert.AreEqual("ident2", getString (generateExpressionList (Set<string> ["ident2"]) (seq [0;1;3])))
+
+    [<Test>]
     member this.``Can generate declared identifier``() =
         Assert.AreEqual(Some "ident5", getString (generateDeclaredIdent (Set ["ident0"; "ident3"; "ident5"])
                                                                   (seq [11])))
