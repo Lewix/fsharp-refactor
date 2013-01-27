@@ -66,7 +66,7 @@ type CodeGenerationModule() =
         Assert.AreEqual("1 + 2", getString (generateExpressionEmpty (seq [2;0;1;0;2])))
         Assert.AreEqual("(ident0 ident2 ident3)",
                         getString (generateExpression 
-                            (Set ["ident0";"ident1";"ident2";"ident3"]) (seq [3;0;1;2;3])))
+                            (Set ["ident0";"ident1";"ident2";"ident3"]) (seq [3;1;0;1;1;2;1;3])))
         Assert.AreEqual("(let ident0 = 1 in 2)", getString (generateExpressionEmpty (seq [4;0;0;0;1;0;2])))
         Assert.AreEqual("1", getString (generateExpressionEmpty (seq [10;1])))
 

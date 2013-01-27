@@ -70,10 +70,9 @@ and generateExpression state (randomNumbers : seq<int>) =
             let e2, _, randomNumbers = generateExpression state randomNumbers
             sprintf "%s + %s" e1 e2, state, randomNumbers
         | ExpressionForm.Application ->
-        //TODO: use expressions instead of idents
-            let ident, _, randomNumbers = generateIdent state randomNumbers
-            let identList, _, randomNumbers = generateIdentList state randomNumbers
-            sprintf "(%s %s)" ident identList, state, randomNumbers
+            let expression, _, randomNumbers = generateExpression state randomNumbers
+            let expressionList, _, randomNumbers = generateExpressionList state randomNumbers
+            sprintf "(%s %s)" expression expressionList, state, randomNumbers
         | ExpressionForm.Let ->
         //TODO: Add the args to e1's state and the function to e1's
             let identList, new_state, randomNumbers = generateIdentList state randomNumbers
