@@ -84,7 +84,7 @@ type CodeGenerationModule() =
 
     [<Test>]
     member this.``Can avoid using idents which aren't declared``() =
-        Assert.AreEqual("(let ident0 = 1 in ident0)", getString (generateExpressionEmpty (seq [4;1;0;0;1;1;2])),
+        Assert.AreEqual("(let ident0 = 1 in ident0)", getString (generateExpressionEmpty (seq [4;0;0;0;1;1;2])),
                         "Don't use ident2, use ident0 because it's the only available one")
-        Assert.AreEqual("(let ident0 = 1 in ident0)", getString (generateExpressionEmpty (seq [4;1;0;1;0;1;1;5])),
+        Assert.AreEqual("(let ident0 = 1 in ident0)", getString (generateExpressionEmpty (seq [4;0;0;1;0;1;1;5])),
                         "If a number indicates an ident should be used when state is empty, just discard that number")
