@@ -100,6 +100,7 @@ module Ast =
                     | SynExpr.CompExpr(_,_,e,_) -> Some([AstNode.Expression e])
                     | SynExpr.ArrayOrList(_,es,_)
                     | SynExpr.Tuple(es,_,_) -> Some(List.map AstNode.Expression es)
+                    | SynExpr.DotIndexedGet(e,es,_,_) -> Some((Expression e)::(List.map Expression es))
                     | SynExpr.LetOrUse(_,_,bs,e,_) ->  Some(List.append (List.map AstNode.Binding bs) [AstNode.Expression e])
                     | SynExpr.Match(_,e,cs,_,_) -> Some((AstNode.Expression e)::(List.map AstNode.MatchClause cs))
                     | SynExpr.Null(_) -> None

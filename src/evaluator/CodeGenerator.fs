@@ -19,6 +19,9 @@ type Type =
     | Int
     | Fun of Type * Type
 
+let chooseFrom (elements : list<'a>) randomNumbers =
+    elements.[(Seq.head randomNumbers) % (List.length elements)], Seq.skip 1 randomNumbers
+
 let rec generateInteger targetType state (randomNumbers : seq<int>) =
     let integer =
         GenerationConfig.IntegerThreshold
@@ -63,14 +66,14 @@ and generateExpressionList targetType depth state (randomNumbers : seq<int>) =
     generateList Int state randomNumbers (generateExpression Int depth) GenerationConfig.ExpressionListLengthThreshold
 
 and generateExpression targetType depth state (randomNumbers : seq<int>) =
+    let terminalExpressionForms = [ExpressionForm.Integer; ExpressionForm.Ident]
     let expressionForm, randomNumbers =
-        enum<ExpressionForm>(Seq.head randomNumbers), Seq.skip 1 randomNumbers
-    let expressionForm =
         if depth >= GenerationConfig.CutoffDepth then
-            enum<ExpressionForm> ((int expressionForm) % 2)
+            chooseFrom terminalExpressionForms randomNumbers
         else
-            expressionForm
+            chooseFrom (List.map enum<ExpressionForm> [0..4]) randomNumbers
     let depth = depth+1
+
     match expressionForm with
         | ExpressionForm.Integer -> generateInteger Int state randomNumbers
         | ExpressionForm.Ident ->
