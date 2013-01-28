@@ -15,6 +15,10 @@ type ExpressionForm =
     | Application = 3
     | Let = 4
 
+type Type =
+    | Int
+    | Fun of Type * Type
+
 let rec generateInteger state (randomNumbers : seq<int>) =
     let integer =
         GenerationConfig.IntegerThreshold
@@ -22,19 +26,19 @@ let rec generateInteger state (randomNumbers : seq<int>) =
         |> string
     integer, state, Seq.skip 1 randomNumbers
 
-and generateIdent (state : Set<string>) (randomNumbers : seq<int>) =
+and generateIdent (state : Map<string,Type>) (randomNumbers : seq<int>) =
     let ident =
         GenerationConfig.IdentThreshold
         |> (%) (Seq.head randomNumbers)
         |> string
         |> (+) "ident"
-    ident, state.Add ident, Seq.skip 1 randomNumbers
+    ident, state.Add (ident, Type.Int), Seq.skip 1 randomNumbers
 
-and generateDeclaredIdent (state : Set<string>) (randomNumbers : seq<int>) =
+and generateDeclaredIdent (state : Map<string,Type>) (randomNumbers : seq<int>) =
     if state.Count = 0 then
         None, state, randomNumbers
     else
-        let ident = Seq.nth ((Seq.head randomNumbers) % state.Count) state
+        let ident, _ = Seq.nth ((Seq.head randomNumbers) % state.Count) (Map.toSeq state)
         Some ident, state, Seq.skip 1 randomNumbers
 
 and generateList state (randomNumbers : seq<int>) generationFunction lengthThreshold =
