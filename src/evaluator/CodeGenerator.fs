@@ -35,11 +35,12 @@ and generateIdent targetType (state : Map<string,Type>) (randomNumbers : seq<int
     ident, state.Add (ident, Type.Int), Seq.skip 1 randomNumbers
 
 and generateDeclaredIdent targetType (state : Map<string,Type>) (randomNumbers : seq<int>) =
-    if state.Count = 0 then
-        None, state, randomNumbers
+    let targetTypeIdents = Map.filter (fun i t -> t = targetType) state
+    if targetTypeIdents.Count = 0 then
+        None, targetTypeIdents, randomNumbers
     else
-        let ident, _ = Seq.nth ((Seq.head randomNumbers) % state.Count) (Map.toSeq state)
-        Some ident, state, Seq.skip 1 randomNumbers
+        let ident, _ = Seq.nth ((Seq.head randomNumbers) % targetTypeIdents.Count) (Map.toSeq targetTypeIdents)
+        Some ident, targetTypeIdents, Seq.skip 1 randomNumbers
 
 and generateList targetType state (randomNumbers : seq<int>) generationFunction lengthThreshold =
     let length = (Seq.head randomNumbers) % (lengthThreshold+1)

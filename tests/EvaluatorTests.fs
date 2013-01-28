@@ -93,3 +93,10 @@ type CodeGenerationModule() =
     [<Test>]
     member this.``Can cutoff at a certain depth to avoid exponential growth``() =
         Assert.AreEqual("1 + 1 + 1 + 1 + 1", getString (generateExpressionEmpty (seq [2;0;1;2;0;1;2;0;1;2;0;1;2;1])))
+
+    [<Test>]
+    member this.``Can generate a declared identifier of a specified type``() =
+        Assert.AreEqual(Some ("ident3"),
+            getString (generateDeclaredIdent (Fun(Int,Int)) (Map["ident1",Int;"ident3",Fun(Int,Int)]) (seq [0])))
+        Assert.AreEqual(None,
+            getString (generateDeclaredIdent (Fun(Int,Int)) (Map["ident1",Int;"ident3",Int]) (seq [1])))
