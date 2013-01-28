@@ -23,26 +23,28 @@ let chooseFrom (elements : list<'a>) randomNumbers =
     elements.[(Seq.head randomNumbers) % (List.length elements)], Seq.skip 1 randomNumbers
 
 let rec generateInteger targetType state (randomNumbers : seq<int>) =
-    let integer, randomNumbers = chooseFrom [0..GenerationConfig.IntegerThreshold] randomNumbers
+    let integers = List.map string [0..GenerationConfig.IntegerThreshold-1]
+    let integer, randomNumbers = chooseFrom integers randomNumbers
     integer, state, randomNumbers
 
 and generateIdent targetType (state : Map<string,Type>) (randomNumbers : seq<int>) =
-    let idents = List.map (fun i -> "ident"+(string i)) [0..GenerationConfig.IdentThreshold]
+    let idents = List.map (fun i -> "ident"+(string i)) [0..GenerationConfig.IdentThreshold-1]
     let ident, randomNumbers = chooseFrom idents randomNumbers
     ident, state.Add (ident, targetType), randomNumbers
 
 and generateDeclaredIdent targetType (state : Map<string,Type>) (randomNumbers : seq<int>) =
     let targetTypeIdents =
         Map.filter (fun i t -> t = targetType) state
+        |> Map.toList
         |> List.map fst
-    if targetTypeIdents.Count = 0 then
-        None, targetTypeIdents, randomNumbers
+    if List.isEmpty targetTypeIdents then
+        None, state, randomNumbers
     else
         let ident, randomNumbers = chooseFrom targetTypeIdents randomNumbers
         Some ident, state, randomNumbers
 
 and generateList targetType state (randomNumbers : seq<int>) generationFunction lengthThreshold =
-    let length, randomNumbers = chooseFrom [0..lengthThreshold+1] randomNumbers
+    let length, randomNumbers = chooseFrom [0..lengthThreshold] randomNumbers
     if length = 0 then
         "", state, randomNumbers
     elif length = 1 then
