@@ -41,10 +41,10 @@ type BehaviourCheckerModule() =
 
 [<TestFixture>]
 type CodeGenerationModule() =
-    let generateInteger = generateInteger (Map<string,Type> [])
-    let generateIdent = generateIdent (Map<string,Type> [])
-    let generateIdentList = generateIdentList (Map<string,Type> [])
-    let generateExpressionEmpty = generateExpression 1 (Map<string,Type> [])
+    let generateInteger = generateInteger Int (Map<string,Type> [])
+    let generateIdent = generateIdent Int (Map<string,Type> [])
+    let generateIdentList = generateIdentList Int (Map<string,Type> [])
+    let generateExpressionEmpty = generateExpression Int 1 (Map<string,Type> [])
 
     let getString (s,_,_) = s
 
@@ -63,10 +63,10 @@ type CodeGenerationModule() =
     member this.``Can generate an expression``() =
         // 0 : int, 1 : ident, 2 : e + e, 3 : (ident ident_list), 4 : let ident_list = e in e
         Assert.AreEqual("1", getString (generateExpressionEmpty (seq [0;1])))
-        Assert.AreEqual("ident5", getString (generateExpression 1 (Map ["ident5", Type.Int]) (seq [1;5])))
+        Assert.AreEqual("ident5", getString (generateExpression Int 1 (Map ["ident5", Type.Int]) (seq [1;5])))
         Assert.AreEqual("1 + 2", getString (generateExpressionEmpty (seq [2;0;1;0;2])))
         Assert.AreEqual("(ident0 ident2 ident3)",
-                        getString (generateExpression 1
+                        getString (generateExpression Int 1
                             (Map ["ident0",Type.Int;"ident1",Type.Int;"ident2",Type.Int;"ident3",Type.Int])
                             (seq [3;1;0;2;1;2;1;3])))
         Assert.AreEqual("(let ident0 = 1 in 2)", getString (generateExpressionEmpty (seq [4;0;0;0;1;0;2])))
@@ -74,14 +74,14 @@ type CodeGenerationModule() =
 
     [<Test>]
     member this.``Can generate a list of expressions``() =
-        Assert.AreEqual("1 2 3", getString (generateExpressionList 0 (Map []) (seq [3;0;1;0;2;0;3])))
-        Assert.AreEqual("ident2", getString (generateExpressionList 0 (Map ["ident2",Type.Int]) (seq [1;1;3])))
+        Assert.AreEqual("1 2 3", getString (generateExpressionList Int 0 (Map []) (seq [3;0;1;0;2;0;3])))
+        Assert.AreEqual("ident2", getString (generateExpressionList Int 0 (Map ["ident2",Type.Int]) (seq [1;1;3])))
 
     [<Test>]
     member this.``Can generate declared identifier``() =
-        Assert.AreEqual(Some "ident5", getString (generateDeclaredIdent (Map ["ident0",Type.Int; "ident3",Type.Int; "ident5",Type.Int])
+        Assert.AreEqual(Some "ident5", getString (generateDeclaredIdent Int (Map ["ident0",Type.Int; "ident3",Type.Int; "ident5",Type.Int])
                                                                   (seq [11])))
-        Assert.AreEqual(None, getString (generateDeclaredIdent (Map []) (seq [5])))
+        Assert.AreEqual(None, getString (generateDeclaredIdent Int (Map []) (seq [5])))
 
     [<Test>]
     member this.``Can avoid using idents which aren't declared``() =
