@@ -32,7 +32,7 @@ and generateIdent targetType (state : Map<string,Type>) (randomNumbers : seq<int
         |> (%) (Seq.head randomNumbers)
         |> string
         |> (+) "ident"
-    ident, state.Add (ident, Type.Int), Seq.skip 1 randomNumbers
+    ident, state.Add (ident, targetType), Seq.skip 1 randomNumbers
 
 and generateDeclaredIdent targetType (state : Map<string,Type>) (randomNumbers : seq<int>) =
     let targetTypeIdents = Map.filter (fun i t -> t = targetType) state
