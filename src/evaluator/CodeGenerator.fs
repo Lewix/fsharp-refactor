@@ -23,31 +23,26 @@ let chooseFrom (elements : list<'a>) randomNumbers =
     elements.[(Seq.head randomNumbers) % (List.length elements)], Seq.skip 1 randomNumbers
 
 let rec generateInteger targetType state (randomNumbers : seq<int>) =
-    let integer =
-        GenerationConfig.IntegerThreshold
-        |> (%) (Seq.head randomNumbers)
-        |> string
-    integer, state, Seq.skip 1 randomNumbers
+    let integer, randomNumbers = chooseFrom [0..GenerationConfig.IntegerThreshold] randomNumbers
+    integer, state, randomNumbers
 
 and generateIdent targetType (state : Map<string,Type>) (randomNumbers : seq<int>) =
-    let ident =
-        GenerationConfig.IdentThreshold
-        |> (%) (Seq.head randomNumbers)
-        |> string
-        |> (+) "ident"
-    ident, state.Add (ident, targetType), Seq.skip 1 randomNumbers
+    let idents = List.map (fun i -> "ident"+(string i)) [0..GenerationConfig.IdentThreshold]
+    let ident, randomNumbers = chooseFrom idents randomNumbers
+    ident, state.Add (ident, targetType), randomNumbers
 
 and generateDeclaredIdent targetType (state : Map<string,Type>) (randomNumbers : seq<int>) =
-    let targetTypeIdents = Map.filter (fun i t -> t = targetType) state
+    let targetTypeIdents =
+        Map.filter (fun i t -> t = targetType) state
+        |> List.map fst
     if targetTypeIdents.Count = 0 then
         None, targetTypeIdents, randomNumbers
     else
-        let ident, _ = Seq.nth ((Seq.head randomNumbers) % targetTypeIdents.Count) (Map.toSeq targetTypeIdents)
-        Some ident, targetTypeIdents, Seq.skip 1 randomNumbers
+        let ident, randomNumbers = chooseFrom targetTypeIdents randomNumbers
+        Some ident, state, randomNumbers
 
 and generateList targetType state (randomNumbers : seq<int>) generationFunction lengthThreshold =
-    let length = (Seq.head randomNumbers) % (lengthThreshold+1)
-    let randomNumbers = Seq.skip 1 randomNumbers
+    let length, randomNumbers = chooseFrom [0..lengthThreshold+1] randomNumbers
     if length = 0 then
         "", state, randomNumbers
     elif length = 1 then
