@@ -19,6 +19,17 @@ type Type =
     | Int
     | Fun of Type * Type
 
+let getTargetTypeExpressionForms targetType state =
+    let typeInState t =
+        Map.exists (fun _ t -> t = targetType) state
+
+    List.filter snd [ExpressionForm.Integer, targetType = Int;
+                     ExpressionForm.Ident, typeInState targetType;
+                     ExpressionForm.Addition, targetType = Int;
+                     ExpressionForm.Application, true;
+                     ExpressionForm.Let, true]
+    |> List.map fst
+
 let chooseFrom (elements : list<'a>) randomNumbers =
     elements.[(Seq.head randomNumbers) % (List.length elements)], Seq.skip 1 randomNumbers
 
@@ -66,30 +77,33 @@ and generateExpressionList targetType depth state (randomNumbers : seq<int>) =
 
 and generateExpression targetType depth state (randomNumbers : seq<int>) =
     let terminalExpressionForms = [ExpressionForm.Integer; ExpressionForm.Ident]
+    let targetTypeExpressionForms = getTargetTypeExpressionForms targetType state
     let expressionForm, randomNumbers =
         if depth >= GenerationConfig.CutoffDepth then
             chooseFrom terminalExpressionForms randomNumbers
         else
-            chooseFrom (List.map enum<ExpressionForm> [0..4]) randomNumbers
+            chooseFrom targetTypeExpressionForms randomNumbers
     let depth = depth+1
 
     match expressionForm with
         | ExpressionForm.Integer -> generateInteger Int state randomNumbers
         | ExpressionForm.Ident ->
-            let i, state, randomNumbers = generateDeclaredIdent Int state randomNumbers
+            let i, state, randomNumbers = generateDeclaredIdent targetType state randomNumbers
             if Option.isSome i then
                 i.Value, state, randomNumbers
             else
                 generateExpression targetType depth state randomNumbers
         | ExpressionForm.Addition ->
-            let e1, _, randomNumbers = generateExpression targetType depth state randomNumbers
-            let e2, _, randomNumbers = generateExpression targetType depth state randomNumbers
+            let e1, _, randomNumbers = generateExpression Int depth state randomNumbers
+            let e2, _, randomNumbers = generateExpression Int depth state randomNumbers
             sprintf "%s + %s" e1 e2, state, randomNumbers
         | ExpressionForm.Application ->
+            //TODO: get the types right
             let expression, _, randomNumbers = generateExpression targetType depth state randomNumbers
             let expressionList, _, randomNumbers = generateExpressionList targetType depth state randomNumbers
             sprintf "(%s %s)" expression expressionList, state, randomNumbers
         | ExpressionForm.Let ->
+            //TODO: get the types right
             let ident, inScopeState, randomNumbers = generateIdent targetType state randomNumbers
             let identList, bodyState, randomNumbers = generateIdentList targetType state randomNumbers
             let e1, _, randomNumbers = generateExpression targetType depth bodyState randomNumbers

@@ -64,13 +64,12 @@ type CodeGenerationModule() =
         // 0 : int, 1 : ident, 2 : e + e, 3 : (ident ident_list), 4 : let ident_list = e in e
         Assert.AreEqual("1", getString (generateExpressionEmpty (seq [0;1])))
         Assert.AreEqual("ident5", getString (generateExpression Int 1 (Map ["ident5", Type.Int]) (seq [1;5])))
-        Assert.AreEqual("1 + 2", getString (generateExpressionEmpty (seq [2;0;1;0;2])))
+        Assert.AreEqual("1 + 2", getString (generateExpressionEmpty (seq [1;0;1;0;2])))
         Assert.AreEqual("(ident0 ident2 ident3)",
                         getString (generateExpression Int 1
                             (Map ["ident0",Type.Int;"ident1",Type.Int;"ident2",Type.Int;"ident3",Type.Int])
                             (seq [3;1;0;2;1;2;1;3])))
-        Assert.AreEqual("(let ident0 = 1 in 2)", getString (generateExpressionEmpty (seq [4;0;0;0;1;0;2])))
-        Assert.AreEqual("1", getString (generateExpressionEmpty (seq [10;1])))
+        Assert.AreEqual("(let ident0 = 1 in 2)", getString (generateExpressionEmpty (seq [3;0;0;0;1;0;2])))
 
     [<Test>]
     member this.``Can generate a list of expressions``() =
@@ -85,14 +84,12 @@ type CodeGenerationModule() =
 
     [<Test>]
     member this.``Can avoid using idents which aren't declared``() =
-        Assert.AreEqual("(let ident0 = 1 in ident0)", getString (generateExpressionEmpty (seq [4;0;0;0;1;1;2])),
+        Assert.AreEqual("(let ident0 = 1 in ident0)", getString (generateExpressionEmpty (seq [3;0;0;0;1;1;2])),
                         "Don't use ident2, use ident0 because it's the only available one")
-        Assert.AreEqual("(let ident0 = 1 in ident0)", getString (generateExpressionEmpty (seq [4;0;0;1;0;1;1;5])),
-                        "If a number indicates an ident should be used when state is empty, just discard that number")
 
     [<Test>]
     member this.``Can cutoff at a certain depth to avoid exponential growth``() =
-        Assert.AreEqual("1 + 1 + 1 + 1 + 1", getString (generateExpressionEmpty (seq [2;0;1;2;0;1;2;0;1;2;0;1;2;1])))
+        Assert.AreEqual("1 + 1 + 1 + 1 + 1 + 1", getString (generateExpression Int 0 (Map ["ident1",Type.Int]) (seq [2;0;1;2;0;1;2;0;1;2;0;1;2;0;1;2;1;1])))
 
     [<Test>]
     member this.``Can generate a declared identifier of a specified type``() =
@@ -100,3 +97,8 @@ type CodeGenerationModule() =
             getString (generateDeclaredIdent (Fun(Int,Int)) (Map["ident1",Int;"ident3",Fun(Int,Int)]) (seq [0])))
         Assert.AreEqual(None,
             getString (generateDeclaredIdent (Fun(Int,Int)) (Map["ident1",Int;"ident3",Int]) (seq [1])))
+
+    [<Test>]
+    member this.``Can generate an expression with a function type``() =
+        Assert.AreEqual("ident3",
+            getString (generateExpression (Fun(Int,Int)) 1 (Map["ident3",(Fun(Int,Int))]) (seq[0;0;1;1;1;3])))
