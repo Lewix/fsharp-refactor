@@ -41,6 +41,7 @@ type BehaviourCheckerModule() =
         Assert.IsTrue(hasChanged (noErrors, "../mnt/media/git/university/personalproj/fsharp-refactor/tests/compiler_tests/success1.dll") (errors, ""))
 
 [<TestFixture>]
+[<Category("Evaluation")>]
 type CodeGenerationModule() =
     let generateInteger = generateInteger Int (Map<string,Type> [])
     let generateIdent = generateIdent Int (Map<string,Type> [])
