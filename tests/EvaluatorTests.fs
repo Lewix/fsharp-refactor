@@ -7,6 +7,7 @@ open FSharpRefactor.Evaluator.BehaviourChecker
 open FSharpRefactor.Evaluator.CodeGenerator
 
 [<TestFixture>]
+[<Category("Evaluation")>]
 type BehaviourCheckerModule() =
     let hasChanged resultsAndAssembly1 resultsAndAssembly2 =
         resultsBehaviourHasChanged "f" resultsAndAssembly1 resultsAndAssembly2
