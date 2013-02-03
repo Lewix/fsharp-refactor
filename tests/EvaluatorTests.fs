@@ -112,3 +112,8 @@ type CodeGenerationModule() =
 
         let equivalent, state = typesAreEquivalent { emptyState with genericTypes = (Map [0,Set[Generic 1; Int]]) } (Generic 1) (Type.Fun(Type.Int,Type.Int))
         Assert.AreEqual((false, Map [0,Set[Generic 1; Int];1,Set[(Type.Fun(Type.Int,Type.Int))]]), (equivalent, state.genericTypes))
+
+    [<Test>]
+    member this.``Can generate used generics numbers``() =
+        let state = { emptyState with genericTypes = Map[0,Set[Generic 1; Generic 2]; 1,Set[Generic 5; Int]] }
+        Assert.AreEqual([1;2;5], usedGenerics state)
