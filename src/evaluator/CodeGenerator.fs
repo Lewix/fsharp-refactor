@@ -20,11 +20,11 @@ type ExpressionForm =
 
 let getTargetTypeExpressionForms targetType state =
     let typeInState t =
-        Map.exists (fun _ t -> snd (typesAreEquivalent state targetType t)) state.identifierTypes
+        Map.exists (fun _ t -> fst (typesAreEquivalent state targetType t)) state.identifierTypes
 
-    List.filter snd [ExpressionForm.Integer, snd(typesAreEquivalent state targetType Type.Int);
+    List.filter snd [ExpressionForm.Integer, fst(typesAreEquivalent state targetType Type.Int);
                      ExpressionForm.Ident, typeInState targetType;
-                     ExpressionForm.Addition, snd(typesAreEquivalent state targetType Type.Int);
+                     ExpressionForm.Addition, fst(typesAreEquivalent state targetType Type.Int);
                      ExpressionForm.Application, true;
                      ExpressionForm.Let, true]
     |> List.map fst
@@ -46,7 +46,7 @@ and generateIdent targetType (state : GenerationState)  =
 
 and generateDeclaredIdent targetType (state : GenerationState) =
     let targetTypeIdents =
-        Map.filter (fun i t -> snd (typesAreEquivalent state t targetType)) state.identifierTypes
+        Map.filter (fun _ t -> fst (typesAreEquivalent state t targetType)) state.identifierTypes
         |> Map.toList
         |> List.map fst
     let ident, state = chooseFrom targetTypeIdents state

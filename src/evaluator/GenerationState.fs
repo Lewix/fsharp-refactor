@@ -1,5 +1,7 @@
 module FSharpRefactor.Evaluator.GenerationState
 
+open System
+
 type Type =
     | Int
     | Fun of Type * Type
@@ -7,7 +9,7 @@ type Type =
 
 type GenerationState = {
     identifierTypes : Map<string, Type>;
-    genericTypes : Map<int, Type>;
+    genericTypes : Map<int,Set<Type>>; // This is sort of a disjoint set
     randomNumbers : seq<int>
     }
 
@@ -19,15 +21,33 @@ let chooseFrom (elements : list<'a>) (state : GenerationState) =
 let addIdentifierType state (identifier, identifierType) =
     { state with identifierTypes = state.identifierTypes.Add(identifier, identifierType) }
 
-let rec typesAreEquivalent state t1 t2 =
-    let genericTypes = state.genericTypes
-    match t1,t2 with
-        | Type.Generic i, Type.Generic j ->
-            match genericTypes.ContainsKey i, genericTypes.ContainsKey j with
-                | true, true -> typesAreEquivalent state genericTypes.[i] genericTypes.[j]
-        | Type.Generic _, _ | _, Type.Generic _ -> genericTypes, true
-        | Type.Int, Type.Int -> genericTypes, true
-        | Type.Fun(ta1,ta2),Type.Fun(tb1,tb2) ->
-            genericTypes, snd (typesAreEquivalent state ta1 ta2) && snd (typesAreEquivalent state tb1 tb2)
-        | _ -> genericTypes, false
+let isGeneric t =
+    match t with | Generic _ -> true | _ -> false
+let isGenericSet (genericTypes : Map<int,Set<Type>>) i =
+    Set.fold (&&) true (Set.map isGeneric genericTypes.[i])
+let typesAreEquivalent state t1 t2 =
+    let append genericTypes typeSet =
+        if Map.exists (fun _ s -> Set.isSubset typeSet s) genericTypes then
+            genericTypes
+        else
+            Map.add genericTypes.Count typeSet genericTypes
+    let union (genericTypes : Map<int,Set<Type>>) key1 key2 =
+        Set.union genericTypes.[key1] genericTypes.[key2]
+        |> append genericTypes
+        |> Map.remove key1
+        |> Map.remove key2
 
+    let findTypeIndex genericTypes t =
+        Map.findKey (fun _ s -> Set.contains t s) genericTypes
+
+    let genericTypes = append state.genericTypes (Set [t1])
+    let genericTypes = append genericTypes (Set [t2])
+    let t1Index = findTypeIndex genericTypes t1
+    let t2Index = findTypeIndex genericTypes t2
+
+    if t1Index = t2Index then
+        true, genericTypes
+    elif isGenericSet genericTypes t1Index || isGenericSet genericTypes t2Index then
+        true, union genericTypes t1Index t2Index
+    else
+        false, genericTypes
