@@ -31,7 +31,11 @@ let getTargetTypeExpressionForms targetType state =
 
 let generateGeneric state =
     //TODO: distinguish used and unused generic types
-    let genericNum, state = chooseFrom [0..GenerationConfig.GenericTypeThreshold] state
+    let unusedGenerics =
+        Set (usedGenerics state)
+        |> Set.difference (Set [0..GenerationConfig.GenericTypeThreshold])
+        |> Set.toList
+    let genericNum, state = chooseFrom unusedGenerics state
     Type.Generic genericNum, state
 
 let rec generateInteger targetType state =
@@ -115,5 +119,4 @@ and generateExpression targetType depth (state : GenerationState) =
             generateLet targetType depth state 
         | _ ->
             let newExpressionForm = (int expressionForm) % GenerationConfig.ExpressionFormsCount 
-            //TODO: update randomnums
             generateExpression targetType depth state
