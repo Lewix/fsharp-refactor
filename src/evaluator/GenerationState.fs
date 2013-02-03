@@ -54,6 +54,7 @@ let typesAreEquivalent state t1 t2 =
     let equivalent, genericTypes =
         if t1Index = t2Index then
             true, genericTypes
+        //TODO: Do unification properly
         elif (isGenericSet genericTypes t1Index || isGenericSet genericTypes t2Index) && occursCheckPasses then
             true, union genericTypes t1Index t2Index
         else
