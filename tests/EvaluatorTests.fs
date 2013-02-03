@@ -7,7 +7,6 @@ open FSharpRefactor.Evaluator.BehaviourChecker
 open FSharpRefactor.Evaluator.CodeGenerator
 
 [<TestFixture>]
-[<Category("Evaluation")>]
 type BehaviourCheckerModule() =
     let hasChanged resultsAndAssembly1 resultsAndAssembly2 =
         resultsBehaviourHasChanged "f" resultsAndAssembly1 resultsAndAssembly2
@@ -67,10 +66,11 @@ type CodeGenerationModule() =
         Assert.AreEqual("1", getString (generateExpressionEmpty (seq [0;1])))
         Assert.AreEqual("ident5", getString (generateExpression Int 1 (Map ["ident5", Type.Int]) (seq [1;5])))
         Assert.AreEqual("1 + 2", getString (generateExpressionEmpty (seq [1;0;1;0;2])))
-        Assert.AreEqual("(ident0 ident2 ident3)",
+        Assert.AreEqual("(ident0 ident2)",
                         getString (generateExpression Int 1
-                            (Map ["ident0",Type.Int;"ident1",Type.Int;"ident2",Type.Int;"ident3",Type.Int])
-                            (seq [3;1;0;2;1;2;1;3])))
+                            (Map ["ident0",Type.Fun(Type.Int,Type.Int);
+                                  "ident1",Type.Int;"ident2",Type.Int])
+                            (seq [3;0;0;0;1;0])))
         Assert.AreEqual("(let ident0 = 1 in 2)", getString (generateExpressionEmpty (seq [3;0;0;0;1;0;2])))
 
     [<Test>]
@@ -80,9 +80,8 @@ type CodeGenerationModule() =
 
     [<Test>]
     member this.``Can generate declared identifier``() =
-        Assert.AreEqual(Some "ident5", getString (generateDeclaredIdent Int (Map ["ident0",Type.Int; "ident3",Type.Int; "ident5",Type.Int])
+        Assert.AreEqual("ident5", getString (generateDeclaredIdent Int (Map ["ident0",Type.Int; "ident3",Type.Int; "ident5",Type.Int])
                                                                   (seq [11])))
-        Assert.AreEqual(None, getString (generateDeclaredIdent Int (Map []) (seq [5])))
 
     [<Test>]
     member this.``Can avoid using idents which aren't declared``() =
@@ -95,12 +94,14 @@ type CodeGenerationModule() =
 
     [<Test>]
     member this.``Can generate a declared identifier of a specified type``() =
-        Assert.AreEqual(Some ("ident3"),
+        Assert.AreEqual("ident3",
             getString (generateDeclaredIdent (Fun(Int,Int)) (Map["ident1",Int;"ident3",Fun(Int,Int)]) (seq [0])))
-        Assert.AreEqual(None,
-            getString (generateDeclaredIdent (Fun(Int,Int)) (Map["ident1",Int;"ident3",Int]) (seq [1])))
 
     [<Test>]
     member this.``Can generate an expression with a function type``() =
         Assert.AreEqual("ident3",
             getString (generateExpression (Fun(Int,Int)) 1 (Map["ident3",(Fun(Int,Int))]) (seq[0;0;1;1;1;3])))
+        Assert.AreEqual("(ident0 1)",
+            getString (generateExpression (Fun(Int,Int)) 1 (Map["ident0",(Fun(Int,Fun(Int,Int)))]) (seq[0;0;0;1;0;1])))
+        Assert.AreEqual("(let ident0 ident1 = ident1 in ident0)",
+            getString (generateExpression (Fun(Int,Int)) 1 (Map[]) (seq[0;0;1;1;1;3])))
