@@ -15,6 +15,7 @@ SOURCES=src/Ast.fs \
 		src/AddArgument.fs
 
 EVALUATOR_SOURCES=src/evaluator/BehaviourChecker.fs \
+				  src/evaluator/GenerationState.fs \
 				  src/evaluator/CodeGenerator.fs
 
 TESTS=tests/EngineTests.fs \
