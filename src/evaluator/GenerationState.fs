@@ -24,6 +24,7 @@ let addIdentifierType state (identifier, identifierType) =
 let isGeneric t =
     match t with | Generic _ -> true | _ -> false
 
+//TODO: consider t1 = Fun(Generic 1, Int) and t2 = Generic 1
 let typesAreEquivalent state t1 t2 =
     let isGenericSet (genericTypes : Map<int,Set<Type>>) i =
         Set.fold (&&) true (Set.map isGeneric genericTypes.[i])
