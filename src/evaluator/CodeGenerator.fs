@@ -18,29 +18,25 @@ type ExpressionForm =
     | Application = 3
     | Let = 4
 
-let rec typesAreEquivalent (genericTypes : Map<int,Type>) t1 t2 =
+let rec typesAreEquivalent state t1 t2 =
+    let genericTypes = state.genericTypes
     match t1,t2 with
         | Type.Generic i, Type.Generic j ->
             match genericTypes.ContainsKey i, genericTypes.ContainsKey j with
-                | true, true -> typesAreEquivalent genericTypes genericTypes.[i] genericTypes.[j]
-                | true, false ->
-                    typesAreEquivalent (genericTypes.Add(j, genericTypes.[i])) genericTypes.[i] (Type.Generic j)
-                | false, true ->
-                    typesAreEquivalent (genericTypes.Add(i, genericTypes.[j])) (Type.Generic i) genericTypes.[j]
-                | false, false -> genericTypes, true
+                | true, true -> typesAreEquivalent state genericTypes.[i] genericTypes.[j]
         | Type.Generic _, _ | _, Type.Generic _ -> genericTypes, true
         | Type.Int, Type.Int -> genericTypes, true
         | Type.Fun(ta1,ta2),Type.Fun(tb1,tb2) ->
-            genericTypes, snd (typesAreEquivalent genericTypes ta1 ta2) && snd (typesAreEquivalent genericTypes tb1 tb2)
+            genericTypes, snd (typesAreEquivalent state ta1 ta2) && snd (typesAreEquivalent state tb1 tb2)
         | _ -> genericTypes, false
 
-let getTargetTypeExpressionForms genericTypes targetType state =
+let getTargetTypeExpressionForms targetType state =
     let typeInState t =
-        Map.exists (fun _ t -> snd (typesAreEquivalent genericTypes targetType t)) state.identifierTypes
+        Map.exists (fun _ t -> snd (typesAreEquivalent state targetType t)) state.identifierTypes
 
-    List.filter snd [ExpressionForm.Integer, snd(typesAreEquivalent genericTypes targetType Type.Int);
+    List.filter snd [ExpressionForm.Integer, snd(typesAreEquivalent state targetType Type.Int);
                      ExpressionForm.Ident, typeInState targetType;
-                     ExpressionForm.Addition, snd(typesAreEquivalent genericTypes targetType Type.Int);
+                     ExpressionForm.Addition, snd(typesAreEquivalent state targetType Type.Int);
                      ExpressionForm.Application, true;
                      ExpressionForm.Let, true]
     |> List.map fst
@@ -60,9 +56,9 @@ and generateIdent targetType (state : GenerationState)  =
     let ident, state = chooseFrom idents state
     ident, addIdentifierType state (ident, targetType)
 
-and generateDeclaredIdent genericTypes targetType (state : GenerationState) =
+and generateDeclaredIdent targetType (state : GenerationState) =
     let targetTypeIdents =
-        Map.filter (fun i t -> snd (typesAreEquivalent genericTypes t targetType)) state.identifierTypes
+        Map.filter (fun i t -> snd (typesAreEquivalent state t targetType)) state.identifierTypes
         |> Map.toList
         |> List.map fst
     let ident, state = chooseFrom targetTypeIdents state
@@ -86,18 +82,18 @@ and generateList targetType state  generationFunction lengthThreshold =
 and generateIdentList targetType state =
     generateList targetType state (generateIdent targetType) GenerationConfig.IdentListLengthThreshold
 
-and generateApplication genericTypes targetType depth state =
+and generateApplication targetType depth state =
     let argumentType, state = generateGeneric state
     let e1, state =
-        generateExpression genericTypes (Type.Fun(argumentType, targetType)) depth state
-    let e2, state = generateExpression genericTypes argumentType depth state
+        generateExpression (Type.Fun(argumentType, targetType)) depth state
+    let e2, state = generateExpression argumentType depth state
     sprintf "(%s %s)" e1 e2, state
 
-and generateLet genericTypes targetType depth state =
+and generateLet targetType depth state =
     let identList, bodyState = generateIdentList targetType state
-    let e1, state = generateExpression genericTypes targetType depth bodyState
+    let e1, state = generateExpression targetType depth bodyState
     let ident, inScopeState = generateIdent targetType state
-    let e2, state = generateExpression genericTypes targetType depth inScopeState
+    let e2, state = generateExpression targetType depth inScopeState
     let letString =
         if identList = "" then
             sprintf "(let %s = %s in %s)" ident e1 e2
@@ -105,9 +101,9 @@ and generateLet genericTypes targetType depth state =
             sprintf "(let %s %s = %s in %s)" ident identList e1 e2
     letString, state
 
-and generateExpression genericTypes targetType depth (state : GenerationState) =
+and generateExpression targetType depth (state : GenerationState) =
     let terminalExpressionForms = [ExpressionForm.Integer; ExpressionForm.Ident]
-    let targetTypeExpressionForms = getTargetTypeExpressionForms genericTypes targetType state
+    let targetTypeExpressionForms = getTargetTypeExpressionForms targetType state
     let expressionForm, state =
         if depth >= GenerationConfig.CutoffDepth then
             chooseFrom terminalExpressionForms state
@@ -119,17 +115,17 @@ and generateExpression genericTypes targetType depth (state : GenerationState) =
         | ExpressionForm.Integer ->
             generateInteger Type.Int state 
         | ExpressionForm.Ident ->
-            generateDeclaredIdent genericTypes targetType state 
+            generateDeclaredIdent targetType state 
         | ExpressionForm.Addition ->
-            let e1, state = generateExpression genericTypes Type.Int depth state 
-            let e2, state = generateExpression genericTypes Type.Int depth state 
+            let e1, state = generateExpression Type.Int depth state 
+            let e2, state = generateExpression Type.Int depth state 
             sprintf "%s + %s" e1 e2, state
         | ExpressionForm.Application ->
-            generateApplication genericTypes targetType depth state 
+            generateApplication targetType depth state 
         | ExpressionForm.Let ->
             //TODO: get the types right
-            generateLet genericTypes targetType depth state 
+            generateLet targetType depth state 
         | _ ->
             let newExpressionForm = (int expressionForm) % GenerationConfig.ExpressionFormsCount 
             //TODO: update randomnums
-            generateExpression genericTypes targetType depth state
+            generateExpression targetType depth state
