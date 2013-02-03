@@ -30,7 +30,6 @@ let getTargetTypeExpressionForms targetType state =
     |> List.map fst
 
 let generateGeneric state =
-    //TODO: distinguish used and unused generic types
     let unusedGenerics =
         Set (usedGenerics state)
         |> Set.difference (Set [0..GenerationConfig.GenericTypeThreshold])
