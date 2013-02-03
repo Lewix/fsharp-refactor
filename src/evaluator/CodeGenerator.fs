@@ -18,18 +18,6 @@ type ExpressionForm =
     | Application = 3
     | Let = 4
 
-let rec typesAreEquivalent state t1 t2 =
-    let genericTypes = state.genericTypes
-    match t1,t2 with
-        | Type.Generic i, Type.Generic j ->
-            match genericTypes.ContainsKey i, genericTypes.ContainsKey j with
-                | true, true -> typesAreEquivalent state genericTypes.[i] genericTypes.[j]
-        | Type.Generic _, _ | _, Type.Generic _ -> genericTypes, true
-        | Type.Int, Type.Int -> genericTypes, true
-        | Type.Fun(ta1,ta2),Type.Fun(tb1,tb2) ->
-            genericTypes, snd (typesAreEquivalent state ta1 ta2) && snd (typesAreEquivalent state tb1 tb2)
-        | _ -> genericTypes, false
-
 let getTargetTypeExpressionForms targetType state =
     let typeInState t =
         Map.exists (fun _ t -> snd (typesAreEquivalent state targetType t)) state.identifierTypes
