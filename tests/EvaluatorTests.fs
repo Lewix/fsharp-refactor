@@ -86,7 +86,7 @@ type CodeGenerationModule() =
 
     [<Test>]
     member this.``Can avoid using idents which aren't declared``() =
-        Assert.AreEqual("(let ident0 = 1 in ident0)", getString (generateExpressionEmpty {emptyState with randomNumbers = (seq [3;0;0;0;1;1;2])}), "Don't use ident2, use ident0 because it's the only available one")
+        Assert.AreEqual("(let ident0 = 1 in ident0)", getString (generateExpressionEmpty {emptyState with randomNumbers = (seq [3;0;0;1;0;1;2])}), "Don't use ident2, use ident0 because it's the only available one")
 
     [<Test>]
     member this.``Can cutoff at a certain depth to avoid exponential growth``() =
