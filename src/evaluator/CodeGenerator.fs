@@ -8,7 +8,6 @@ type GenerationConfig =
     static member IdentListLengthThreshold = 5
     static member GenericTypeThreshold = 10
     static member ExpressionFormsCount = 5
-    static member ExpressionListLengthThreshold = 5
     static member CutoffDepth = 5
 
 type ExpressionForm =
@@ -23,22 +22,22 @@ type Type =
     | Generic of int
     | Fun of Type * Type
 
-let rec typesAreEquivalent t1 t2 =
+let rec typesAreEquivalent genericTypes t1 t2 =
     match t1,t2 with
         | Generic i, Generic j -> i = j
         | Generic _, _ | _, Generic _ -> true
         | Int, Int -> true
         | Fun(ta1,ta2),Fun(tb1,tb2) ->
-            typesAreEquivalent ta1 ta2 && typesAreEquivalent tb1 tb2
+            typesAreEquivalent genericTypes ta1 ta2 && typesAreEquivalent genericTypes tb1 tb2
         | _ -> false
 
-let getTargetTypeExpressionForms targetType state =
+let getTargetTypeExpressionForms genericTypes targetType state =
     let typeInState t =
-        Map.exists (fun _ t -> typesAreEquivalent targetType t) state
+        Map.exists (fun _ t -> typesAreEquivalent genericTypes targetType t) state
 
-    List.filter snd [ExpressionForm.Integer, typesAreEquivalent targetType Int;
+    List.filter snd [ExpressionForm.Integer, typesAreEquivalent genericTypes targetType Int;
                      ExpressionForm.Ident, typeInState targetType;
-                     ExpressionForm.Addition, typesAreEquivalent targetType Int;
+                     ExpressionForm.Addition, typesAreEquivalent genericTypes targetType Int;
                      ExpressionForm.Application, true;
                      ExpressionForm.Let, true]
     |> List.map fst
@@ -61,9 +60,9 @@ and generateIdent targetType (state : Map<string,Type>) (randomNumbers : seq<int
     let ident, randomNumbers = chooseFrom idents randomNumbers
     ident, state.Add (ident, targetType), randomNumbers
 
-and generateDeclaredIdent targetType (state : Map<string,Type>) (randomNumbers : seq<int>) =
+and generateDeclaredIdent genericTypes targetType (state : Map<string,Type>) (randomNumbers : seq<int>) =
     let targetTypeIdents =
-        Map.filter (fun i t -> typesAreEquivalent t targetType) state
+        Map.filter (fun i t -> typesAreEquivalent genericTypes t targetType) state
         |> Map.toList
         |> List.map fst
     let ident, randomNumbers = chooseFrom targetTypeIdents randomNumbers
@@ -86,29 +85,26 @@ and generateList targetType state (randomNumbers : seq<int>) generationFunction 
 and generateIdentList targetType state (randomNumbers : seq<int>) =
     generateList targetType state randomNumbers (generateIdent targetType) GenerationConfig.IdentListLengthThreshold
 
-and generateExpressionList targetType depth state (randomNumbers : seq<int>) =
-    generateList targetType state randomNumbers (generateExpression targetType depth)
-                 GenerationConfig.ExpressionListLengthThreshold
-
-and generateApplication targetType depth state (randomNumbers : seq<int>) =
+and generateApplication genericTypes targetType depth state (randomNumbers : seq<int>) =
     let argumentType, randomNumbers = generateGeneric state randomNumbers
-    let e1, _, randomNumbers = generateExpression (Fun(argumentType, targetType)) depth state randomNumbers
-    let e2, _, randomNumbers = generateExpression argumentType depth state randomNumbers
+    let e1, _, randomNumbers =
+        generateExpression genericTypes (Fun(argumentType, targetType)) depth state randomNumbers
+    let e2, _, randomNumbers = generateExpression genericTypes argumentType depth state randomNumbers
     sprintf "(%s %s)" e1 e2, state, randomNumbers
 
-and generateLet targetType depth state (randomNumbers : seq<int>) =
+and generateLet genericTypes targetType depth state (randomNumbers : seq<int>) =
     let ident, inScopeState, randomNumbers = generateIdent targetType state randomNumbers
     let identList, bodyState, randomNumbers = generateIdentList targetType state randomNumbers
-    let e1, _, randomNumbers = generateExpression targetType depth bodyState randomNumbers
-    let e2, _, randomNumbers = generateExpression targetType depth inScopeState randomNumbers
+    let e1, _, randomNumbers = generateExpression genericTypes targetType depth bodyState randomNumbers
+    let e2, _, randomNumbers = generateExpression genericTypes targetType depth inScopeState randomNumbers
     if identList = "" then
         sprintf "(let %s = %s in %s)" ident e1 e2, state, randomNumbers
     else
         sprintf "(let %s %s = %s in %s)" ident identList e1 e2, state, randomNumbers
-and generateExpression targetType depth state (randomNumbers : seq<int>) =
+
+and generateExpression genericTypes targetType depth state (randomNumbers : seq<int>) =
     let terminalExpressionForms = [ExpressionForm.Integer; ExpressionForm.Ident]
-    let targetTypeExpressionForms = getTargetTypeExpressionForms targetType state
-    Console.Out.WriteLine(sprintf "%A" targetTypeExpressionForms)
+    let targetTypeExpressionForms = getTargetTypeExpressionForms genericTypes targetType state
     let expressionForm, randomNumbers =
         if depth >= GenerationConfig.CutoffDepth then
             chooseFrom terminalExpressionForms randomNumbers
@@ -120,16 +116,16 @@ and generateExpression targetType depth state (randomNumbers : seq<int>) =
         | ExpressionForm.Integer ->
             generateInteger Int state randomNumbers
         | ExpressionForm.Ident ->
-            generateDeclaredIdent targetType state randomNumbers
+            generateDeclaredIdent genericTypes targetType state randomNumbers
         | ExpressionForm.Addition ->
-            let e1, _, randomNumbers = generateExpression Int depth state randomNumbers
-            let e2, _, randomNumbers = generateExpression Int depth state randomNumbers
+            let e1, _, randomNumbers = generateExpression genericTypes Int depth state randomNumbers
+            let e2, _, randomNumbers = generateExpression genericTypes Int depth state randomNumbers
             sprintf "%s + %s" e1 e2, state, randomNumbers
         | ExpressionForm.Application ->
-            generateApplication targetType depth state randomNumbers
+            generateApplication genericTypes targetType depth state randomNumbers
         | ExpressionForm.Let ->
             //TODO: get the types right
-            generateLet targetType depth state randomNumbers
+            generateLet genericTypes targetType depth state randomNumbers
         | _ ->
             let newExpressionForm = (int expressionForm) % GenerationConfig.ExpressionFormsCount 
-            generateExpression targetType depth state (Seq.append (seq [newExpressionForm]) randomNumbers)
+            generateExpression genericTypes targetType depth state (Seq.append (seq [newExpressionForm]) randomNumbers)
