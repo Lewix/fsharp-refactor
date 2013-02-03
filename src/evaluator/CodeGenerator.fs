@@ -22,22 +22,27 @@ type Type =
     | Generic of int
     | Fun of Type * Type
 
-let rec typesAreEquivalent genericTypes t1 t2 =
+let rec typesAreEquivalent (genericTypes : Map<int,Type>) t1 t2 =
     match t1,t2 with
-        | Generic i, Generic j -> i = j
-        | Generic _, _ | _, Generic _ -> true
-        | Int, Int -> true
+        | Generic i, Generic j ->
+            match genericTypes.ContainsKey i, genericTypes.ContainsKey j with
+                | true, true -> typesAreEquivalent genericTypes genericTypes.[i] genericTypes.[j]
+                | true, false -> typesAreEquivalent genericTypes genericTypes.[i] (Generic j)
+                | false, true -> typesAreEquivalent genericTypes (Generic i) genericTypes.[j]
+                | false, false -> genericTypes, true
+        | Generic _, _ | _, Generic _ -> genericTypes, true
+        | Int, Int -> genericTypes, true
         | Fun(ta1,ta2),Fun(tb1,tb2) ->
-            typesAreEquivalent genericTypes ta1 ta2 && typesAreEquivalent genericTypes tb1 tb2
-        | _ -> false
+            genericTypes, snd (typesAreEquivalent genericTypes ta1 ta2) && snd (typesAreEquivalent genericTypes tb1 tb2)
+        | _ -> genericTypes, false
 
 let getTargetTypeExpressionForms genericTypes targetType state =
     let typeInState t =
-        Map.exists (fun _ t -> typesAreEquivalent genericTypes targetType t) state
+        Map.exists (fun _ t -> snd (typesAreEquivalent genericTypes targetType t)) state
 
-    List.filter snd [ExpressionForm.Integer, typesAreEquivalent genericTypes targetType Int;
+    List.filter snd [ExpressionForm.Integer, snd(typesAreEquivalent genericTypes targetType Int);
                      ExpressionForm.Ident, typeInState targetType;
-                     ExpressionForm.Addition, typesAreEquivalent genericTypes targetType Int;
+                     ExpressionForm.Addition, snd(typesAreEquivalent genericTypes targetType Int);
                      ExpressionForm.Application, true;
                      ExpressionForm.Let, true]
     |> List.map fst
@@ -62,7 +67,7 @@ and generateIdent targetType (state : Map<string,Type>) (randomNumbers : seq<int
 
 and generateDeclaredIdent genericTypes targetType (state : Map<string,Type>) (randomNumbers : seq<int>) =
     let targetTypeIdents =
-        Map.filter (fun i t -> typesAreEquivalent genericTypes t targetType) state
+        Map.filter (fun i t -> snd (typesAreEquivalent genericTypes t targetType)) state
         |> Map.toList
         |> List.map fst
     let ident, randomNumbers = chooseFrom targetTypeIdents randomNumbers
@@ -97,10 +102,12 @@ and generateLet genericTypes targetType depth state (randomNumbers : seq<int>) =
     let identList, bodyState, randomNumbers = generateIdentList targetType state randomNumbers
     let e1, _, randomNumbers = generateExpression genericTypes targetType depth bodyState randomNumbers
     let e2, _, randomNumbers = generateExpression genericTypes targetType depth inScopeState randomNumbers
-    if identList = "" then
-        sprintf "(let %s = %s in %s)" ident e1 e2, state, randomNumbers
-    else
-        sprintf "(let %s %s = %s in %s)" ident identList e1 e2, state, randomNumbers
+    let letString =
+        if identList = "" then
+            sprintf "(let %s = %s in %s)" ident e1 e2
+        else
+            sprintf "(let %s %s = %s in %s)" ident identList e1 e2
+    letString, state, randomNumbers
 
 and generateExpression genericTypes targetType depth state (randomNumbers : seq<int>) =
     let terminalExpressionForms = [ExpressionForm.Integer; ExpressionForm.Ident]

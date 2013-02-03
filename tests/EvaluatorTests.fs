@@ -93,10 +93,8 @@ type CodeGenerationModule() =
             getString (generateDeclaredIdent (Map<int,Type> []) (Fun(Int,Int)) (Map["ident1",Int;"ident3",Fun(Int,Int)]) (seq [0])))
 
     [<Test>]
-    member this.``Can generate an expression with a function type``() =
-        Assert.AreEqual("ident3",
-            getString (generateExpression (Map<int,Type> []) (Fun(Int,Int)) 1 (Map["ident3",(Fun(Int,Int))]) (seq[0;0;1;1;1;3])))
-        Assert.AreEqual("(ident0 1)",
-            getString (generateExpression (Map<int,Type> []) (Fun(Int,Int)) 1 (Map["ident0",(Fun(Int,Fun(Int,Int)))]) (seq[0;0;0;1;0;1])))
-        Assert.AreEqual("(let ident0 ident1 = ident1 in ident0)",
-            getString (generateExpression (Map<int,Type> []) (Fun(Int,Int)) 1 (Map[]) (seq[0;0;1;1;1;3])))
+    member this.``Can compare generic types``() =
+        Assert.AreEqual((Map [1,Int], true), typesAreEquivalent (Map<int,Type> []) Int (Generic 1))
+        Assert.AreEqual((Map [1,Generic 2], true), typesAreEquivalent (Map<int,Type> []) (Generic 1) (Generic 2))
+        Assert.AreEqual((Map [1,Int;2,Int], true), typesAreEquivalent (Map [1,Int;2,Int]) (Generic 2) (Generic 1))
+        Assert.AreEqual((Map [1,Int], false), typesAreEquivalent (Map [1,Int]) (Generic 1) (Fun(Int,Int)))
