@@ -101,7 +101,14 @@ type CodeGenerationModule() =
 
     [<Test>]
     member this.``Can compare generic types``() =
-        Assert.AreEqual((true, Map [2,Set[Generic 1; Int]]), typesAreEquivalent emptyState Type.Int (Generic 1))
-        Assert.AreEqual((true, Map [2,Set[Generic 1; Generic 2]]), typesAreEquivalent emptyState (Generic 1) (Generic 2))
-        Assert.AreEqual((true, Map [0,Set[Generic 1; Generic 2; Int]]), typesAreEquivalent { emptyState with genericTypes = (Map [0,Set[Generic 1; Generic 2; Int]]) } (Generic 2) (Generic 1))
-        Assert.AreEqual((false, Map [0,Set[Generic 1; Int];1,Set[(Type.Fun(Type.Int,Type.Int))]]), typesAreEquivalent { emptyState with genericTypes = (Map [0,Set[Generic 1; Int]]) } (Generic 1) (Type.Fun(Type.Int,Type.Int)))
+        let equivalent, state = typesAreEquivalent emptyState Type.Int (Generic 1)
+        Assert.AreEqual((true, Map [2,Set[Generic 1; Int]]), (equivalent, state.genericTypes))
+
+        let equivalent, state = typesAreEquivalent emptyState (Generic 1) (Generic 2)
+        Assert.AreEqual((true, Map [2,Set[Generic 1; Generic 2]]), (equivalent, state.genericTypes))
+
+        let equivalent, state = typesAreEquivalent { emptyState with genericTypes = (Map [0,Set[Generic 1; Generic 2; Int]]) } (Generic 2) (Generic 1)
+        Assert.AreEqual((true, Map [0,Set[Generic 1; Generic 2; Int]]), (equivalent, state.genericTypes))
+
+        let equivalent, state = typesAreEquivalent { emptyState with genericTypes = (Map [0,Set[Generic 1; Int]]) } (Generic 1) (Type.Fun(Type.Int,Type.Int))
+        Assert.AreEqual((false, Map [0,Set[Generic 1; Int];1,Set[(Type.Fun(Type.Int,Type.Int))]]), (equivalent, state.genericTypes))

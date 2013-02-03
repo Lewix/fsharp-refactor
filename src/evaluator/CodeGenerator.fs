@@ -50,7 +50,7 @@ and generateDeclaredIdent targetType (state : GenerationState) =
         |> Map.toList
         |> List.map fst
     let ident, state = chooseFrom targetTypeIdents state
-    ident, state
+    ident, snd (typesAreEquivalent state (state.identifierTypes.[ident]) targetType)
 
 and generateList targetType state  generationFunction lengthThreshold =
     let length, state = chooseFrom [0..lengthThreshold] state

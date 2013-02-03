@@ -21,11 +21,11 @@ let chooseFrom (elements : list<'a>) (state : GenerationState) =
 let addIdentifierType state (identifier, identifierType) =
     { state with identifierTypes = state.identifierTypes.Add(identifier, identifierType) }
 
-let isGeneric t =
-    match t with | Generic _ -> true | _ -> false
-let isGenericSet (genericTypes : Map<int,Set<Type>>) i =
-    Set.fold (&&) true (Set.map isGeneric genericTypes.[i])
 let typesAreEquivalent state t1 t2 =
+    let isGeneric t =
+        match t with | Generic _ -> true | _ -> false
+    let isGenericSet (genericTypes : Map<int,Set<Type>>) i =
+        Set.fold (&&) true (Set.map isGeneric genericTypes.[i])
     let append genericTypes typeSet =
         if Map.exists (fun _ s -> Set.isSubset typeSet s) genericTypes then
             genericTypes
@@ -45,9 +45,11 @@ let typesAreEquivalent state t1 t2 =
     let t1Index = findTypeIndex genericTypes t1
     let t2Index = findTypeIndex genericTypes t2
 
-    if t1Index = t2Index then
-        true, genericTypes
-    elif isGenericSet genericTypes t1Index || isGenericSet genericTypes t2Index then
-        true, union genericTypes t1Index t2Index
-    else
-        false, genericTypes
+    let equivalent, genericTypes =
+        if t1Index = t2Index then
+            true, genericTypes
+        elif isGenericSet genericTypes t1Index || isGenericSet genericTypes t2Index then
+            true, union genericTypes t1Index t2Index
+        else
+            false, genericTypes
+    equivalent, { state with genericTypes = genericTypes }
