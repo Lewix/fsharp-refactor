@@ -64,13 +64,6 @@ type CodeGenerationModule() =
         Assert.AreEqual("ident5", getString (generateExpression Type.Int 1 {state with randomNumbers = (seq [1;5])}))
 
         Assert.AreEqual("(1 + 2)", getString (generateExpressionEmpty {emptyState with randomNumbers = (seq [1;0;1;0;2])}))
-        //TODO: Test app and let
-        //Assert.AreEqual("(ident0 ident2)",
-        //                getString (generateExpression (Map<int,Type> []) Type.Int 1
-        //                    (Map ["ident0",Type.Fun(Type.Int,Type.Int);
-        //                          "ident1",Type.Int;"ident2",Type.Int])
-        //                    (seq [3;0;0;0;1;0])))
-        //Assert.AreEqual("(let ident0 = 1 in 2)", getString (generateExpressionEmpty (seq [3;0;0;0;1;0;2])))
 
     [<Test>]
     member this.``Can generate declared identifier``() =
