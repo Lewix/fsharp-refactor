@@ -36,7 +36,7 @@ let rec unifyTypes t1 t2 =
         | Int,Fun(_,_) -> false
         | Fun(_,_),Int -> false
         | Fun(ta1,tb1),Fun(ta2,tb2) -> unifyTypes ta1 ta2 && unifyTypes tb1 tb2
-        | (Generic _ as g),t | t,(Generic _ as g) -> not (occurs g t)
+        | (Generic _ as g),t | t,(Generic _ as g) -> g = t || not (occurs g t)
 
 let typesAreEquivalent state t1 t2 =
     let isGenericSet (genericTypes : Map<int,Set<Type>>) i =

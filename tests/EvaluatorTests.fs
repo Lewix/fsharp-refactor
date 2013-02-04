@@ -126,6 +126,7 @@ type TypeEquivalenceModule() =
         Assert.AreEqual(true, unifyTypes Int Int)
         Assert.AreEqual(true, unifyTypes Int (Generic 1))
         Assert.AreEqual(true, unifyTypes (Generic 1) (Generic 2))
+        Assert.AreEqual(true, unifyTypes (Generic 2) (Generic 2))
         Assert.AreEqual(true, unifyTypes (Fun(Int,Int)) (Fun(Generic 1, Int)))
 
         Assert.AreEqual(false, unifyTypes (Fun(Generic 1, Int)) (Generic 1))
