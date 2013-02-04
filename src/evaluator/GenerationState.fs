@@ -24,6 +24,20 @@ let addIdentifierType state (identifier, identifierType) =
 let isGeneric t =
     match t with | Generic _ -> true | _ -> false
 
+let rec occurs t1 t2 =
+    match t2 with
+        | Int -> false
+        | Fun(ta,tb) -> occurs t1 ta || occurs t1 tb
+        | _ -> t1 = t2
+
+let rec unifyTypes t1 t2 =
+    match t1,t2 with
+        | Int,Int -> true
+        | Int,Fun(_,_) -> false
+        | Fun(_,_),Int -> false
+        | Fun(ta1,tb1),Fun(ta2,tb2) -> unifyTypes ta1 ta2 && unifyTypes tb1 tb2
+        | (Generic _ as g),t | t,(Generic _ as g) -> not (occurs g t)
+
 let typesAreEquivalent state t1 t2 =
     let isGenericSet (genericTypes : Map<int,Set<Type>>) i =
         Set.fold (&&) true (Set.map isGeneric genericTypes.[i])
@@ -39,11 +53,6 @@ let typesAreEquivalent state t1 t2 =
         |> Map.remove key2
     let findTypeIndex genericTypes t =
         Map.findKey (fun _ s -> Set.contains t s) genericTypes
-    let rec occurs t1 t2 =
-        match t2 with
-            | Int -> false
-            | Fun(ta,tb) -> occurs t1 ta || occurs t1 tb
-            | _ -> t1 = t2
 
     let occursCheckPasses = not (occurs t1 t2 || occurs t2 t1)
     let genericTypes = append state.genericTypes (Set [t1])
