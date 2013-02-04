@@ -46,7 +46,6 @@ type CodeGenerationModule() =
     let emptyState = { identifierTypes = Map []; genericTypes = Set []; randomNumbers = seq [] }
     let generateInteger = generateInteger Int 
     let generateIdent = generateIdent Int 
-    let generateIdentList = generateIdentList Int 
     let generateExpressionEmpty = generateExpression Type.Int 1 
 
     let getString (s,_) = s
@@ -57,14 +56,8 @@ type CodeGenerationModule() =
         Assert.AreEqual("ident10", getString (generateIdent {emptyState with randomNumbers = (seq [110])}))
 
     [<Test>]
-    member this.``Can generate lists of identifiers for functions``() =
-        Assert.AreEqual("", getString (generateIdentList {emptyState with randomNumbers = (seq [0;12;34;5])}))
-        Assert.AreEqual("ident5", getString (generateIdentList {emptyState with randomNumbers = (seq [1;5])}))
-        Assert.AreEqual("ident1 ident5 ident11", getString (generateIdentList {emptyState with randomNumbers = (seq [3;101;5;11;1])}))
-
-    [<Test>]
     member this.``Can generate an expression``() =
-        // 0 : int, 1 : ident, 2 : e + e, 3 : (ident ident_list), 4 : let ident_list = e in e
+        // 0 : int, 1 : ident, 2 : e + e, 3 : (ident ident), 4 : let ident [ident] = e in e
         Assert.AreEqual("1", getString (generateExpressionEmpty {emptyState with randomNumbers = (seq [0;1])}))
 
         let state = { identifierTypes = (Map ["ident5", Type.Int]); genericTypes = Set []; randomNumbers = seq [] }

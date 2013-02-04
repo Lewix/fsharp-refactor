@@ -6,7 +6,6 @@ open FSharpRefactor.Evaluator.GenerationState
 type GenerationConfig =
     static member IntegerThreshold = 100
     static member IdentThreshold = 100
-    static member IdentListLengthThreshold = 5
     static member GenericTypeThreshold = 10
     static member ExpressionFormsCount = 5
     static member CutoffDepth = 5
@@ -54,24 +53,6 @@ and generateDeclaredIdent targetType (state : GenerationState) =
         |> List.map fst
     let ident, state = chooseFrom targetTypeIdents state
     ident, snd (typesAreEquivalent state (state.identifierTypes.[ident]) targetType)
-
-and generateList targetType state  generationFunction lengthThreshold =
-    let length, state = chooseFrom [0..lengthThreshold] state
-    if length = 0 then
-        "", state
-    elif length = 1 then
-        let item, state = generationFunction state 
-        item, state
-    else
-        let item, state = generationFunction state
-        let items, state =
-            let state = { state with randomNumbers = (Seq.append (seq [length-1]) state.randomNumbers) }
-            generateList targetType state generationFunction 
-                         lengthThreshold
-        item + " " + items, state
-
-and generateIdentList targetType state =
-    generateList targetType state (generateIdent targetType) GenerationConfig.IdentListLengthThreshold
 
 and generateApplication targetType depth state =
     let argumentType, state = generateGeneric state
