@@ -56,39 +56,41 @@ let rec occurs t1 t2 =
         | Fun(ta,tb) -> occurs t1 ta || occurs t1 tb
         | _ -> t1 = t2
 
+let rec unifyTypesWithConstraints t1 t2 (constraints : DisjointSet) =
+    match t1,t2 with
+        | Int,Int -> Some constraints
+        | Int,Fun(_,_) -> None
+        | Fun(_,_),Int -> None
+        | Fun(ta1,tb1),Fun(ta2,tb2) ->
+            let constraintsA = unifyTypesWithConstraints ta1 ta2 constraints
+            if Option.isSome constraintsA then
+                unifyTypesWithConstraints tb1 tb2 constraintsA.Value
+            else
+                None
+        | (Generic _ as g),t | t,(Generic _ as g) ->
+            if g = t then Some constraints
+            elif not (occurs g t) then
+                Some (unionSets g t constraints)
+            else None
+
 let unifyTypes t1 t2 : (DisjointSet option)=
-    let rec unifyTypesWithConstraints t1 t2 (constraints : DisjointSet) =
-        match t1,t2 with
-            | Int,Int -> Some constraints
-            | Int,Fun(_,_) -> None
-            | Fun(_,_),Int -> None
-            | Fun(ta1,tb1),Fun(ta2,tb2) ->
-                let constraintsA = unifyTypesWithConstraints ta1 ta2 constraints
-                if Option.isSome constraintsA then
-                    unifyTypesWithConstraints tb1 tb2 constraintsA.Value
-                else
-                    None
-            | (Generic _ as g),t | t,(Generic _ as g) ->
-                if g = t then Some constraints
-                elif not (occurs g t) then
-                    Some (unionSets g t constraints)
-                else None
     unifyTypesWithConstraints t1 t2 (Set[])
 
 let typesAreEquivalent state t1 t2 =
-    let genericTypes = add t1 state.genericTypes
-    let genericTypes = add t2 genericTypes
+    let constraints = add t1 state.genericTypes |> add t2
     
-    let t1Set = findSet t1 genericTypes
-    let t2Set = findSet t2 genericTypes 
+    let t1Set = findSet t1 constraints
+    let t2Set = findSet t2 constraints 
 
-    let t2UnifiesWithT1Set = (Set.map (fun t -> Option.isSome (unifyTypes t2 t)) t1Set) = Set [true]
-    let t1UnifiesWithT2Set = (Set.map (fun t -> Option.isSome (unifyTypes t1 t)) t2Set) = Set [true]
+    let newConstraints =
+        Set.fold (fun cs t -> Option.bind (unifyTypesWithConstraints t1 t) cs) (Some constraints) t2Set
+    let newConstraints =
+        Set.fold (fun cs t -> Option.bind (unifyTypesWithConstraints t2 t) cs) newConstraints t1Set
 
-    if t2UnifiesWithT1Set && t1UnifiesWithT2Set then
-        true, { state with genericTypes = union t1Set t2Set genericTypes }
+    if Option.isSome newConstraints then
+        true, { state with genericTypes = newConstraints.Value }
     else
-        false, state
+        false, { state with genericTypes = constraints }
 
 let usedGenerics state =
     let listGenerics s =

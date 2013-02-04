@@ -101,8 +101,8 @@ type CodeGenerationModule() =
 
     [<Test>]
     member this.``Can generate an expression of a specified type``() =
-        let state = { identifierTypes = (Map["ident1",Type.Int;"ident3",Type.Fun(Type.Int,Type.Int)]); genericTypes = (Set []); randomNumbers = seq [4;0;0;1;1;0] }
-        Assert.AreEqual("ident3 ident1", getString (generateExpression (Fun(Int,Int)) 1 state))
+        let state = { identifierTypes = (Map["ident1",Type.Int;"ident3",Type.Fun(Type.Int,Type.Int)]); genericTypes = (Set []); randomNumbers = seq [3;0;0;1;1;0] }
+        Assert.AreEqual("(ident3 ident1)", getString (generateExpression Int 1 state))
 
     [<Test>]
     member this.``Can generate used generics numbers``() =
@@ -118,19 +118,22 @@ type TypeEquivalenceModule() =
         let constraints = Set [Set[Generic 1; Generic 2; Int]]
         let equivalent, state =
             typesAreEquivalent { emptyState with genericTypes = constraints } (Generic 2) (Generic 1)
-        Assert.AreEqual((true, Map [1,Set[Generic 1; Generic 2; Int]]), (equivalent, state.genericTypes))
+        Assert.AreEqual((true, Set [Set[Generic 1; Generic 2; Int]]), (equivalent, state.genericTypes))
 
         let constraints = Set [Set[Generic 1; Int]]
         let equivalent, state =
             typesAreEquivalent { emptyState with genericTypes = constraints } (Generic 1) (Type.Fun(Type.Int,Type.Int))
-        Assert.AreEqual((false, Map [0,Set[Generic 1; Int]]),
+        Assert.AreEqual((false, Set [Set[Generic 1; Int]; Set[Fun(Int,Int)]]),
                         (equivalent, state.genericTypes))
 
         let constraints = Set [Set[Generic 1; Generic 2; Generic 3]]
         let equivalent, state =
             typesAreEquivalent { emptyState with genericTypes = constraints }
                                (Fun(Generic 1, Generic 2)) (Fun(Generic 3, Int))
-        Assert.AreEqual((true, Map [4,Set[Generic 1; Generic 2; Generic 3; Int]]),
+
+        Assert.AreEqual((true, Set [Set[Generic 1; Generic 2; Generic 3; Int];
+                                    Set[Fun(Generic 1, Generic 2)];
+                                    Set[Fun(Generic 3, Int)]]),
                         (equivalent, state.genericTypes))
 
     [<Test>]
