@@ -6,7 +6,7 @@ open FSharpRefactor.Evaluator.GenerationState
 type GenerationConfig =
     static member IntegerThreshold = 100
     static member IdentThreshold = 100
-    static member GenericTypeThreshold = 10
+    static member GenericTypeThreshold = 100
     static member ExpressionFormsCount = 5
     static member CutoffDepth = 5
 
@@ -48,7 +48,7 @@ and generateIdent targetType (state : GenerationState)  =
 
 and generateDeclaredIdent targetType (state : GenerationState) =
     let targetTypeIdents =
-        Map.filter (fun _ t -> fst (typesAreEquivalent state t targetType)) state.identifierTypes
+        Map.filter (fun _ t -> fst (typesAreEquivalent state targetType t)) state.identifierTypes
         |> Map.toList
         |> List.map fst
     let ident, state = chooseFrom targetTypeIdents state
@@ -56,12 +56,13 @@ and generateDeclaredIdent targetType (state : GenerationState) =
 
 and generateApplication targetType depth state =
     let argumentType, state = generateGeneric state
-    let e1, state =
-        generateExpression (Type.Fun(argumentType, targetType)) depth state
+    let e1, state = generateExpression (Type.Fun(argumentType, targetType)) depth state
     let e2, state = generateExpression argumentType depth state
     sprintf "(%s %s)" e1 e2, state
 
 and generateLet targetType depth state =
+    //TODO: genericTypes should be updated with info from body
+    // so if body ends up with type Int, bodyType = Int should be in genericTypes
     let argumentType, state = generateGeneric state
     let bodyType, state = generateGeneric state
     let isFunction, state = chooseFrom [true;false] state
@@ -86,9 +87,14 @@ and generateLet targetType depth state =
 and generateExpression targetType depth (state : GenerationState) =
     let terminalExpressionForms = [ExpressionForm.Integer; ExpressionForm.Ident]
     let targetTypeExpressionForms = getTargetTypeExpressionForms targetType state
+    let availableTerminalExpressionForms =
+        (Set terminalExpressionForms)
+        |> Set.intersect (Set targetTypeExpressionForms)
+        |> Set.toList
+
     let expressionForm, state =
-        if depth >= GenerationConfig.CutoffDepth then
-            chooseFrom terminalExpressionForms state
+        if depth >= GenerationConfig.CutoffDepth && not (List.isEmpty availableTerminalExpressionForms) then
+            chooseFrom availableTerminalExpressionForms state
         else
             chooseFrom targetTypeExpressionForms state
     let depth = depth+1
@@ -101,7 +107,7 @@ and generateExpression targetType depth (state : GenerationState) =
         | ExpressionForm.Addition ->
             let e1, state = generateExpression Type.Int depth state 
             let e2, state = generateExpression Type.Int depth state 
-            sprintf "%s + %s" e1 e2, state
+            sprintf "(%s + %s)" e1 e2, state
         | ExpressionForm.Application ->
             generateApplication targetType depth state 
         | ExpressionForm.Let ->
@@ -109,3 +115,8 @@ and generateExpression targetType depth (state : GenerationState) =
         | _ ->
             let newExpressionForm = (int expressionForm) % GenerationConfig.ExpressionFormsCount 
             generateExpression targetType depth state
+
+let random = new Random()
+let defaultType = Int
+let defaultState =
+    { identifierTypes = Map []; genericTypes = Set []; randomNumbers = Seq.initInfinite (fun _ -> random.Next()) }

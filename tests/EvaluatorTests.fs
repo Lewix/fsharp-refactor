@@ -63,7 +63,7 @@ type CodeGenerationModule() =
         let state = { identifierTypes = (Map ["ident5", Type.Int]); genericTypes = Set []; randomNumbers = seq [] }
         Assert.AreEqual("ident5", getString (generateExpression Type.Int 1 {state with randomNumbers = (seq [1;5])}))
 
-        Assert.AreEqual("1 + 2", getString (generateExpressionEmpty {emptyState with randomNumbers = (seq [1;0;1;0;2])}))
+        Assert.AreEqual("(1 + 2)", getString (generateExpressionEmpty {emptyState with randomNumbers = (seq [1;0;1;0;2])}))
         //TODO: Test app and let
         //Assert.AreEqual("(ident0 ident2)",
         //                getString (generateExpression (Map<int,Type> []) Type.Int 1
@@ -84,7 +84,7 @@ type CodeGenerationModule() =
     [<Test>]
     member this.``Can cutoff at a certain depth to avoid exponential growth``() =
         let state = { identifierTypes = (Map ["ident1",Type.Int]); genericTypes = (Set []); randomNumbers = seq [] }
-        Assert.AreEqual("1 + 1 + 1 + 1 + 1 + 1", getString (generateExpression Type.Int 0 {state with randomNumbers = (seq [2;0;1;2;0;1;2;0;1;2;0;1;2;0;1;2;1;1])}))
+        Assert.AreEqual("(1 + (1 + (1 + (1 + (1 + 1)))))", getString (generateExpression Type.Int 0 {state with randomNumbers = (seq [2;0;1;2;0;1;2;0;1;2;0;1;2;0;1;2;1;1])}))
 
     [<Test>]
     member this.``Can generate a declared identifier of a specified type``() =
