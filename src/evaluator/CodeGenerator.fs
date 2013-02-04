@@ -81,15 +81,25 @@ and generateApplication targetType depth state =
     sprintf "(%s %s)" e1 e2, state
 
 and generateLet targetType depth state =
-    let identList, bodyState = generateIdentList targetType state
-    let e1, state = generateExpression targetType depth bodyState
-    let ident, inScopeState = generateIdent targetType state
-    let e2, state = generateExpression targetType depth inScopeState
-    let letString =
-        if identList = "" then
-            sprintf "(let %s = %s in %s)" ident e1 e2
+    let argumentType, state = generateGeneric state
+    let bodyType, state = generateGeneric state
+    let isFunction, state = chooseFrom [true;false] state
+
+    let bodyState, argumentAndBodyString, functionType =
+        if isFunction then
+            let argumentName, bodyState = generateIdent argumentType state
+            let e1, bodyState = generateExpression bodyType depth bodyState
+            bodyState, sprintf "%s = %s" argumentName e1, Fun(argumentType,bodyType)
         else
-            sprintf "(let %s %s = %s in %s)" ident identList e1 e2
+            let e1, bodyState = generateExpression bodyType depth state
+            bodyState, sprintf "= %s" e1, bodyType
+
+    let state = { state with randomNumbers = bodyState.randomNumbers; genericTypes = bodyState.genericTypes }
+
+    let functionName, inScopeState = generateIdent functionType state
+    let e2, state = generateExpression targetType depth inScopeState
+
+    let letString = sprintf "(let %s %s in %s)" functionName argumentAndBodyString e2
     letString, state
 
 and generateExpression targetType depth (state : GenerationState) =
@@ -114,7 +124,6 @@ and generateExpression targetType depth (state : GenerationState) =
         | ExpressionForm.Application ->
             generateApplication targetType depth state 
         | ExpressionForm.Let ->
-            //TODO: get the types right
             generateLet targetType depth state 
         | _ ->
             let newExpressionForm = (int expressionForm) % GenerationConfig.ExpressionFormsCount 
