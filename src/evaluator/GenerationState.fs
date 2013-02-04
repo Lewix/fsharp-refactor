@@ -7,9 +7,35 @@ type Type =
     | Fun of Type * Type
     | Generic of int
 
+type DisjointSet = Set<Set<Type>> // This is sort of a disjoint set
+
+let add t disjointSet =
+    if Set.exists (Set.contains t) disjointSet then
+        disjointSet
+    else
+        Set.add (Set [t]) disjointSet
+
+let union set1 set2 (disjointSet : DisjointSet) =
+    let newSet = Set.union set1 set2
+    Set.remove set1 disjointSet
+    |> Set.remove set2
+    |> Set.add newSet
+
+let findSet t disjointSet =
+    Seq.find (Set.contains t) (seq disjointSet)
+
+let unionSets t1 t2 disjointSet =
+    let disjointSet =
+        add t1 disjointSet
+        |> add t2
+    let set1 = findSet t1 disjointSet
+    let set2 = findSet t2 disjointSet
+    union set1 set2 disjointSet
+
+
 type GenerationState = {
     identifierTypes : Map<string, Type>;
-    genericTypes : Map<int,Set<Type>>; // This is sort of a disjoint set
+    genericTypes : DisjointSet;
     randomNumbers : seq<int>
     }
 
@@ -30,50 +56,43 @@ let rec occurs t1 t2 =
         | Fun(ta,tb) -> occurs t1 ta || occurs t1 tb
         | _ -> t1 = t2
 
-let rec unifyTypes t1 t2 =
-    match t1,t2 with
-        | Int,Int -> true
-        | Int,Fun(_,_) -> false
-        | Fun(_,_),Int -> false
-        | Fun(ta1,tb1),Fun(ta2,tb2) -> unifyTypes ta1 ta2 && unifyTypes tb1 tb2
-        | (Generic _ as g),t | t,(Generic _ as g) -> g = t || not (occurs g t)
+let unifyTypes t1 t2 : (DisjointSet option)=
+    let rec unifyTypesWithConstraints t1 t2 (constraints : DisjointSet) =
+        match t1,t2 with
+            | Int,Int -> Some constraints
+            | Int,Fun(_,_) -> None
+            | Fun(_,_),Int -> None
+            | Fun(ta1,tb1),Fun(ta2,tb2) ->
+                let constraintsA = unifyTypesWithConstraints ta1 ta2 constraints
+                if Option.isSome constraintsA then
+                    unifyTypesWithConstraints tb1 tb2 constraintsA.Value
+                else
+                    None
+            | (Generic _ as g),t | t,(Generic _ as g) ->
+                if g = t then Some constraints
+                elif not (occurs g t) then
+                    Some (unionSets g t constraints)
+                else None
+    unifyTypesWithConstraints t1 t2 (Set[])
 
 let typesAreEquivalent state t1 t2 =
-    let isGenericSet (genericTypes : Map<int,Set<Type>>) i =
-        Set.fold (&&) true (Set.map isGeneric genericTypes.[i])
-    let append genericTypes typeSet =
-        if Map.exists (fun _ s -> Set.isSubset typeSet s) genericTypes then
-            genericTypes
-        else
-            Map.add genericTypes.Count typeSet genericTypes
-    let union (genericTypes : Map<int,Set<Type>>) key1 key2 =
-        Set.union genericTypes.[key1] genericTypes.[key2]
-        |> append genericTypes
-        |> Map.remove key1
-        |> Map.remove key2
-    let findTypeIndex genericTypes t =
-        Map.findKey (fun _ s -> Set.contains t s) genericTypes
+    let genericTypes = add t1 state.genericTypes
+    let genericTypes = add t2 genericTypes
+    
+    let t1Set = findSet t1 genericTypes
+    let t2Set = findSet t2 genericTypes 
 
-    let occursCheckPasses = not (occurs t1 t2 || occurs t2 t1)
-    let genericTypes = append state.genericTypes (Set [t1])
-    let genericTypes = append genericTypes (Set [t2])
-    let t1Index = findTypeIndex genericTypes t1
-    let t2Index = findTypeIndex genericTypes t2
+    let t2UnifiesWithT1Set = (Set.map (fun t -> Option.isSome (unifyTypes t2 t)) t1Set) = Set [true]
+    let t1UnifiesWithT2Set = (Set.map (fun t -> Option.isSome (unifyTypes t1 t)) t2Set) = Set [true]
 
-    let equivalent, genericTypes =
-        if t1Index = t2Index then
-            true, genericTypes
-        //TODO: Do unification properly
-        elif (isGenericSet genericTypes t1Index || isGenericSet genericTypes t2Index) && occursCheckPasses then
-            true, union genericTypes t1Index t2Index
-        else
-            false, genericTypes
-    equivalent, { state with genericTypes = genericTypes }
+    if t2UnifiesWithT1Set && t1UnifiesWithT2Set then
+        true, { state with genericTypes = union t1Set t2Set genericTypes }
+    else
+        false, state
 
 let usedGenerics state =
     let listGenerics s =
         Set.toList s
         |> List.choose (fun t -> match t with | Generic i -> Some i | _ -> None)
-    Map.toList state.genericTypes
-    |> List.map snd
+    Set.toList state.genericTypes
     |> List.collect listGenerics
