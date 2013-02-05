@@ -93,6 +93,8 @@ and generateExpression targetType depth (state : GenerationState) =
     let expressionForm, state =
         if depth >= GenerationConfig.CutoffDepth && not (List.isEmpty availableTerminalExpressionForms) then
             chooseFrom availableTerminalExpressionForms state
+        elif depth >= GenerationConfig.CutoffDepth then
+            ExpressionForm.Let, state
         else
             chooseFrom targetTypeExpressionForms state
     let depth = depth+1
