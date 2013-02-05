@@ -138,3 +138,10 @@ type TypeEquivalenceModule() =
 
         Assert.AreEqual(None, unifyTypes (Fun(Generic 1, Int)) (Generic 1))
         Assert.AreEqual(None, unifyTypes Int (Fun(Generic 1, Generic 2)))
+
+    [<Test>]
+    member this.``Integers unify their targetType with Int``() =
+        let state = { emptyState with randomNumbers = seq [0;1] }
+        let expression, afterState =
+            generateExpression (Generic 1) 1 state
+        Assert.AreEqual(("1",Set[Set[Generic 1; Int]]), (expression, afterState.genericTypes))

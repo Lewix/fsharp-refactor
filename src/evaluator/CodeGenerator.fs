@@ -39,6 +39,7 @@ let generateGeneric state =
 let rec generateInteger targetType state =
     let integers = List.map string [0..GenerationConfig.IntegerThreshold-1]
     let integer, state = chooseFrom integers state
+    let _, state = typesAreEquivalent state targetType Int
     integer, state
 
 and generateIdent targetType (state : GenerationState)  =
@@ -101,12 +102,12 @@ and generateExpression targetType depth (state : GenerationState) =
 
     match expressionForm with
         | ExpressionForm.Integer ->
-            generateInteger Type.Int state 
+            generateInteger targetType state 
         | ExpressionForm.Ident ->
             generateDeclaredIdent targetType state 
         | ExpressionForm.Addition ->
-            let e1, state = generateExpression Type.Int depth state 
-            let e2, state = generateExpression Type.Int depth state 
+            let e1, state = generateExpression targetType depth state 
+            let e2, state = generateExpression targetType depth state 
             sprintf "(%s + %s)" e1 e2, state
         | ExpressionForm.Application ->
             generateApplication targetType depth state 
