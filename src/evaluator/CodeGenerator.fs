@@ -62,8 +62,9 @@ and generateApplication targetType depth state =
     sprintf "(%s %s)" e1 e2, state
 
 and generateLet targetType depth state =
-    //TODO: genericTypes should be updated with info from body
-    // so if body ends up with type Int, bodyType = Int should be in genericTypes
+    // Save off identifierTypes so that the declared identifier is only in scope in the let expression
+    let oldIdentifierTypes = state.identifierTypes
+
     let argumentType, state = generateGeneric state
     let bodyType, state = generateGeneric state
     let isFunction, state = chooseFrom [true;false] state
@@ -83,7 +84,7 @@ and generateLet targetType depth state =
     let e2, state = generateExpression targetType depth inScopeState
 
     let letString = sprintf "(let %s %s in %s)" functionName argumentAndBodyString e2
-    letString, state
+    letString, { state with identifierTypes = oldIdentifierTypes }
 
 and generateExpression targetType depth (state : GenerationState) =
     let terminalExpressionForms = [ExpressionForm.Integer; ExpressionForm.Ident]

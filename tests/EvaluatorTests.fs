@@ -99,6 +99,12 @@ type CodeGenerationModule() =
         let state = { emptyState with genericTypes = Set[Set[Generic 1; Generic 2]; Set[Generic 5; Int]] }
         Assert.AreEqual(Set [1;2;5], Set (usedGenerics state))
 
+    [<Test>]
+    member this.``Cannot refer to identifiers outside of their scope``() =
+        let state = { emptyState with randomNumbers = seq[3;0;0;1;0;1;0;0;1] }
+        let expression, state = generateExpression Int 1 state
+        Assert.AreEqual(("(let ident0 = 1 in 1)",Map<string,Type>[]), (expression, state.identifierTypes))
+
 [<TestFixture>]
 [<Category("Evaluation")>]
 type TypeEquivalenceModule() =

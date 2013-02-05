@@ -93,6 +93,7 @@ let typesAreEquivalent state t1 t2 =
         false, { state with genericTypes = constraints }
 
 let usedGenerics state =
+    //TODO: generating two generics in a row could generate the same one :-(
     let listGenerics s =
         Set.toList s
         |> List.choose (fun t -> match t with | Generic i -> Some i | _ -> None)
