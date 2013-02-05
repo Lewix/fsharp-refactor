@@ -43,7 +43,7 @@ type BehaviourCheckerModule() =
 [<TestFixture>]
 [<Category("Evaluation")>]
 type CodeGenerationModule() =
-    let emptyState = { identifierTypes = Map []; genericTypes = Set []; randomNumbers = seq [] }
+    let emptyState = { identifierTypes = Map []; genericTypes = Set []; randomNumbers = seq []; nextFreeGeneric = 0 }
     let generateInteger = generateInteger Int 
     let generateIdent = generateIdent Int 
     let generateExpressionEmpty = generateExpression Type.Int 1 
@@ -60,55 +60,50 @@ type CodeGenerationModule() =
         // 0 : int, 1 : ident, 2 : e + e, 3 : (ident ident), 4 : let ident [ident] = e in e
         Assert.AreEqual("1", getString (generateExpressionEmpty {emptyState with randomNumbers = (seq [0;1])}))
 
-        let state = { identifierTypes = (Map ["ident5", Type.Int]); genericTypes = Set []; randomNumbers = seq [] }
+        let state = { emptyState with identifierTypes = (Map ["ident5", Type.Int]) }
         Assert.AreEqual("ident5", getString (generateExpression Type.Int 1 {state with randomNumbers = (seq [1;5])}))
 
         Assert.AreEqual("(1 + 2)", getString (generateExpressionEmpty {emptyState with randomNumbers = (seq [1;0;1;0;2])}))
 
     [<Test>]
     member this.``Can generate declared identifier``() =
-        let state = { identifierTypes = (Map ["ident0",Type.Int; "ident3",Type.Int; "ident5",Type.Int]); genericTypes = Set []; randomNumbers = seq [] }
+        let state = { emptyState with identifierTypes = (Map ["ident0",Type.Int; "ident3",Type.Int; "ident5",Type.Int]) }
         Assert.AreEqual("ident5", getString (generateDeclaredIdent Type.Int {state with randomNumbers = (seq [11])}))
 
     [<Test>]
     member this.``Can avoid using idents which aren't declared``() =
-        Assert.AreEqual("(let ident0 = 1 in ident0)", getString (generateExpressionEmpty {emptyState with randomNumbers = (seq [3;0;0;1;0;1;0;1;0])}), "Don't use ident2, use ident0 because it's the only available one")
+        Assert.AreEqual("(let ident0 = 1 in ident0)", getString (generateExpressionEmpty {emptyState with randomNumbers = (seq [3;1;0;1;0;1;0])}), "Don't use ident2, use ident0 because it's the only available one")
 
     [<Test>]
     member this.``Can cutoff at a certain depth to avoid exponential growth``() =
-        let state = { identifierTypes = (Map ["ident1",Type.Int]); genericTypes = (Set []); randomNumbers = seq [] }
+        let state = { emptyState with identifierTypes = (Map ["ident1",Type.Int]) }
         Assert.AreEqual("(1 + (1 + (1 + (1 + (1 + 1)))))", getString (generateExpression Type.Int 0 {state with randomNumbers = (seq [2;0;1;2;0;1;2;0;1;2;0;1;2;0;1;2;1;1])}))
 
     [<Test>]
     member this.``Can generate a declared identifier of a specified type``() =
-        let state = { identifierTypes = (Map["ident1",Type.Int;"ident3",Type.Fun(Type.Int,Type.Int)]); genericTypes = (Set []); randomNumbers = seq [] }
+        let state = { emptyState with identifierTypes = (Map["ident1",Type.Int;"ident3",Type.Fun(Type.Int,Type.Int)]) }
         Assert.AreEqual("ident3",
             getString (generateDeclaredIdent (Type.Fun(Type.Int,Type.Int)) {state with randomNumbers = (seq [0])}))
 
     [<Test>]
     member this.``Can generate an expression of a specified type``() =
-        let state = { identifierTypes = (Map["ident1",Type.Int;"ident3",Type.Fun(Type.Int,Type.Int)]); genericTypes = (Set []); randomNumbers = seq [3;0;0;1;1;0] }
+        let state = { emptyState with identifierTypes = (Map["ident1",Type.Int;"ident3",Type.Fun(Type.Int,Type.Int)]); randomNumbers = seq [3;0;1;1;0] }
         Assert.AreEqual("(ident3 ident1)", getString (generateExpression Int 1 state))
 
-        let state = { identifierTypes = (Map["ident1",Type.Int;"ident3",Type.Fun(Type.Int,Type.Int)]); genericTypes = (Set []); randomNumbers = seq [2;0;0;0;2;1;0;0;0;0] }
+        let state = { emptyState with identifierTypes = (Map["ident1",Type.Int;"ident3",Type.Fun(Type.Int,Type.Int)]); randomNumbers = seq [2;0;2;1;0;0;0;0] }
         Assert.AreEqual("(let ident0 ident2 = ident1 in ident0)",
                         getString (generateExpression (Fun(Int,Int)) 1 state))
 
     [<Test>]
-    member this.``Can generate used generics numbers``() =
-        let state = { emptyState with genericTypes = Set[Set[Generic 1; Generic 2]; Set[Generic 5; Int]] }
-        Assert.AreEqual(Set [1;2;5], Set (usedGenerics state))
-
-    [<Test>]
     member this.``Cannot refer to identifiers outside of their scope``() =
-        let state = { emptyState with randomNumbers = seq[3;0;0;1;0;1;0;0;1] }
+        let state = { emptyState with randomNumbers = seq[3;1;0;1;0;0;1] }
         let expression, state = generateExpression Int 1 state
         Assert.AreEqual(("(let ident0 = 1 in 1)",Map<string,Type>[]), (expression, state.identifierTypes))
 
 [<TestFixture>]
 [<Category("Evaluation")>]
 type TypeEquivalenceModule() =
-    let emptyState = { identifierTypes = Map []; genericTypes = Set []; randomNumbers = seq [] }
+    let emptyState = { identifierTypes = Map []; genericTypes = Set []; randomNumbers = seq []; nextFreeGeneric = 0 }
     [<Test>]
     member this.``Can compare generic types``() =
         let constraints = Set [Set[Generic 1; Generic 2; Int]]

@@ -29,12 +29,8 @@ let getTargetTypeExpressionForms targetType state =
     |> List.map fst
 
 let generateGeneric state =
-    let unusedGenerics =
-        Set (usedGenerics state)
-        |> Set.difference (Set [0..GenerationConfig.GenericTypeThreshold])
-        |> Set.toList
-    let genericNum, state = chooseFrom unusedGenerics state
-    Type.Generic genericNum, state
+    let genericNum = state.nextFreeGeneric
+    Type.Generic genericNum, { state with nextFreeGeneric = genericNum + 1 }
 
 let rec generateInteger targetType state =
     let integers = List.map string [0..GenerationConfig.IntegerThreshold-1]
@@ -121,4 +117,5 @@ and generateExpression targetType depth (state : GenerationState) =
 let random = new Random()
 let defaultType = Int
 let defaultState =
-    { identifierTypes = Map []; genericTypes = Set []; randomNumbers = Seq.initInfinite (fun _ -> random.Next()) }
+    { identifierTypes = Map []; genericTypes = Set []; randomNumbers = Seq.initInfinite (fun _ -> random.Next());
+      nextFreeGeneric = 0 }

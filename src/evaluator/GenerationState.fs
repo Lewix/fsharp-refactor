@@ -36,7 +36,8 @@ let unionSets t1 t2 disjointSet =
 type GenerationState = {
     identifierTypes : Map<string, Type>;
     genericTypes : DisjointSet;
-    randomNumbers : seq<int>
+    randomNumbers : seq<int>;
+    nextFreeGeneric : int
     }
 
 let chooseFrom (elements : list<'a>) (state : GenerationState) =
@@ -91,11 +92,3 @@ let typesAreEquivalent state t1 t2 =
         true, { state with genericTypes = newConstraints.Value }
     else
         false, { state with genericTypes = constraints }
-
-let usedGenerics state =
-    //TODO: generating two generics in a row could generate the same one :-(
-    let listGenerics s =
-        Set.toList s
-        |> List.choose (fun t -> match t with | Generic i -> Some i | _ -> None)
-    Set.toList state.genericTypes
-    |> List.collect listGenerics
