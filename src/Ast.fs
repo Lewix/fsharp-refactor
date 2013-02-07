@@ -100,6 +100,13 @@ module Ast =
                     | SynExpr.CompExpr(_,_,e,_) -> Some([AstNode.Expression e])
                     | SynExpr.ArrayOrList(_,es,_)
                     | SynExpr.Tuple(es,_,_) -> Some(List.map AstNode.Expression es)
+                    | SynExpr.Record(_,copyExpr,fieldValues,_) ->
+                        let expressions =
+                            (Option.map fst copyExpr)::(List.map (fun (_,e,_) -> e) fieldValues)
+                            |> List.map Option.toList
+                            |> List.concat
+                            |> List.map AstNode.Expression
+                        if List.isEmpty expressions then None else Some expressions
                     | SynExpr.DotIndexedGet(e,es,_,_) -> Some((Expression e)::(List.map Expression es))
                     | SynExpr.LetOrUse(_,_,bs,e,_) ->  Some(List.append (List.map AstNode.Binding bs) [AstNode.Expression e])
                     | SynExpr.Match(_,e,cs,_,_) -> Some((AstNode.Expression e)::(List.map AstNode.MatchClause cs))
