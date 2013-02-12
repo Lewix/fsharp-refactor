@@ -22,7 +22,12 @@ let chooseFrom (elements : list<'a>) (state : GenerationState) =
     let state = { state with randomNumbers = Seq.skip 1 randomNumbers }
     elements.[(Seq.head randomNumbers) % (List.length elements)], state
 
-let addIdentifierType state (identifier, identifierType) =
+let mkRange startPos endPos = { startPos = startPos; endPos = endPos }
+
+let addIdentifierType (identifier, identifierType) state =
     { state with identifierTypes = state.identifierTypes.Add(identifier, identifierType) }
 
-let mkRange startPos endPos = { startPos = startPos; endPos = endPos }
+let addIdentifierPosition identifier (startLine, startCol) state =
+    let position =
+        mkRange (startLine, startCol) (startLine, startCol + (String.length identifier))
+    { state with identifierPositions = (identifier, position)::state.identifierPositions }

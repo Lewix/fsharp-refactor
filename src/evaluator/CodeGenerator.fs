@@ -49,7 +49,11 @@ and generateInteger targetType state =
 and generateIdent targetType (state : GenerationState)  =
     let idents = List.map (fun i -> "ident"+(string i)) [0..GenerationConfig.IdentThreshold-1]
     let ident, state = chooseFrom idents state
-    ident, addIdentifierType state (ident, targetType)
+    let state =
+        state
+        |> addIdentifierType (ident, targetType)
+        |> addIdentifierPosition ident (1,0) //TODO: correct identifier position
+    ident, state
 
 and generateDeclaredIdent targetType (state : GenerationState) =
     let targetTypeIdents =
@@ -57,7 +61,7 @@ and generateDeclaredIdent targetType (state : GenerationState) =
         |> Map.toList
         |> List.map fst
     let ident, state = chooseFrom targetTypeIdents state
-    ident, state
+    ident, addIdentifierPosition ident (1,0) state
 
 and generateApplication targetType depth state =
     let argumentType, state = generateType state
