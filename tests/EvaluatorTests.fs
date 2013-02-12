@@ -99,3 +99,8 @@ type CodeGenerationModule() =
         let state = { emptyState with randomNumbers = seq[3;0;0;1;0;1;0;0;1] }
         let expression, state = generateExpression Int 1 state
         Assert.AreEqual(("(let ident0 = 1 in 1)",Map<string,Type>[]), (expression, state.identifierTypes))
+
+    [<Test>]
+    member this.``Can generate concrete types``() =
+        let state = { emptyState with randomNumbers = seq[4;0;0] }
+        Assert.AreEqual(Fun(Int,Int), fst (generateType state))
