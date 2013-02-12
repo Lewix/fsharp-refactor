@@ -103,18 +103,15 @@ and generateLet targetType depth state =
     letString, { state with identifierTypes = oldIdentifierTypes }
 
 and generateExpression targetType depth (state : GenerationState) =
-    let terminalExpressionForms = [ExpressionForm.Integer; ExpressionForm.Ident]
     let targetTypeExpressionForms = getTargetTypeExpressionForms targetType state
-    let availableTerminalExpressionForms =
-        (Set terminalExpressionForms)
-        |> Set.intersect (Set targetTypeExpressionForms)
-        |> Set.toList
 
     let expressionForm, state =
-        if depth >= GenerationConfig.CutoffDepth && not (List.isEmpty availableTerminalExpressionForms) then
+        if depth >= GenerationConfig.CutoffDepth then
+            let availableTerminalExpressionForms =
+                Set [ExpressionForm.Integer; ExpressionForm.Ident; ExpressionForm.Lambda]
+                |> Set.intersect (Set targetTypeExpressionForms)
+                |> Set.toList
             chooseFrom availableTerminalExpressionForms state
-        elif depth >= GenerationConfig.CutoffDepth then
-            ExpressionForm.Let, state
         else
             chooseFrom targetTypeExpressionForms state
     let depth = depth+1
