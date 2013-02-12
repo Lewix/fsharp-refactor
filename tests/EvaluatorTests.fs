@@ -72,7 +72,7 @@ type CodeGenerationModule() =
 
     [<Test>]
     member this.``Can avoid using idents which aren't declared``() =
-        Assert.AreEqual("(let ident0 = 1 in ident0)", getString (generateExpressionEmpty {emptyState with randomNumbers = (seq [3;1;0;1;0;1;0])}), "Don't use ident2, use ident0 because it's the only available one")
+        Assert.AreEqual("(let ident0 = 1 in ident0)", getString (generateExpressionEmpty {emptyState with randomNumbers = (seq [3;0;0;1;0;1;0;1;0])}), "Don't use ident2, use ident0 because it's the only available one")
 
     [<Test>]
     member this.``Can cutoff at a certain depth to avoid exponential growth``() =
@@ -87,15 +87,15 @@ type CodeGenerationModule() =
 
     [<Test>]
     member this.``Can generate an expression of a specified type``() =
-        let state = { emptyState with identifierTypes = (Map["ident1",Type.Int;"ident3",Type.Fun(Type.Int,Type.Int)]); randomNumbers = seq [3;0;1;1;0] }
+        let state = { emptyState with identifierTypes = (Map["ident1",Type.Int;"ident3",Type.Fun(Type.Int,Type.Int)]); randomNumbers = seq [3;0;0;1;1;0] }
         Assert.AreEqual("(ident3 ident1)", getString (generateExpression Int 1 state))
 
-        let state = { emptyState with identifierTypes = (Map["ident1",Type.Int;"ident3",Type.Fun(Type.Int,Type.Int)]); randomNumbers = seq [2;0;2;1;0;0;0;0] }
+        let state = { emptyState with identifierTypes = (Map["ident1",Type.Int;"ident3",Type.Fun(Type.Int,Type.Int)]); randomNumbers = seq [2;0;0;0;2;1;0;0;0;0] }
         Assert.AreEqual("(let ident0 ident2 = ident1 in ident0)",
                         getString (generateExpression (Fun(Int,Int)) 1 state))
 
     [<Test>]
     member this.``Cannot refer to identifiers outside of their scope``() =
-        let state = { emptyState with randomNumbers = seq[3;1;0;1;0;0;1] }
+        let state = { emptyState with randomNumbers = seq[3;0;0;1;0;1;0;0;1] }
         let expression, state = generateExpression Int 1 state
         Assert.AreEqual(("(let ident0 = 1 in 1)",Map<string,Type>[]), (expression, state.identifierTypes))

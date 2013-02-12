@@ -27,9 +27,17 @@ let getTargetTypeExpressionForms targetType state =
                      ExpressionForm.Let, true]
     |> List.map fst
 
-let generateType state = Int, state
+let rec generateType state =
+    //TODO: weighting of elements in chooseFrom
+    let isFunction, state = chooseFrom [false;false;false;false;true] state
+    if isFunction then
+        let t1, state = generateType state
+        let t2, state = generateType state
+        Fun(t1,t2), state
+    else
+        Int, state
 
-let rec generateInteger targetType state =
+and generateInteger targetType state =
     let integers = List.map string [0..GenerationConfig.IntegerThreshold-1]
     let integer, state = chooseFrom integers state
     integer, state
