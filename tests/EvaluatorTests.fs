@@ -43,7 +43,7 @@ type BehaviourCheckerModule() =
 [<TestFixture>]
 [<Category("Evaluation")>]
 type CodeGenerationModule() =
-    let emptyState = { identifierTypes = Map []; genericTypes = Set []; randomNumbers = seq []; nextFreeGeneric = 0 }
+    let emptyState = { identifierTypes = Map []; randomNumbers = seq [] }
     let generateInteger = generateInteger Int 
     let generateIdent = generateIdent Int 
     let generateExpressionEmpty = generateExpression Type.Int 1 
@@ -99,50 +99,3 @@ type CodeGenerationModule() =
         let state = { emptyState with randomNumbers = seq[3;1;0;1;0;0;1] }
         let expression, state = generateExpression Int 1 state
         Assert.AreEqual(("(let ident0 = 1 in 1)",Map<string,Type>[]), (expression, state.identifierTypes))
-
-[<TestFixture>]
-[<Category("Evaluation")>]
-type TypeEquivalenceModule() =
-    let emptyState = { identifierTypes = Map []; genericTypes = Set []; randomNumbers = seq []; nextFreeGeneric = 0 }
-    [<Test>]
-    member this.``Can compare generic types``() =
-        let constraints = Set [Set[Generic 1; Generic 2; Int]]
-        let equivalent, state =
-            typesAreEquivalent { emptyState with genericTypes = constraints } (Generic 2) (Generic 1)
-        Assert.AreEqual((true, Set [Set[Generic 1; Generic 2; Int]]), (equivalent, state.genericTypes))
-
-        let constraints = Set [Set[Generic 1; Int]]
-        let equivalent, state =
-            typesAreEquivalent { emptyState with genericTypes = constraints } (Generic 1) (Type.Fun(Type.Int,Type.Int))
-        Assert.AreEqual((false, Set [Set[Generic 1; Int]; Set[Fun(Int,Int)]]),
-                        (equivalent, state.genericTypes))
-
-        let constraints = Set [Set[Generic 1; Generic 2; Generic 3]]
-        let equivalent, state =
-            typesAreEquivalent { emptyState with genericTypes = constraints }
-                               (Fun(Generic 1, Generic 2)) (Fun(Generic 3, Int))
-
-        Assert.AreEqual((true, Set [Set[Generic 1; Generic 2; Generic 3; Int];
-                                    Set[Fun(Generic 1, Generic 2)];
-                                    Set[Fun(Generic 3, Int)]]),
-                        (equivalent, state.genericTypes))
-
-    [<Test>]
-    member this.``Can unify to types without constraints``() =
-        Assert.AreEqual(Some(Set<Set<Type>>[]), unifyTypes Int Int)
-        Assert.AreEqual(Some(Set[Set[Int;Generic 1]]), unifyTypes Int (Generic 1))
-        Assert.AreEqual(Some(Set[Set[Generic 1;Generic 2]]), unifyTypes (Generic 1) (Generic 2))
-        Assert.AreEqual(Some(Set<Set<Type>>[]), unifyTypes (Generic 2) (Generic 2))
-        Assert.AreEqual(Some(Set[Set[Generic 2;Int];Set[Generic 1; Generic 3]]),
-                        unifyTypes (Fun(Generic 3,Generic 2)) (Fun(Generic 1, Int)))
-        Assert.AreEqual(Some(Set[Set[Generic 1;Fun(Generic 2,Int)]]), unifyTypes (Generic 1) (Fun(Generic 2,Int)))
-
-        Assert.AreEqual(None, unifyTypes (Fun(Generic 1, Int)) (Generic 1))
-        Assert.AreEqual(None, unifyTypes Int (Fun(Generic 1, Generic 2)))
-
-    [<Test>]
-    member this.``Integers unify their targetType with Int``() =
-        let state = { emptyState with randomNumbers = seq [0;1] }
-        let expression, afterState =
-            generateExpression (Generic 1) 1 state
-        Assert.AreEqual(("1",Set[Set[Generic 1; Int]]), (expression, afterState.genericTypes))

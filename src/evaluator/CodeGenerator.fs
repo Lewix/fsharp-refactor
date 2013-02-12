@@ -6,7 +6,6 @@ open FSharpRefactor.Evaluator.GenerationState
 type GenerationConfig =
     static member IntegerThreshold = 100
     static member IdentThreshold = 100
-    static member GenericTypeThreshold = 100
     static member ExpressionFormsCount = 5
     static member CutoffDepth = 5
 
@@ -19,23 +18,20 @@ type ExpressionForm =
 
 let getTargetTypeExpressionForms targetType state =
     let typeInState t =
-        Map.exists (fun _ t -> fst (typesAreEquivalent state targetType t)) state.identifierTypes
+        Map.exists (fun _ t -> targetType = t) state.identifierTypes
 
-    List.filter snd [ExpressionForm.Integer, fst(typesAreEquivalent state targetType Type.Int);
+    List.filter snd [ExpressionForm.Integer, targetType = Type.Int;
                      ExpressionForm.Ident, typeInState targetType;
-                     ExpressionForm.Addition, fst(typesAreEquivalent state targetType Type.Int);
+                     ExpressionForm.Addition, targetType = Type.Int;
                      ExpressionForm.Application, true;
                      ExpressionForm.Let, true]
     |> List.map fst
 
-let generateGeneric state =
-    let genericNum = state.nextFreeGeneric
-    Type.Generic genericNum, { state with nextFreeGeneric = genericNum + 1 }
+let generateType state = Int, state
 
 let rec generateInteger targetType state =
     let integers = List.map string [0..GenerationConfig.IntegerThreshold-1]
     let integer, state = chooseFrom integers state
-    let _, state = typesAreEquivalent state targetType Int
     integer, state
 
 and generateIdent targetType (state : GenerationState)  =
@@ -45,14 +41,14 @@ and generateIdent targetType (state : GenerationState)  =
 
 and generateDeclaredIdent targetType (state : GenerationState) =
     let targetTypeIdents =
-        Map.filter (fun _ t -> fst (typesAreEquivalent state targetType t)) state.identifierTypes
+        Map.filter (fun _ t -> targetType = t) state.identifierTypes
         |> Map.toList
         |> List.map fst
     let ident, state = chooseFrom targetTypeIdents state
-    ident, snd (typesAreEquivalent state (state.identifierTypes.[ident]) targetType)
+    ident, state
 
 and generateApplication targetType depth state =
-    let argumentType, state = generateGeneric state
+    let argumentType, state = generateType state
     let e1, state = generateExpression (Type.Fun(argumentType, targetType)) depth state
     let e2, state = generateExpression argumentType depth state
     sprintf "(%s %s)" e1 e2, state
@@ -61,8 +57,8 @@ and generateLet targetType depth state =
     // Save off identifierTypes so that the declared identifier is only in scope in the let expression
     let oldIdentifierTypes = state.identifierTypes
 
-    let argumentType, state = generateGeneric state
-    let bodyType, state = generateGeneric state
+    let argumentType, state = generateType state
+    let bodyType, state = generateType state
     let isFunction, state = chooseFrom [true;false] state
 
     let bodyState, argumentAndBodyString, functionType =
@@ -74,7 +70,7 @@ and generateLet targetType depth state =
             let e1, bodyState = generateExpression bodyType depth state
             bodyState, sprintf "= %s" e1, bodyType
 
-    let state = { state with randomNumbers = bodyState.randomNumbers; genericTypes = bodyState.genericTypes }
+    let state = { state with randomNumbers = bodyState.randomNumbers }
 
     let functionName, inScopeState = generateIdent functionType state
     let e2, state = generateExpression targetType depth inScopeState
@@ -118,6 +114,4 @@ and generateExpression targetType depth (state : GenerationState) =
 
 let random = new Random()
 let defaultType = Int
-let defaultState =
-    { identifierTypes = Map []; genericTypes = Set []; randomNumbers = Seq.initInfinite (fun _ -> random.Next());
-      nextFreeGeneric = 0 }
+let defaultState = { identifierTypes = Map []; randomNumbers = Seq.initInfinite (fun _ -> random.Next()) }
