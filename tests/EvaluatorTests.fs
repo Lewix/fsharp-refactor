@@ -66,6 +66,11 @@ type CodeGenerationModule() =
         Assert.AreEqual("(1 + 2)", getString (generateExpressionEmpty {emptyState with randomNumbers = (seq [1;0;1;0;2])}))
 
     [<Test>]
+    member this.``Can generate a lambda abstraction``() =
+        let state = { emptyState with randomNumbers = seq [2;0;1;0] }
+        Assert.AreEqual("(fun ident0 -> ident0)", getString (generateExpression (Fun(Int,Int)) 1 state))
+
+    [<Test>]
     member this.``Can generate declared identifier``() =
         let state = { emptyState with identifierTypes = (Map ["ident0",Type.Int; "ident3",Type.Int; "ident5",Type.Int]) }
         Assert.AreEqual("ident5", getString (generateDeclaredIdent Type.Int {state with randomNumbers = (seq [11])}))

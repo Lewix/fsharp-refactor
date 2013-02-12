@@ -15,16 +15,20 @@ type ExpressionForm =
     | Addition = 2
     | Application = 3
     | Let = 4
+    | Lambda = 5
 
 let getTargetTypeExpressionForms targetType state =
     let typeInState t =
         Map.exists (fun _ t -> targetType = t) state.identifierTypes
+    let isFunction t =
+        match t with Fun(_,_) -> true | _ -> false
 
     List.filter snd [ExpressionForm.Integer, targetType = Type.Int;
                      ExpressionForm.Ident, typeInState targetType;
                      ExpressionForm.Addition, targetType = Type.Int;
                      ExpressionForm.Application, true;
-                     ExpressionForm.Let, true]
+                     ExpressionForm.Let, true;
+                     ExpressionForm.Lambda, isFunction targetType]
     |> List.map fst
 
 let rec generateType state =
@@ -60,6 +64,18 @@ and generateApplication targetType depth state =
     let e1, state = generateExpression (Type.Fun(argumentType, targetType)) depth state
     let e2, state = generateExpression argumentType depth state
     sprintf "(%s %s)" e1 e2, state
+
+and generateLambda targetType depth state =
+    let oldIdentifierTypes = state.identifierTypes
+
+    let argumentType, bodyType =
+        match targetType with
+            | Fun(t1,t2) -> t1,t2
+            | _ -> failwith "Trying to generate a lambda with a non-function type"
+    let argument, state = generateIdent argumentType state
+    let body, state = generateExpression bodyType depth state
+
+    sprintf "(fun %s -> %s)" argument body, { state with identifierTypes = oldIdentifierTypes }
 
 and generateLet targetType depth state =
     // Save off identifierTypes so that the declared identifier is only in scope in the let expression
@@ -116,6 +132,8 @@ and generateExpression targetType depth (state : GenerationState) =
             generateApplication targetType depth state 
         | ExpressionForm.Let ->
             generateLet targetType depth state 
+        | ExpressionForm.Lambda ->
+            generateLambda targetType depth state
         | _ ->
             let newExpressionForm = (int expressionForm) % GenerationConfig.ExpressionFormsCount 
             generateExpression targetType depth state
