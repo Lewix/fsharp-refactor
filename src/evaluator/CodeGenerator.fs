@@ -137,4 +137,5 @@ and generateExpression targetType depth (state : GenerationState) =
 
 let random = new Random()
 let defaultType = Int
-let defaultState = { identifierTypes = Map []; randomNumbers = Seq.initInfinite (fun _ -> random.Next()) }
+let defaultState = { identifierTypes = Map []; randomNumbers = Seq.initInfinite (fun _ -> random.Next());
+                     identifierPositions = []}
