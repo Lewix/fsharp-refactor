@@ -16,7 +16,8 @@ SOURCES=src/Ast.fs \
 
 EVALUATOR_SOURCES=src/evaluator/BehaviourChecker.fs \
 				  src/evaluator/GenerationState.fs \
-				  src/evaluator/CodeGenerator.fs
+				  src/evaluator/CodeGenerator.fs \
+				  src/evaluator/CodeRefactorer.fs
 
 TESTS=tests/EngineTests.fs \
       tests/RenameTests.fs \
