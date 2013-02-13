@@ -6,6 +6,13 @@ type Type =
     | Int
     | Fun of Type * Type
 
+type Pos = int * int
+
+type Range = {
+    startPos : Pos;
+    endPos : Pos
+    }
+
 type GenerationState = {
     identifierTypes : Map<string, Type>;
     randomNumbers : seq<int>;
@@ -18,3 +25,5 @@ let chooseFrom (elements : list<'a>) (state : GenerationState) =
 
 let addIdentifierType state (identifier, identifierType) =
     { state with identifierTypes = state.identifierTypes.Add(identifier, identifierType) }
+
+let mkRange startPos endPos = { startPos = startPos; endPos = endPos }
