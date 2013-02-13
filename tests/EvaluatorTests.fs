@@ -43,7 +43,7 @@ type BehaviourCheckerModule() =
 [<TestFixture>]
 [<Category("Evaluation")>]
 type CodeGenerationModule() =
-    let emptyState = { identifierTypes = Map []; randomNumbers = seq []; identifierPositions = []}
+    let emptyState = { identifierTypes = Map []; randomNumbers = seq []; identifiers = []}
     let generateInteger = generateInteger Int 
     let generateIdent = generateIdent Int 
     let generateExpressionEmpty = generateExpression Type.Int 1 
@@ -111,12 +111,12 @@ type CodeGenerationModule() =
         Assert.AreEqual(Fun(Int,Int), fst (generateType state))
 
     [<Test>]
-    member this.``Can track every generated identifier``() =
+    member this.``Can track every generated identifier``() = 
         let state = { emptyState with randomNumbers = seq[1;0;4;0;0;1;2;1;1;1;0;0;1] }
         let expression, state = generateExpression (Fun(Int,Int)) 1 state
-        let identifiers = ["ident0",mkRange (1,5) (1,11);
-                           "ident1",mkRange (1,19) (1,25);
-                           "ident1",mkRange (1,29) (1,35);
-                           "ident0",mkRange (1,40) (1,46)]
+        let identifiers = ["ident0";
+                           "ident1";
+                           "ident1";
+                           "ident0"]
         Assert.AreEqual("(let ident0 = (fun ident1 -> ident1) in ident0)", expression)
-        Assert.AreEqual(identifiers, state.identifierPositions)
+        Assert.AreEqual(identifiers, state.identifiers, sprintf "%A" state.identifiers)

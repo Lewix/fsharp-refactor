@@ -52,7 +52,7 @@ and generateIdent targetType (state : GenerationState)  =
     let state =
         state
         |> addIdentifierType (ident, targetType)
-        |> addIdentifierPosition ident (1,0) //TODO: correct identifier position
+        |> addIdentifier ident
     ident, state
 
 and generateDeclaredIdent targetType (state : GenerationState) =
@@ -61,7 +61,7 @@ and generateDeclaredIdent targetType (state : GenerationState) =
         |> Map.toList
         |> List.map fst
     let ident, state = chooseFrom targetTypeIdents state
-    ident, addIdentifierPosition ident (1,0) state
+    ident, addIdentifier ident state
 
 and generateApplication targetType depth state =
     let argumentType, state = generateType state
@@ -142,4 +142,4 @@ and generateExpression targetType depth (state : GenerationState) =
 let random = new Random()
 let defaultType = Int
 let defaultState = { identifierTypes = Map []; randomNumbers = Seq.initInfinite (fun _ -> random.Next());
-                     identifierPositions = []}
+                     identifiers = [] }
