@@ -32,3 +32,10 @@ let getIdentifiers code =
                                  ((ident,identRange)::identifiers)
             | _ -> identifiers
     getIdentifiersTc code 0 []
+
+let randomRename code newName identifierIndex =
+    let identifier =
+        (getIdentifiers code).[identifierIndex]
+    let tree = (Ast.Parse code).Value
+
+    code, DoRename code tree identifier newName
