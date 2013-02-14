@@ -25,15 +25,16 @@ TESTS=tests/EngineTests.fs \
       tests/AddArgumentTests.fs \
       tests/EvaluatorTests.fs
 
-INTEGRATION_TESTS=tests/integration_tests/CompilerTests.fs
+INTEGRATION_TESTS=tests/integration_tests/CompilerTests.fs \
+				  tests/integration_tests/EvaluatorTests.fs
 
 all: libs/FSharp.Refactor.dll libs/FSharp.Refactor.Tests.dll bin/FSharpRefactor.exe libs/FSharp.Refactor.Evaluator.dll
 
-libs/FSharp.Refactor.Evaluator.dll: $(EVALUATOR_SOURCES)
-	fsharpc $(OPTS) -o:libs/FSharp.Refactor.Evaluator.dll $(REFS) $(EVALUATOR_SOURCES)
-
 libs/FSharp.Refactor.dll: $(SOURCES)
 	fsharpc $(OPTS) -o:libs/FSharp.Refactor.dll $(REFS) $(SOURCES)
+
+libs/FSharp.Refactor.Evaluator.dll: $(EVALUATOR_SOURCES) libs/FSharp.Refactor.dll
+	fsharpc $(OPTS) -o:libs/FSharp.Refactor.Evaluator.dll -r:libs/FSharp.Refactor.dll $(REFS) $(EVALUATOR_SOURCES)
 
 libs/FSharp.Refactor.Tests.dll: libs/FSharp.Refactor.Evaluator.dll libs/FSharp.Refactor.dll $(TESTS)
 	fsharpc $(OPTS) -o:libs/FSharp.Refactor.Tests.dll -r:libs/FSharp.Refactor.dll -r:libs/FSharp.Refactor.Evaluator.dll $(REFS) $(TESTS)

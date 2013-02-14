@@ -3,6 +3,7 @@ module FSharpRefactor.Tests.EvaluatorTests
 open System.IO
 open System.CodeDom.Compiler
 open NUnit.Framework
+open Microsoft.FSharp.Compiler.Range
 open FSharpRefactor.Evaluator.BehaviourChecker
 open FSharpRefactor.Evaluator.CodeGenerator
 open FSharpRefactor.Evaluator.GenerationState
@@ -114,12 +115,16 @@ type CodeGenerationModule() =
 [<Category("Evaluation")>]
 [<TestFixture>]
 type CodeRefactorerModule() =
+    let rangeTuples (ident,range : range) =
+        ident, ((range.StartLine, range.StartColumn),(range.EndLine, range.EndColumn))
+
     [<Test>]
     member this.``Can find all the identifiers in a piece of code``() =
         let code = "let ident0 ident1 = (fun ident3 -> 1) in ident0 1"
-        let identifiers = Set ["ident0", (mkRange (1,4) (1,10));
-                           "ident1", (mkRange (1,11) (1,17));
-                           "ident3", (mkRange (1,25) (1,31));
-                           "ident0", (mkRange (1,41) (1,47))]
+        let identifiers = Set ["ident0", ((1,4), (1,10));
+                           "ident1", ((1,11), (1,17));
+                           "ident3", ((1,25), (1,31));
+                           "ident0", ((1,41), (1,47))]
+        let actual = List.map rangeTuples (getIdentifiers code)
 
-        Assert.AreEqual(identifiers, Set (getIdentifiers code))
+        Assert.AreEqual(identifiers, Set actual)

@@ -1,10 +1,13 @@
 module FSharpRefactor.Evaluator.CodeRefactorer
 
 open System.Text.RegularExpressions
+open Microsoft.FSharp.Compiler.Range
+open FSharpRefactor.Engine.Ast
+open FSharpRefactor.Refactorings.Rename
 open FSharpRefactor.Evaluator.GenerationState
 
 //TODO: multiline code
-let posFromIndex code index = (1,index)
+let posFromIndex code index = mkPos 1 index
 
 let (|Ident|_|) code =
     let m = Regex("[^i]*(ident[0-9]*)(.*)").Match(code)
@@ -21,7 +24,8 @@ let getIdentifiers code =
             | Ident(ident, indexInRemainingCode, rest) ->
                 let identIndex = indexInRemainingCode + index
                 let identRange =
-                    mkRange (posFromIndex code identIndex)
+                    mkRange "test.fs"
+                            (posFromIndex code identIndex)
                             (posFromIndex code (identIndex + ident.Length))
                 getIdentifiersTc rest
                                  (identIndex + ident.Length)
