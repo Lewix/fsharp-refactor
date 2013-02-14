@@ -117,9 +117,9 @@ type CodeRefactorerModule() =
     [<Test>]
     member this.``Can find all the identifiers in a piece of code``() =
         let code = "let ident0 ident1 = (fun ident3 -> 1) in ident0 1"
-        let identifiers = ["ident0", (mkRange (1,4) (1,10));
+        let identifiers = Set ["ident0", (mkRange (1,4) (1,10));
                            "ident1", (mkRange (1,11) (1,17));
                            "ident3", (mkRange (1,25) (1,31));
                            "ident0", (mkRange (1,41) (1,47))]
 
-        Assert.AreEqual(identifiers, getIdentifiers code)
+        Assert.AreEqual(identifiers, Set (getIdentifiers code))
