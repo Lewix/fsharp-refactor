@@ -34,8 +34,8 @@ let getIdentifiers code =
     getIdentifiersTc code 0 []
 
 let randomRename code newName identifierIndex =
-    let identifier =
-        (getIdentifiers code).[identifierIndex]
+    let identifiers = getIdentifiers code
+    let identifier = identifiers.[identifierIndex % identifiers.Length]
     let tree = (Ast.Parse code).Value
 
     code, DoRename code tree identifier newName
