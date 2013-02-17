@@ -112,6 +112,11 @@ type CodeGenerationModule() =
         let state = { emptyState with randomNumbers = seq[4;0;0] }
         Assert.AreEqual(Fun(Int,Int), fst (generateType state))
 
+    [<Test>]
+    member this.``Can generate an entry point with a specified name``() =
+        let state = { emptyState with randomNumbers = seq[0;0;1] }
+        Assert.AreEqual("let f ident0 = 1", generateEntryPoint "f" state)
+
 [<Category("Evaluation")>]
 [<TestFixture>]
 type CodeRefactorerModule() =

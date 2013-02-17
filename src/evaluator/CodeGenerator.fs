@@ -135,6 +135,11 @@ and generateExpression targetType depth (state : GenerationState) =
             let newExpressionForm = (int expressionForm) % GenerationConfig.ExpressionFormsCount 
             generateExpression targetType depth state
 
+and generateEntryPoint functionName (state : GenerationState) =
+    let ident, state = generateIdent Int state
+    let e, _ = generateExpression Int 1 state
+    sprintf "let %s ident0 = %s" functionName e
+
 let random = new Random()
 let defaultType = Int
 let defaultState = { identifierTypes = Map []; randomNumbers = Seq.initInfinite (fun _ -> random.Next()) }
