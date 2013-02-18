@@ -3,6 +3,7 @@ module FSharpRefactor.Evaluator.CodeRefactorer
 open System.Text.RegularExpressions
 open Microsoft.FSharp.Compiler.Range
 open FSharpRefactor.Engine.Ast
+open FSharpRefactor.Engine.RefactoringWorkflow
 open FSharpRefactor.Refactorings.Rename
 open FSharpRefactor.Evaluator.GenerationState
 
@@ -38,4 +39,7 @@ let randomRename code newName identifierIndex =
     let identifier = identifiers.[identifierIndex % identifiers.Length]
     let tree = (Ast.Parse code).Value
 
-    code, DoRename code tree identifier newName
+    try
+       Some(code, DoRename code tree identifier newName)
+    with
+       | RefactoringFailure _ -> None
