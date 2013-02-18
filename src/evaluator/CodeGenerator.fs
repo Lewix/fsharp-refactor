@@ -32,8 +32,7 @@ let getTargetTypeExpressionForms targetType state =
     |> List.map fst
 
 let rec generateType state =
-    //TODO: weighting of elements in chooseFrom
-    let isFunction, state = chooseFrom [false;false;false;false;true] state
+    let isFunction, state = chooseFromWeighted [false,4;true,1] state
     if isFunction then
         let t1, state = generateType state
         let t2, state = generateType state

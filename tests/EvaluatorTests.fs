@@ -53,6 +53,15 @@ type CodeGenerationModule() =
     let getString (s,_) = s
 
     [<Test>]
+    member this.``Can choose at random from a list of weighted options``() =
+        let options = ["a",1;"b",2]
+        let state = { emptyState with randomNumbers = seq [0] }
+        Assert.AreEqual("a", chooseFromWeighted options { emptyState with randomNumbers = seq [0] } |> fst)
+        Assert.AreEqual("b", chooseFromWeighted options { emptyState with randomNumbers = seq [1] } |> fst)
+        Assert.AreEqual("b", chooseFromWeighted options { emptyState with randomNumbers = seq [2] } |> fst)
+        Assert.AreEqual("a", chooseFromWeighted options { emptyState with randomNumbers = seq [3] } |> fst)
+
+    [<Test>]
     member this.``Can generate identifier and integer terminals``() =
         Assert.AreEqual("10", getString (generateInteger {emptyState with randomNumbers = (seq [110])}))
         Assert.AreEqual("ident10", getString (generateIdent {emptyState with randomNumbers = (seq [110])}))
