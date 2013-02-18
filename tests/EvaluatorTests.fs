@@ -115,7 +115,7 @@ type CodeGenerationModule() =
     [<Test>]
     member this.``Can generate an entry point with a specified name``() =
         let state = { emptyState with randomNumbers = seq[0;0;1] }
-        Assert.AreEqual("let f ident0 = 1", generateEntryPoint "f" state)
+        Assert.AreEqual("let f (ident0:int) = 1", generateEntryPoint "f" state)
 
 [<Category("Evaluation")>]
 [<TestFixture>]
