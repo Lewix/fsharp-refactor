@@ -138,7 +138,7 @@ and generateExpression targetType depth (state : GenerationState) =
 and generateEntryPoint functionName (state : GenerationState) =
     let ident, state = generateIdent Int state
     let e, _ = generateExpression Int 1 state
-    sprintf "let %s %s = %s" functionName ident e
+    sprintf "let %s (%s:int) = %s" functionName ident e
 
 let random = new Random()
 let defaultType = Int
