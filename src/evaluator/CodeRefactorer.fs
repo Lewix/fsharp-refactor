@@ -56,16 +56,22 @@ let randomAddArgument code argumentName defaultValue bindingIndex =
     let bindings =
         ListNodes tree
         |> List.filter isBinding
-    let bindingRange = (Ast.GetRange (bindings.[bindingIndex % bindings.Length])).Value
-
-    tryRefactoring (fun () -> DoAddArgument code tree bindingRange argumentName (string defaultValue))
+    
+    if List.isEmpty bindings then None
+    else
+        let bindingRange = (Ast.GetRange (bindings.[bindingIndex % bindings.Length])).Value
+        tryRefactoring (fun () -> DoAddArgument code tree bindingRange argumentName (string defaultValue))
 
 let randomExtractFunction source functionName expressionIndex scopeIndex =
     let tree = (Ast.Parse source).Value
     let isExpression node = match node with | Ast.AstNode.Expression e -> true | _ -> false
     let expressions = List.filter isExpression (ListNodes tree)
-    let expressionRange = (Ast.GetRange (expressions.[expressionIndex % expressions.Length])).Value
-    let potentialScopes = FindNodesAroundRange expressionRange tree
-    let inScopeTree = potentialScopes.[scopeIndex % potentialScopes.Length]
 
-    tryRefactoring (fun () -> DoExtractFunction source tree inScopeTree expressionRange functionName)
+    if List.isEmpty expressions then None 
+    else
+        let expressionRange = (Ast.GetRange (expressions.[expressionIndex % expressions.Length])).Value
+        let potentialScopes = FindNodesAroundRange expressionRange tree
+        if List.isEmpty potentialScopes then None
+        else
+            let inScopeTree = potentialScopes.[scopeIndex % potentialScopes.Length]
+            tryRefactoring (fun () -> DoExtractFunction source tree inScopeTree expressionRange functionName)
