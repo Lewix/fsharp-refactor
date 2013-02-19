@@ -9,23 +9,34 @@ open FSharpRefactor.Evaluator.CodeRefactorer
 
 let last ls = List.reduceBack (fun _ l -> l) ls
 
-let evaluateRename () =
+let randomIdent (random : Random) =
+    { defaultState with randomNumbers = Seq.initInfinite (fun i -> random.Next()) }
+    |> generateIdent Int
+    |> fst
+
+let evaluateExtractFunction source (random : Random) =
+    randomExtractFunction source (randomIdent random) (random.Next()) (random.Next())
+
+let evaluateAddArgument source (random : Random) =
+    randomAddArgument source (randomIdent random) (random.Next()) (random.Next())
+
+let evaluateRename source (random : Random) =
+    randomRename source (randomIdent random) (random.Next())
+
+let evaluateRefactoring refactoring =
     let entryPoint = "f"
     let code = generateEntryPoint entryPoint defaultState
     let random = new Random()
-    let newName, _ =
-        { defaultState with randomNumbers = Seq.initInfinite(fun _ -> random.Next()) }
-        |> generateIdent Int
-    let renameResult = randomRename code newName (random.Next())
+    let refactoringResult = refactoring code (random.Next())
 
-    if Option.isSome renameResult then
-        let after = renameResult.Value
-        Some(BehaviourHasChanged (entryPoint) code after, code, after)
+    if Option.isSome refactoringResult then
+        let after = refactoringResult.Value
+        Some(BehaviourHasChanged entryPoint code after, code, after)
     else
         None
 
-let evaluateRenames iterations (resultsFile : string) =
-    let evaluations = Seq.init iterations (fun i -> evaluateRename())
+let evaluateRefactorings refactoring iterations (resultsFile : string) =
+    let evaluations = Seq.init iterations (fun i -> evaluateRefactoring refactoring)
     let fileWriter = new StreamWriter(resultsFile)
 
     let writeResultLine result =
