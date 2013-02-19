@@ -122,6 +122,7 @@ module Ast =
                     | SynExpr.IfThenElse(e1,e2,Some(e3),_,_,_,_) -> Some([AstNode.Expression e1; AstNode
 .Expression e2; AstNode.Expression e3])
                     | SynExpr.ForEach(_,_,_,p,e1,e2,_) -> Some([AstNode.Expression e1; AstNode.Expression e2; AstNode.Pattern p])
+                    | SynExpr.TryWith(e,_,cs,_,_,_,_) -> Some((AstNode.Expression e)::(List.map AstNode.MatchClause cs))
                     | SynExpr.FromParseError(e,_) -> Some([AstNode.Expression e])
                     | _ -> raise (new NotImplementedException("Add a new entry to pattern for Expression: " + (string e)))
             | Ident(i) -> None
