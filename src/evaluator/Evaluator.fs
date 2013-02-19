@@ -30,8 +30,9 @@ let evaluateRefactoring refactoring =
     let refactoringResult = refactoring code random
 
     if Option.isSome refactoringResult then
+        let before = codeTemplate code
         let after = codeTemplate refactoringResult.Value
-        Some(BehaviourHasChanged entryPoint code after, code, after)
+        Some(BehaviourHasChanged entryPoint before after, before, after)
     else
         None
 
