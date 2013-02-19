@@ -145,6 +145,6 @@ type CodeRefactorerModule() =
 
     [<Test>]
     member this.``Can rename identifiers``() =
-        Assert.AreEqual(Some("let ident0 ident1 = ident1", "let ident0 ident2 = ident2"),
+        Assert.AreEqual(Some("let ident0 ident2 = ident2"),
                         randomRename "let ident0 ident1 = ident1" "ident2" 1)
         Assert.AreEqual(None, randomRename "let ident0 ident1 = ident2" "ident2" 1)

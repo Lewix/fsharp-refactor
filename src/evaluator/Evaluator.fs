@@ -19,8 +19,8 @@ let evaluateRename () =
     let renameResult = randomRename code newName (random.Next())
 
     if Option.isSome renameResult then
-        let before, after = renameResult.Value
-        Some(BehaviourHasChanged (entryPoint) before after, before, after)
+        let after = renameResult.Value
+        Some(BehaviourHasChanged (entryPoint) code after, code, after)
     else
         None
 

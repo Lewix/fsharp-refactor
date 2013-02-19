@@ -40,6 +40,6 @@ let randomRename code newName identifierIndex =
     let tree = (Ast.Parse code).Value
 
     try
-       Some(code, DoRename code tree identifier newName)
+       Some(DoRename code tree identifier newName)
     with
        | RefactoringFailure _ -> None
