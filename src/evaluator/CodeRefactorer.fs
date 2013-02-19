@@ -3,8 +3,10 @@ module FSharpRefactor.Evaluator.CodeRefactorer
 open System.Text.RegularExpressions
 open Microsoft.FSharp.Compiler.Range
 open FSharpRefactor.Engine.Ast
+open FSharpRefactor.Engine.CodeAnalysis.RangeAnalysis
 open FSharpRefactor.Engine.RefactoringWorkflow
 open FSharpRefactor.Refactorings.Rename
+open FSharpRefactor.Refactorings.AddArgument
 open FSharpRefactor.Evaluator.GenerationState
 
 //TODO: multiline code
@@ -34,12 +36,25 @@ let getIdentifiers code =
             | _ -> identifiers
     getIdentifiersTc code 0 []
 
+let tryRefactoring refactoring =
+    try
+       Some(refactoring ())
+    with
+       | RefactoringFailure _ -> None
+
 let randomRename code newName identifierIndex =
     let identifiers = getIdentifiers code
     let identifier = identifiers.[identifierIndex % identifiers.Length]
     let tree = (Ast.Parse code).Value
 
-    try
-       Some(DoRename code tree identifier newName)
-    with
-       | RefactoringFailure _ -> None
+    tryRefactoring (fun () -> DoRename code tree identifier newName)
+
+let randomAddArgument code argumentName defaultValue bindingIndex =
+    let tree = (Ast.Parse code).Value
+    let isBinding node = match node with | Ast.AstNode.Binding b -> true | _ -> false
+    let bindings =
+        ListNodes tree
+        |> List.filter isBinding
+    let bindingRange = (Ast.GetRange (bindings.[bindingIndex % bindings.Length])).Value
+
+    tryRefactoring (fun () -> DoAddArgument code tree bindingRange argumentName (string defaultValue))

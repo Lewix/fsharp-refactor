@@ -148,3 +148,8 @@ type CodeRefactorerModule() =
         Assert.AreEqual(Some("let ident0 ident2 = ident2"),
                         randomRename "let ident0 ident1 = ident1" "ident2" 1)
         Assert.AreEqual(None, randomRename "let ident0 ident1 = ident2" "ident2" 1)
+
+    [<Test>]
+    member this.``Can add an argument to a function``() =
+        Assert.AreEqual(Some("let f a = 1 in f 0"), randomAddArgument "let f = 1 in f" "a" "0" 0)
+        Assert.AreEqual(None, randomAddArgument "let f = a in f" "a" "0" 0)
