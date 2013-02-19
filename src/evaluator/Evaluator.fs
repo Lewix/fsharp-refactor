@@ -25,12 +25,12 @@ let evaluateRename source (random : Random) =
 
 let evaluateRefactoring refactoring =
     let entryPoint = "f"
-    let code = generateEntryPoint entryPoint defaultState
+    let codeTemplate, code = generateEntryPoint entryPoint defaultState
     let random = new Random()
-    let refactoringResult = refactoring code (random.Next())
+    let refactoringResult = refactoring code random
 
     if Option.isSome refactoringResult then
-        let after = refactoringResult.Value
+        let after = codeTemplate refactoringResult.Value
         Some(BehaviourHasChanged entryPoint code after, code, after)
     else
         None
