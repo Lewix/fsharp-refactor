@@ -7,6 +7,7 @@ open FSharpRefactor.Engine.CodeAnalysis.RangeAnalysis
 open FSharpRefactor.Engine.RefactoringWorkflow
 open FSharpRefactor.Refactorings.Rename
 open FSharpRefactor.Refactorings.AddArgument
+open FSharpRefactor.Refactorings.ExtractFunction
 open FSharpRefactor.Evaluator.GenerationState
 
 //TODO: multiline code
@@ -58,3 +59,13 @@ let randomAddArgument code argumentName defaultValue bindingIndex =
     let bindingRange = (Ast.GetRange (bindings.[bindingIndex % bindings.Length])).Value
 
     tryRefactoring (fun () -> DoAddArgument code tree bindingRange argumentName (string defaultValue))
+
+let randomExtractFunction source functionName expressionIndex scopeIndex =
+    let tree = (Ast.Parse source).Value
+    let isExpression node = match node with | Ast.AstNode.Expression e -> true | _ -> false
+    let expressions = List.filter isExpression (ListNodes tree)
+    let expressionRange = (Ast.GetRange (expressions.[expressionIndex % expressions.Length])).Value
+    let potentialScopes = FindNodesAroundRange expressionRange tree
+    let inScopeTree = potentialScopes.[scopeIndex % potentialScopes.Length]
+
+    tryRefactoring (fun () -> DoExtractFunction source tree inScopeTree expressionRange functionName)
