@@ -154,6 +154,7 @@ type CodeRefactorerModule() =
     member this.``Can add an argument to a function``() =
         Assert.AreEqual(Some("let f a = 1 in f 0"), randomAddArgument "let f = 1 in f" "a" 0 0)
         Assert.AreEqual(None, randomAddArgument "let f = a in f" "a" "0" 0)
+        Assert.AreEqual(None, randomAddArgument "1" "a" "0" 0)
 
     [<Test>]
     member this.``Can extract an expression into a function``() =
