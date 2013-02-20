@@ -8,6 +8,7 @@ open FSharpRefactor.Evaluator.BehaviourChecker
 open FSharpRefactor.Evaluator.CodeGenerator
 open FSharpRefactor.Evaluator.GenerationState
 open FSharpRefactor.Evaluator.CodeRefactorer
+open FSharpRefactor.Evaluator.Evaluator
 
 [<TestFixture>]
 type BehaviourCheckerModule() =
@@ -160,3 +161,7 @@ type CodeRefactorerModule() =
     member this.``Can extract an expression into a function``() =
         Assert.AreEqual(Some("let f a = a in let g a = (f a)"), randomExtractFunction "let g a = a" "f" 0 1)
         Assert.AreEqual(None, randomExtractFunction "let g a = a" "a" 0 1)
+
+    [<Test>]
+    member this.``Is not a test``() =
+        Assert.Fail(sprintf "%A" (evaluateRefactorings evaluateExtractFunction 1000 "/home/lewis/results.csv"))
