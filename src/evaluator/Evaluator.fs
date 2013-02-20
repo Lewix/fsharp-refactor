@@ -18,7 +18,8 @@ type RefactoringResult = {
     sourceBefore : string;
     sourceAfter : string option;
     refactoring : string;
-    time : DateTime
+    time : DateTime;
+    errorMessage : string option
     }
 
 let last ls = List.reduceBack (fun _ l -> l) ls
@@ -30,70 +31,79 @@ let randomIdent (random : Random) =
 
 let tryRefactoring refactoring =
     try
-        let didCheck, result = refactoring ()
+        let didCheck, result, message = refactoring ()
         if didCheck then
-            Succeeded, Some result
+            Succeeded, Some result, message
         else
-            Failed, Some result
+            Failed, Some result, message
     with
-        | _ -> Exception, None
+        | CouldNotRefactor -> raise CouldNotRefactor
+        | e -> Exception, None, Some e.Message
 
 let evaluateExtractFunction source (random : Random) =
-    let status, sourceAfter =
+    let status, sourceAfter, message =
         tryRefactoring (fun () -> randomExtractFunction source (randomIdent random) (random.Next()) (random.Next()))
     { status = status;
       sourceBefore = source;
       sourceAfter = sourceAfter;
       refactoring = "extract-function";
       time = DateTime.Now;
-      changed = false }
+      changed = false;
+      errorMessage = message }
 
 let evaluateAddArgument source (random : Random) =
-    let status, sourceAfter =
+    let status, sourceAfter, message =
         tryRefactoring (fun () -> randomAddArgument source (randomIdent random) (random.Next()) (random.Next()))
     { status = status;
       sourceBefore = source;
       sourceAfter = sourceAfter;
       refactoring = "add-argument";
       time = DateTime.Now;
-      changed = false }
+      changed = false;
+      errorMessage = message }
 
 let evaluateRename source (random : Random) =
-    let status, sourceAfter =
+    let status, sourceAfter, message =
         tryRefactoring (fun () -> randomRename source (randomIdent random) (random.Next()))
     { status = status;
       sourceBefore = source;
       sourceAfter = sourceAfter;
       refactoring = "rename";
       time = DateTime.Now;
-      changed = false }
+      changed = false;
+      errorMessage = message }
 
 let evaluateRefactoring refactoring =
-    let entryPoint = "f"
-    let codeTemplate, code = generateEntryPoint entryPoint defaultState
-    let random = new Random()
-    let refactoringResult = refactoring code random
-    let changed =
-        if Option.isSome refactoringResult.sourceAfter then
-            BehaviourHasChanged entryPoint refactoringResult.sourceBefore refactoringResult.sourceAfter.Value
-        else
-            false
+    try
+        let entryPoint = "f"
+        let codeTemplate, code = generateEntryPoint entryPoint defaultState
+        let random = new Random()
+        let refactoringResult = refactoring code random
+        let changed =
+            if Option.isSome refactoringResult.sourceAfter then
+                BehaviourHasChanged entryPoint refactoringResult.sourceBefore refactoringResult.sourceAfter.Value
+            else
+                false
 
-    { refactoringResult with changed = changed }
+        Some { refactoringResult with changed = changed }
+    with
+        | CouldNotRefactor -> None
 
 let evaluateRefactorings refactoring iterations (resultsFile : string) =
     let evaluations = Seq.init iterations (fun i -> evaluateRefactoring refactoring)
     let fileWriter = new StreamWriter(resultsFile, true)
-    ignore (fprintfn fileWriter "status,before,after,refactoring,time")
+    ignore (fprintfn fileWriter "status,changed,before,after,refactoring,time,error message")
 
     let writeResultLine result =
-        fprintfn fileWriter "%A,%A,%A,%A,%A,%A" result.status
-                                                result.changed
-                                                result.sourceBefore
-                                                result.sourceAfter
-                                                result.refactoring
-                                                result.time
-        fileWriter.Flush()
+        if Option.isSome result then
+            fprintfn fileWriter "%A,%A,%A,%A,%A,%A,%A" result.Value.status
+                                                    result.Value.changed
+                                                    result.Value.sourceBefore
+                                                    result.Value.sourceAfter
+                                                    result.Value.refactoring
+                                                    result.Value.time
+                                                    result.Value.errorMessage
+            fileWriter.Flush()
 
     Seq.iter writeResultLine evaluations
     fileWriter.Close()

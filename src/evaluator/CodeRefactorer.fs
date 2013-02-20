@@ -10,6 +10,8 @@ open FSharpRefactor.Refactorings.AddArgument
 open FSharpRefactor.Refactorings.ExtractFunction
 open FSharpRefactor.Evaluator.GenerationState
 
+exception CouldNotRefactor
+
 //TODO: multiline code
 let posFromIndex code index = mkPos 1 index
 
@@ -39,9 +41,9 @@ let getIdentifiers code =
 
 let tryRefactoring refactoring =
     try
-       true, refactoring true
+       true, refactoring true, None
     with
-       | RefactoringFailure _ -> false, refactoring false
+       | RefactoringFailure message -> false, refactoring false, Some message
 
 let randomRename code newName identifierIndex =
     let identifiers = getIdentifiers code
@@ -57,21 +59,21 @@ let randomAddArgument code argumentName defaultValue bindingIndex =
         ListNodes tree
         |> List.filter isBinding
     
-    if List.isEmpty bindings then None
+    if List.isEmpty bindings then raise CouldNotRefactor
     else
         let bindingRange = (Ast.GetRange (bindings.[bindingIndex % bindings.Length])).Value
-        tryRefactoring (fun check -> (RunRefactoring (AddArgument check code tree bindingRange argumentName (string defaultValue)))
+        tryRefactoring (fun check -> RunRefactoring (AddArgument check code tree bindingRange argumentName (string defaultValue)))
 
 let randomExtractFunction source functionName expressionIndex scopeIndex =
     let tree = (Ast.Parse source).Value
     let isExpression node = match node with | Ast.AstNode.Expression e -> true | _ -> false
     let expressions = List.filter isExpression (ListNodes tree)
 
-    if List.isEmpty expressions then None 
+    if List.isEmpty expressions then raise CouldNotRefactor 
     else
         let expressionRange = (Ast.GetRange (expressions.[expressionIndex % expressions.Length])).Value
         let potentialScopes = FindNodesAroundRange expressionRange tree
-        if List.isEmpty potentialScopes then None
+        if List.isEmpty potentialScopes then raise CouldNotRefactor
         else
             let inScopeTree = potentialScopes.[scopeIndex % potentialScopes.Length]
-            tryRefactoring (fun check -> (RunRefactoring (ExtractFunction check source tree inScopeTree expressionRange functionName))
+            tryRefactoring (fun check -> RunRefactoring (ExtractFunction check source tree inScopeTree expressionRange functionName))
