@@ -9,6 +9,7 @@ type Type =
 type GenerationState = {
     identifierTypes : Map<string, Type>;
     randomNumbers : seq<int>;
+    identThreshold : int
     }
 
 let chooseFrom (elements : list<'a>) (state : GenerationState) =

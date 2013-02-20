@@ -5,7 +5,6 @@ open FSharpRefactor.Evaluator.GenerationState
 
 type GenerationConfig =
     static member IntegerThreshold = 100
-    static member IdentThreshold = 5
     static member ExpressionFormsCount = 5
     static member CutoffDepth = 5
 
@@ -46,7 +45,7 @@ and generateInteger targetType state =
     integer, state
 
 and generateIdent targetType (state : GenerationState)  =
-    let idents = List.map (fun i -> "ident"+(string i)) [0..GenerationConfig.IdentThreshold-1]
+    let idents = List.map (fun i -> "ident"+(string i)) [0..state.identThreshold-1]
     let ident, state = chooseFrom idents state
     ident, addIdentifierType state (ident, targetType)
 
@@ -147,4 +146,4 @@ and generateEntryPoint functionName (state : GenerationState) =
 
 let random = new Random()
 let defaultType = Int
-let defaultState = { identifierTypes = Map []; randomNumbers = Seq.initInfinite (fun _ -> random.Next()) }
+let defaultState = { identifierTypes = Map []; randomNumbers = Seq.initInfinite (fun _ -> random.Next()); identThreshold = 5 }

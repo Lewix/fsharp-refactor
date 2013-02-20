@@ -73,10 +73,10 @@ let evaluateRename source (random : Random) =
       changed = false;
       errorMessage = message }
 
-let evaluateRefactoring refactoring =
+let evaluateRefactoring idents refactoring =
     try
         let entryPoint = "f"
-        let codeTemplate, code = generateEntryPoint entryPoint defaultState
+        let codeTemplate, code = generateEntryPoint entryPoint { defaultState with identThreshold = idents }
         let random = new Random()
         let refactoringResult = refactoring code random
         let changed =
@@ -89,20 +89,21 @@ let evaluateRefactoring refactoring =
     with
         | CouldNotRefactor -> None
 
-let evaluateRefactorings refactoring iterations (resultsFile : string) =
-    let evaluations = Seq.init iterations (fun i -> evaluateRefactoring refactoring)
+let evaluateRefactorings refactoring idents iterations (resultsFile : string) =
+    let evaluations = Seq.init iterations (fun i -> evaluateRefactoring idents refactoring)
     let fileWriter = new StreamWriter(resultsFile, true)
-    ignore (fprintfn fileWriter "status,changed,before,after,refactoring,time,error message")
+    ignore (fprintfn fileWriter "status,changed,before,after,refactoring,time,error message,ident threshold")
 
     let writeResultLine result =
         if Option.isSome result then
-            fprintfn fileWriter "%A,%A,%A,%A,%A,%A,%A" result.Value.status
+            fprintfn fileWriter "%A,%A,%A,%A,%A,%A,%A,%A" result.Value.status
                                                     result.Value.changed
                                                     result.Value.sourceBefore
                                                     result.Value.sourceAfter
                                                     result.Value.refactoring
                                                     result.Value.time
                                                     result.Value.errorMessage
+                                                    idents
             fileWriter.Flush()
 
     Seq.iter writeResultLine evaluations

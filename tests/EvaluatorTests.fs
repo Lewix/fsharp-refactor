@@ -46,7 +46,7 @@ type BehaviourCheckerModule() =
 [<TestFixture>]
 [<Category("Evaluation")>]
 type CodeGenerationModule() =
-    let emptyState = { identifierTypes = Map []; randomNumbers = seq [] }
+    let emptyState = { identifierTypes = Map []; randomNumbers = seq []; identThreshold = 100 }
     let generateInteger = generateInteger Int 
     let generateIdent = generateIdent Int 
     let generateExpressionEmpty = generateExpression Type.Int 1 
@@ -164,4 +164,4 @@ type CodeRefactorerModule() =
 
     [<Test>]
     member this.``Is not a test``() =
-        Assert.Fail(sprintf "%A" (evaluateRefactorings evaluateExtractFunction 1000 "/home/lewis/results.csv"))
+        Assert.Fail(sprintf "%A" (evaluateRefactorings evaluateExtractFunction 5 1000 "/home/lewis/results.csv"))
