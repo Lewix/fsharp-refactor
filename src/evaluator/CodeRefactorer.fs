@@ -39,16 +39,16 @@ let getIdentifiers code =
 
 let tryRefactoring refactoring =
     try
-       Some(refactoring ())
+       true, refactoring true
     with
-       | RefactoringFailure _ -> None
+       | RefactoringFailure _ -> false, refactoring false
 
 let randomRename code newName identifierIndex =
     let identifiers = getIdentifiers code
     let identifier = identifiers.[identifierIndex % identifiers.Length]
     let tree = (Ast.Parse code).Value
 
-    tryRefactoring (fun () -> DoRename code tree identifier newName)
+    tryRefactoring (fun check -> RunRefactoring (Rename check code tree identifier newName))
 
 let randomAddArgument code argumentName defaultValue bindingIndex =
     let tree = (Ast.Parse code).Value
@@ -60,7 +60,7 @@ let randomAddArgument code argumentName defaultValue bindingIndex =
     if List.isEmpty bindings then None
     else
         let bindingRange = (Ast.GetRange (bindings.[bindingIndex % bindings.Length])).Value
-        tryRefactoring (fun () -> DoAddArgument code tree bindingRange argumentName (string defaultValue))
+        tryRefactoring (fun check -> (RunRefactoring (AddArgument check code tree bindingRange argumentName (string defaultValue)))
 
 let randomExtractFunction source functionName expressionIndex scopeIndex =
     let tree = (Ast.Parse source).Value
@@ -74,4 +74,4 @@ let randomExtractFunction source functionName expressionIndex scopeIndex =
         if List.isEmpty potentialScopes then None
         else
             let inScopeTree = potentialScopes.[scopeIndex % potentialScopes.Length]
-            tryRefactoring (fun () -> DoExtractFunction source tree inScopeTree expressionRange functionName)
+            tryRefactoring (fun check -> (RunRefactoring (ExtractFunction check source tree inScopeTree expressionRange functionName))

@@ -30,11 +30,11 @@ let randomIdent (random : Random) =
 
 let tryRefactoring refactoring =
     try
-        let result = refactoring ()
-        if Option.isSome result then
-            Succeeded, result
+        let didCheck, result = refactoring ()
+        if didCheck then
+            Succeeded, Some result
         else
-            Failed, result
+            Failed, Some result
     with
         | _ -> Exception, None
 
