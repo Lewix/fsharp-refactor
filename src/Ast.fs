@@ -60,6 +60,7 @@ module Ast =
                     | SynPat.Const(_,_) -> None
                     | SynPat.Typed(p,_,_) -> Some([AstNode.Pattern p])
                     | SynPat.ArrayOrList(_,ps,_) -> Some(List.map AstNode.Pattern ps)
+                    | SynPat.IsInst(_,_) -> None
                     | _ -> raise (new NotImplementedException("Add a new entry to pattern for Pattern: " + (string p)))
             | SimplePattern(p) ->
                 match p with
