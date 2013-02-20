@@ -87,11 +87,12 @@ let evaluateRefactorings refactoring iterations (resultsFile : string) =
     ignore (fprintfn fileWriter "status,before,after,refactoring,time")
 
     let writeResultLine result =
-        fprintfn fileWriter "%A,%A,%A,%A,%A" result.status
-                                             result.sourceBefore
-                                             result.sourceAfter
-                                             result.refactoring
-                                             result.time
+        fprintfn fileWriter "%A,%A,%A,%A,%A,%A" result.status
+                                                result.changed
+                                                result.sourceBefore
+                                                result.sourceAfter
+                                                result.refactoring
+                                                result.time
         fileWriter.Flush()
 
     Seq.iter writeResultLine evaluations
