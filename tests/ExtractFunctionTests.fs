@@ -133,6 +133,16 @@ type ExtractFunctionTransformModule() =
         Assert.AreEqual(expected, result,
                         sprintf "The resulting string was: %s" result)
 
+    [<Test>]
+    member this.``Can turn off extract function checks``() =
+        let source = "let f a = 1 in (f 1)+(1+2)"
+        let tree = (Ast.Parse source).Value
+        let inScopeTree =
+            List.head (FindNodesWithRange (mkRange "test.fs" (mkPos 1 15) (mkPos 1 26)) tree)
+        let expressionRange = mkRange "test.fs" (mkPos 1 21) (mkPos 1 26)
+
+        Assert.AreEqual("let f a = 1 in let f = 1+2 in (f 1)+(f)", RunRefactoring (ExtractFunction false source tree inScopeTree expressionRange "f"))
+
 [<TestFixture>]
 type CreateFunctionModule() =
     [<Test>]

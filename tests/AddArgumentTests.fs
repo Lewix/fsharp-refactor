@@ -117,3 +117,11 @@ type AddArgumentModule() =
         Assert.AreEqual("let f f a b = a+b", DoAddArgument source1 tree1 range1 "f" "0")
         Assert.Throws<RefactoringFailure>(fun () -> ignore (DoAddArgument source1 tree1 range1 "a" "0")) |> ignore
         Assert.Throws<RefactoringFailure>(fun () -> ignore (DoAddArgument source2 tree2 range2 "f" "0")) |> ignore
+
+    [<Test>]
+    member this.``Can turn off add argument checks``() =
+        let source = "let rec f a = f a"
+        let tree = (Ast.Parse source).Value
+        let range = mkRange "test.fs" (mkPos 1 8) (mkPos 1 17)
+
+        Assert.AreEqual("let rec f a a = f 0 a", RunRefactoring (AddArgument false source tree range "a" "0"))

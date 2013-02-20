@@ -76,8 +76,9 @@ let CanAddArgument source (tree : Ast.AstNode) (bindingRange : range) (argumentN
         | RefactoringFailure(m) -> Invalid(m)
 
 //TODO: Check arguments such as argumentName or defaultValue have a valid form
-let AddTempArgument source (tree : Ast.AstNode) (bindingRange : range) (argumentName : string) (defaultValue : string) =
-    let valid = CanAddArgument source tree bindingRange argumentName defaultValue
+let AddTempArgument doCheck source (tree : Ast.AstNode) (bindingRange : range) (argumentName : string) (defaultValue : string) =
+    let valid =
+        if doCheck then CanAddArgument source tree bindingRange argumentName defaultValue else Valid
     refactoring source valid {
         let identRanges =
             findFunctionName source tree bindingRange
@@ -87,12 +88,12 @@ let AddTempArgument source (tree : Ast.AstNode) (bindingRange : range) (argument
             yield! (AddArgumentToFunctionUsage source tree identRange defaultValue)
     }
 
-let AddArgument source (tree : Ast.AstNode) (bindingRange : range) (argumentName : string) (defaultValue : string) =
+let AddArgument doCheck source (tree : Ast.AstNode) (bindingRange : range) (argumentName : string) (defaultValue : string) =
     let unusedName = FindUnusedName tree
-    let sourceWithTempArgument = RunRefactoring (AddTempArgument source tree bindingRange unusedName defaultValue)
+    let sourceWithTempArgument = RunRefactoring (AddTempArgument doCheck source tree bindingRange unusedName defaultValue)
     let tree = (Ast.Parse sourceWithTempArgument).Value
     let identifier = (TryFindIdentifierWithName (makeScopeTrees tree) unusedName).Value
-    Rename sourceWithTempArgument tree identifier argumentName
+    Rename doCheck sourceWithTempArgument tree identifier argumentName
 
 let DoAddArgument source (tree : Ast.AstNode) (bindingRange : range) (argumentName : string) (defaultValue : string) =
-    RunRefactoring (AddArgument source tree bindingRange argumentName defaultValue)
+    RunRefactoring (AddArgument true source tree bindingRange argumentName defaultValue)

@@ -61,8 +61,9 @@ let CanExtractFunction (tree : Ast.AstNode) (inScopeTree : Ast.AstNode) (express
     List.reduce CombineValidity
                 [expressionRangeIsValid; expressionRangeIsInInScopeTree; expressionIsInfix]
 
-let ExtractTempFunction source (tree : Ast.AstNode) (inScopeTree : Ast.AstNode) (expressionRange : range) (functionName : string) =
-    let valid = CanExtractFunction tree inScopeTree expressionRange functionName
+let ExtractTempFunction doCheck source (tree : Ast.AstNode) (inScopeTree : Ast.AstNode) (expressionRange : range) (functionName : string) =
+    let valid =
+        if doCheck then CanExtractFunction tree inScopeTree expressionRange functionName else Valid
     refactoring source valid {
         let body = CodeTransforms.TextOfRange source expressionRange
         let bodyExpression = TryFindExpressionAtRange expressionRange inScopeTree
@@ -88,13 +89,13 @@ let ExtractTempFunction source (tree : Ast.AstNode) (inScopeTree : Ast.AstNode) 
         yield (expressionRange, CallFunction functionName arguments)
     }
 
-let ExtractFunction source (tree : Ast.AstNode) (inScopeTree : Ast.AstNode) (expressionRange : range) (functionName : string) =
+let ExtractFunction doCheck source (tree : Ast.AstNode) (inScopeTree : Ast.AstNode) (expressionRange : range) (functionName : string) =
     let unusedName = FindUnusedName tree
-    let sourceWithTempFunction = RunRefactoring (ExtractTempFunction source tree inScopeTree expressionRange unusedName)
+    let sourceWithTempFunction = RunRefactoring (ExtractTempFunction doCheck source tree inScopeTree expressionRange unusedName)
     let tree = (Ast.Parse sourceWithTempFunction).Value
     let identifier = (TryFindIdentifierWithName (makeScopeTrees tree) unusedName).Value
-    Rename sourceWithTempFunction tree identifier functionName
+    Rename doCheck sourceWithTempFunction tree identifier functionName
     
 
 let DoExtractFunction source (tree : Ast.AstNode) (inScopeTree : Ast.AstNode) (expressionRange : range) (functionName : string) =
-    RunRefactoring (ExtractFunction source tree inScopeTree expressionRange functionName)
+    RunRefactoring (ExtractFunction true source tree inScopeTree expressionRange functionName)
