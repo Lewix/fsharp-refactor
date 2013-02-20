@@ -83,7 +83,7 @@ let evaluateRefactoring refactoring =
 
 let evaluateRefactorings refactoring iterations (resultsFile : string) =
     let evaluations = Seq.init iterations (fun i -> evaluateRefactoring refactoring)
-    let fileWriter = new StreamWriter(resultsFile)
+    let fileWriter = new StreamWriter(resultsFile, true)
     ignore (fprintfn fileWriter "status,before,after,refactoring,time")
 
     let writeResultLine result =
