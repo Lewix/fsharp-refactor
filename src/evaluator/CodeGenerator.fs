@@ -5,7 +5,7 @@ open FSharpRefactor.Evaluator.GenerationState
 
 type GenerationConfig =
     static member IntegerThreshold = 100
-    static member IdentThreshold = 100
+    static member IdentThreshold = 5
     static member ExpressionFormsCount = 5
     static member CutoffDepth = 5
 
@@ -103,14 +103,20 @@ and generateLet targetType depth state =
 
 and generateExpression targetType depth (state : GenerationState) =
     let targetTypeExpressionForms = getTargetTypeExpressionForms targetType state
+    let terminalExpressionForms = [ExpressionForm.Integer; ExpressionForm.Ident; ExpressionForm.Lambda]
 
     let expressionForm, state =
         if depth >= GenerationConfig.CutoffDepth then
             let availableTerminalExpressionForms =
-                Set [ExpressionForm.Integer; ExpressionForm.Ident; ExpressionForm.Lambda]
+                Set terminalExpressionForms
                 |> Set.intersect (Set targetTypeExpressionForms)
                 |> Set.toList
             chooseFrom availableTerminalExpressionForms state
+        elif not (Set.isEmpty (Set.difference (Set targetTypeExpressionForms) (Set terminalExpressionForms))) then
+            let availableNonTerminalExpressionForms =
+                Set.difference (Set targetTypeExpressionForms) (Set terminalExpressionForms)
+                |> Set.toList
+            chooseFrom availableNonTerminalExpressionForms state
         else
             chooseFrom targetTypeExpressionForms state
     let depth = depth+1
