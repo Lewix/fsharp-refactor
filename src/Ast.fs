@@ -94,6 +94,7 @@ module Ast =
                     | SynExpr.TypeApp(e,_,_,_,_,_,_)
                     | SynExpr.Downcast(e,_,_)
                     | SynExpr.YieldOrReturn(_,e,_)
+                    | SynExpr.YieldOrReturnFrom(_,e,_)
                     | SynExpr.Paren(e,_,_,_)
                     | SynExpr.ArrayOrListOfSeqExpr(_,e,_)
                     | SynExpr.New(_,_,e,_)
