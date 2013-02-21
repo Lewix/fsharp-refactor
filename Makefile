@@ -14,10 +14,10 @@ SOURCES=src/Ast.fs \
 		src/ExtractFunction.fs \
 		src/AddArgument.fs
 
-EVALUATOR_SOURCES=src/evaluator/BehaviourChecker.fs \
-				  src/evaluator/GenerationState.fs \
+EVALUATOR_SOURCES=src/evaluator/GenerationState.fs \
 				  src/evaluator/CodeGenerator.fs \
 				  src/evaluator/CodeRefactorer.fs \
+				  src/evaluator/BehaviourChecker.fs \
 				  src/evaluator/Evaluator.fs
 
 TESTS=tests/EngineTests.fs \

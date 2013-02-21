@@ -5,6 +5,7 @@ open System.IO
 open System.Reflection
 open System.CodeDom.Compiler
 open Microsoft.FSharp.Compiler.CodeDom
+open FSharpRefactor.Evaluator.CodeRefactorer
 
 // Get beforeSource:
 // let f (a:int) = a in f arg
@@ -30,12 +31,12 @@ let compile source =
 
 let loadFunction assemblyPath moduleName methodName : (int -> int) =
     let assembly = Assembly.LoadFrom(assemblyPath)
-    let methodClosure arg =
+    let methodObject =
         assembly.GetModule(Path.GetFileName(assemblyPath))
                 .GetType(moduleName)
                 .GetMethod(methodName)
-                .Invoke(null,[|arg|]) :?> int
-    methodClosure
+    if methodObject.IsGenericMethod then raise CouldNotRefactor
+    else (fun arg -> methodObject.Invoke(null,[|arg|]) :?> int)
 
 let functionBehaviourHasChanged before after =
     Seq.init 100000 (fun i -> i)
