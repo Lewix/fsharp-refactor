@@ -85,7 +85,7 @@ let evaluateRefactoring idents refactoring =
         let refactoringResult = refactoring idents code random
         let changed =
             if Option.isSome refactoringResult.sourceAfter then
-                BehaviourHasChanged entryPoint refactoringResult.sourceBefore refactoringResult.sourceAfter.Value
+                BehaviourHasChanged entryPoint (codeTemplate refactoringResult.sourceBefore) (codeTemplate refactoringResult.sourceAfter.Value)
             else
                 false
 
