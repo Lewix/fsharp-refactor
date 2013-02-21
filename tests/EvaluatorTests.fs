@@ -164,4 +164,4 @@ type CodeRefactorerModule() =
 
     [<Test>]
     member this.``Is not a test``() =
-        Assert.Fail(sprintf "%A" (evaluateRefactorings evaluateExtractFunction 5 1000 "/home/lewis/results.csv"))
+        Assert.Fail(sprintf "%A" (evaluateRefactorings evaluateExtractFunction 1000 "/home/lewis/results.csv"))

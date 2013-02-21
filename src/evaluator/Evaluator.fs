@@ -19,7 +19,8 @@ type RefactoringResult = {
     sourceAfter : string option;
     refactoring : string;
     time : DateTime;
-    errorMessage : string option
+    errorMessage : string option;
+    identThreshold : int
     }
 
 let last ls = List.reduceBack (fun _ l -> l) ls
@@ -40,7 +41,7 @@ let tryRefactoring refactoring =
         | CouldNotRefactor -> raise CouldNotRefactor
         | e -> Exception, None, Some e.Message
 
-let evaluateExtractFunction source (random : Random) =
+let evaluateExtractFunction idents source (random : Random) =
     let status, sourceAfter, message =
         tryRefactoring (fun () -> randomExtractFunction source (randomIdent random) (random.Next()) (random.Next()))
     { status = status;
@@ -49,9 +50,10 @@ let evaluateExtractFunction source (random : Random) =
       refactoring = "extract-function";
       time = DateTime.Now;
       changed = false;
-      errorMessage = message }
+      errorMessage = message;
+      identThreshold = idents }
 
-let evaluateAddArgument source (random : Random) =
+let evaluateAddArgument idents source (random : Random) =
     let status, sourceAfter, message =
         tryRefactoring (fun () -> randomAddArgument source (randomIdent random) (random.Next()) (random.Next()))
     { status = status;
@@ -60,9 +62,10 @@ let evaluateAddArgument source (random : Random) =
       refactoring = "add-argument";
       time = DateTime.Now;
       changed = false;
-      errorMessage = message }
+      errorMessage = message;
+      identThreshold = idents }
 
-let evaluateRename source (random : Random) =
+let evaluateRename idents source (random : Random) =
     let status, sourceAfter, message =
         tryRefactoring (fun () -> randomRename source (randomIdent random) (random.Next()))
     { status = status;
@@ -71,14 +74,15 @@ let evaluateRename source (random : Random) =
       refactoring = "rename";
       time = DateTime.Now;
       changed = false;
-      errorMessage = message }
+      errorMessage = message;
+      identThreshold = idents }
 
 let evaluateRefactoring idents refactoring =
     try
         let entryPoint = "f"
         let codeTemplate, code = generateEntryPoint entryPoint { defaultState with identThreshold = idents }
         let random = new Random()
-        let refactoringResult = refactoring code random
+        let refactoringResult = refactoring idents code random
         let changed =
             if Option.isSome refactoringResult.sourceAfter then
                 BehaviourHasChanged entryPoint refactoringResult.sourceBefore refactoringResult.sourceAfter.Value
@@ -89,8 +93,9 @@ let evaluateRefactoring idents refactoring =
     with
         | CouldNotRefactor -> None
 
-let evaluateRefactorings refactoring idents iterations (resultsFile : string) =
-    let evaluations = Seq.init iterations (fun i -> evaluateRefactoring idents refactoring)
+let evaluateRefactorings refactoring iterations (resultsFile : string) =
+    let identsOnIteration i = 5 * (i/1000 + 1)
+    let evaluations = Seq.init iterations (fun i -> evaluateRefactoring (identsOnIteration i) refactoring)
     let fileWriter = new StreamWriter(resultsFile, true)
     ignore (fprintfn fileWriter "status,changed,before,after,refactoring,time,error message,ident threshold")
 
@@ -103,7 +108,7 @@ let evaluateRefactorings refactoring idents iterations (resultsFile : string) =
                                                     result.Value.refactoring
                                                     result.Value.time
                                                     result.Value.errorMessage
-                                                    idents
+                                                    result.Value.identThreshold
             fileWriter.Flush()
 
     Seq.iter writeResultLine evaluations
