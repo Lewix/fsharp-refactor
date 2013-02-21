@@ -93,23 +93,25 @@ let evaluateRefactoring idents refactoring =
     with
         | CouldNotRefactor -> None
 
-let evaluateRefactorings refactoring iterations (resultsFile : string) =
-    let identsOnIteration i = 5 * (i/1000 + 1)
+let evaluateRefactorings refactoring (resultsFile : string) =
+    let identsOnIteration i = (5 * (i/1000 + 1) % 30)
     let refactorings = [evaluateAddArgument; evaluateRename; evaluateExtractFunction]
-    let evaluations = Seq.init iterations (fun i -> evaluateRefactoring (identsOnIteration i) (refactorings.[i%3]))
+    let evaluations = Seq.initInfinite (fun i -> evaluateRefactoring (identsOnIteration i) (refactorings.[i%3]))
     let fileWriter = new StreamWriter(resultsFile, true)
     ignore (fprintfn fileWriter "status,changed,before,after,refactoring,time,error message,ident threshold")
 
     let writeResultLine result =
         if Option.isSome result then
+            let sourceAfter =
+                if Option.isSome result.Value.sourceAfter then result.Value.sourceAfter.Value else ""
             fprintfn fileWriter "%A,%A,%A,%A,%A,%A,%A,%A" result.Value.status
-                                                    result.Value.changed
-                                                    result.Value.sourceBefore
-                                                    result.Value.sourceAfter
-                                                    result.Value.refactoring
-                                                    result.Value.time
-                                                    result.Value.errorMessage
-                                                    result.Value.identThreshold
+                                                          result.Value.changed
+                                                          result.Value.sourceBefore
+                                                          sourceAfter
+                                                          result.Value.refactoring
+                                                          result.Value.time
+                                                          result.Value.errorMessage
+                                                          result.Value.identThreshold
             fileWriter.Flush()
 
     Seq.iter writeResultLine evaluations
