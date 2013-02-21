@@ -95,7 +95,8 @@ let evaluateRefactoring idents refactoring =
 
 let evaluateRefactorings refactoring iterations (resultsFile : string) =
     let identsOnIteration i = 5 * (i/1000 + 1)
-    let evaluations = Seq.init iterations (fun i -> evaluateRefactoring (identsOnIteration i) refactoring)
+    let refactorings = [evaluateAddArgument; evaluateRename; evaluateExtractFunction]
+    let evaluations = Seq.init iterations (fun i -> evaluateRefactoring (identsOnIteration i) (refactorings.[i%3]))
     let fileWriter = new StreamWriter(resultsFile, true)
     ignore (fprintfn fileWriter "status,changed,before,after,refactoring,time,error message,ident threshold")
 
