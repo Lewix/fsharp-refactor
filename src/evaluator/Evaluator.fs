@@ -92,6 +92,7 @@ let evaluateRefactoring idents refactoring =
         Some { refactoringResult with changed = changed }
     with
         | CouldNotRefactor -> None
+        | :? DivideByZeroException -> None
 
 let evaluateRefactorings refactoring (resultsFile : string) =
     let identsOnIteration i = (5 * (i/1000 + 1) % 30)
