@@ -29,7 +29,7 @@ TESTS=tests/EngineTests.fs \
 INTEGRATION_TESTS=tests/integration_tests/CompilerTests.fs \
 				  tests/integration_tests/EvaluatorTests.fs
 
-all: libs/FSharp.Refactor.dll libs/FSharp.Refactor.Tests.dll bin/FSharpRefactor.exe libs/FSharp.Refactor.Evaluator.dll
+all: libs/FSharp.Refactor.dll bin/FSharpRefactor.exe
 
 libs/FSharp.Refactor.dll: $(SOURCES)
 	fsharpc $(OPTS) -o:libs/FSharp.Refactor.dll $(REFS) $(SOURCES)
