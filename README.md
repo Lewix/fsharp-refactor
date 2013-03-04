@@ -23,7 +23,7 @@ Calling it from the command-line is done like so:
       -i[SUFFIX], --in-place=[SUFFIX]     Modify the input file in-place (makes backup if extension supplied)
       -oFILENAME, --output-file=FILENAME  Write result to FILENAME
 
-Positions should be written as "line:column". Alternatively the Vim bindings
+Positions should be written as `line:column`. Alternatively the Vim bindings
 supply the functions:
 
   * `:FSharpRename`
