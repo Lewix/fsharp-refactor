@@ -13,15 +13,15 @@ It can be used either via a command-line interface or using the Vim bindings
 
 Calling it from the command-line is done like so:
 
-  Usage:
-    rename <position> <new_name> [<filename>]
-    extract-function <expression_range> <function_name> [<filename>]
-    add-argument <position> <argument_name> <default_value> [<filename>]
-
-  Options:
-    -h, --help                          Display this message and exit
-    -i[SUFFIX], --in-place=[SUFFIX]     Modify the input file in-place (makes backup if extension supplied)
-    -oFILENAME, --output-file=FILENAME  Write result to FILENAME
+    Usage:
+      rename <position> <new_name> [<filename>]
+      extract-function <expression_range> <function_name> [<filename>]
+      add-argument <position> <argument_name> <default_value> [<filename>]
+  
+    Options:
+      -h, --help                          Display this message and exit
+      -i[SUFFIX], --in-place=[SUFFIX]     Modify the input file in-place (makes backup if extension supplied)
+      -oFILENAME, --output-file=FILENAME  Write result to FILENAME
 
 Positions should be written as "line:column". Alternatively the Vim bindings
 supply the functions:
