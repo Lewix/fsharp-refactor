@@ -86,3 +86,27 @@ let refactor (refactoring : NewRefactoring) source =
                 refactoring.transform source
                 |> CodeTransforms.ChangeTextOf source 
             Success(resultingSource)
+
+//TODO: interleavedAnalysis
+let interleave (r1 : NewRefactoring) (r2 : NewRefactoring) =
+    let interleavedTransform source =
+        List.append (r1.transform source) (r2.transform source)
+    { r1 with transform = interleavedTransform }
+
+//TODO: exception handling
+let sequence (r1 : NewRefactoring) (r2 : NewRefactoring) =
+    let analysis source =
+        let r1Analysis = r1.analysis source
+        if r1Analysis = Valid then
+            let r1Result = refactor r1 source
+            match r1Result with
+                | Success(r1Source) -> r2.analysis r1Source
+                | Failure(message) -> Invalid(message)
+        else r1Analysis
+    let transform  source =
+        let r1Result = refactor r1 source
+        match r1Result with
+            | Success(r1Source) -> r2.transform r1Source
+            | Failure(message) -> raise (RefactoringFailure message)
+
+    { analysis = analysis; transform = transform }

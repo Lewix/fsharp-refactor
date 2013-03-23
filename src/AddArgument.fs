@@ -27,8 +27,9 @@ let DefaultBindingRange source (tree : Ast.AstNode) (position : pos) =
     if Option.isNone deepestBinding then None
     else Ast.GetRange (Ast.AstNode.Binding deepestBinding.Value)
 
-let AddArgumentToBinding source (tree : Ast.AstNode) (bindingRange : range) (argumentName : string) =
-    refactoring source Valid {
+let AddArgumentToBinding (bindingRange : range) (argumentName : string) =
+    let transform source =
+        let tree = (Ast.Parse source).Value
         let identEndRange =
             match FindBindingAtRange bindingRange tree with
                 | SynBinding.Binding(_,_,_,_,_,_,_,
@@ -36,14 +37,13 @@ let AddArgumentToBinding source (tree : Ast.AstNode) (bindingRange : range) (arg
                 | SynBinding.Binding(_,_,_,_,_,_,_,
                                      SynPat.Named(_,valueName,_,_,_),_,_,_,_) -> valueName.idRange.EndRange
                 | b -> raise (RefactoringFailure("Binding did not have the right form:" + (sprintf "%A" b)))
-        yield (identEndRange, " " + argumentName)
-    }
+        [identEndRange, " " + argumentName]
+
+    { analysis = (fun _ -> Valid); transform = transform }
 
 //TODO: Add brackets around usage if needed (if it's not an App)
-let AddArgumentToFunctionUsage source (tree : Ast.AstNode) (identRange : range) (argument : string) =
-    refactoring source Valid {
-        yield (identRange.EndRange, " " + argument)
-    }
+let AddArgumentToFunctionUsage (argument : string) (identRange : range) =
+    { analysis = (fun _ -> Valid); transform = fun _ -> [identRange.EndRange, " " + argument] }
 
 let FindFunctionUsageRanges source (tree : Ast.AstNode) (bindingRange : range) (functionName : string) =
     let isDeclarationOfFunction scopeTree =
@@ -77,20 +77,17 @@ let CanAddArgument source (tree : Ast.AstNode) (bindingRange : range) (argumentN
 
 //TODO: Check arguments such as argumentName or defaultValue have a valid form
 let AddTempArgument doCheck source (tree : Ast.AstNode) (bindingRange : range) (argumentName : string) (defaultValue : string) =
-    let valid =
-        if doCheck then CanAddArgument source tree bindingRange argumentName defaultValue else Valid
-    refactoring source valid {
-        let identRanges =
-            findFunctionName source tree bindingRange
-            |> FindFunctionUsageRanges source tree bindingRange
-        yield! (AddArgumentToBinding source tree bindingRange argumentName)
-        for identRange in identRanges do
-            yield! (AddArgumentToFunctionUsage source tree identRange defaultValue)
-    }
+    let analysis source = CanAddArgument source (Ast.Parse source).Value bindingRange argumentName defaultValue
+    let usageRefactorings =
+        findFunctionName source tree bindingRange
+        |> FindFunctionUsageRanges source tree bindingRange
+        |> List.map (AddArgumentToFunctionUsage defaultValue)
+    let bindingRefactoring = AddArgumentToBinding bindingRange argumentName
+    { List.fold interleave bindingRefactoring usageRefactorings with analysis = analysis }
 
 let AddArgument doCheck source (tree : Ast.AstNode) (bindingRange : range) (argumentName : string) (defaultValue : string) =
     let unusedName = FindUnusedName tree
-    let sourceWithTempArgument = RunRefactoring (AddTempArgument doCheck source tree bindingRange unusedName defaultValue)
+    let sourceWithTempArgument = RunNewRefactoring (refactor (AddTempArgument doCheck source tree bindingRange unusedName defaultValue) source)
     let tree = (Ast.Parse sourceWithTempArgument).Value
     let identifier = (TryFindIdentifierWithName (makeScopeTrees tree) unusedName).Value
     Rename doCheck sourceWithTempArgument tree identifier argumentName
