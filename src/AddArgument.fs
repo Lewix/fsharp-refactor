@@ -96,4 +96,4 @@ let AddArgument doCheck source (tree : Ast.AstNode) (bindingRange : range) (argu
     Rename doCheck sourceWithTempArgument tree identifier argumentName
 
 let DoAddArgument source (tree : Ast.AstNode) (bindingRange : range) (argumentName : string) (defaultValue : string) =
-    RunRefactoring (AddArgument true source tree bindingRange argumentName defaultValue)
+    RunNewRefactoring (AddArgument true source tree bindingRange argumentName defaultValue)

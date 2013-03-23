@@ -7,13 +7,14 @@ type ErrorMessage = string
 type Change = range * string
 type Source = string
 
-type Refactoring =
-    | Success of Source * Change list
-    | Failure of ErrorMessage
 
 type RefactoringValidity =
     | Valid
     | Invalid of ErrorMessage
+
+type Refactoring =
+    | Success of Source * Change list
+    | Failure of ErrorMessage
 
 let CombineValidity validity1 validity2 =
     match validity1, validity2 with
@@ -23,12 +24,12 @@ let CombineValidity validity1 validity2 =
 
 exception RefactoringFailure of ErrorMessage
 
-type RefactoringBuilder(source,validity) =
+type RefactoringBuilder(source,analysis) =
     member this.source = source
-    member this.validity = validity
+    member this.analysis = analysis
         
     member this.Yield(change) : Refactoring =
-        match this.validity with
+        match this.analysis with
             | Valid -> Success(this.source,[change])
             | Invalid message -> Failure(message)
 
@@ -55,3 +56,33 @@ let RunRefactoring refactoring =
         | Failure(message) -> raise (RefactoringFailure message)
         
 let refactoring source valid = new RefactoringBuilder(source,valid)
+
+
+
+
+
+
+
+type RefactoringResult =
+    | Success of Source
+    | Failure of ErrorMessage
+
+type NewRefactoring = {
+    analysis : Source -> RefactoringValidity;
+    transform : Source -> (range * string) list
+    }
+
+let RunNewRefactoring refactoringResult =
+    match refactoringResult with
+        | Success(source) -> source
+        | Failure(message) -> raise (RefactoringFailure message)
+
+let refactor (refactoring : NewRefactoring) source =
+    let validity = refactoring.analysis source 
+    match validity with
+        | Invalid(message) -> Failure(message)
+        | Valid ->
+            let resultingSource =
+                refactoring.transform source
+                |> CodeTransforms.ChangeTextOf source 
+            Success(resultingSource)

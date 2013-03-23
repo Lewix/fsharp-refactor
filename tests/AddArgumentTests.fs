@@ -124,4 +124,4 @@ type AddArgumentModule() =
         let tree = (Ast.Parse source).Value
         let range = mkRange "test.fs" (mkPos 1 8) (mkPos 1 17)
 
-        Assert.AreEqual("let rec f a a = f 0 a", RunRefactoring (AddArgument false source tree range "a" "0"))
+        Assert.AreEqual("let rec f a a = f 0 a", RunNewRefactoring (AddArgument false source tree range "a" "0"))

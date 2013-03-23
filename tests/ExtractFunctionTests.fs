@@ -141,7 +141,7 @@ type ExtractFunctionTransformModule() =
             List.head (FindNodesWithRange (mkRange "test.fs" (mkPos 1 15) (mkPos 1 26)) tree)
         let expressionRange = mkRange "test.fs" (mkPos 1 21) (mkPos 1 26)
 
-        Assert.AreEqual("let f a = 1 in let f = 1+2 in (f 1)+(f)", RunRefactoring (ExtractFunction false source tree inScopeTree expressionRange "f"))
+        Assert.AreEqual("let f a = 1 in let f = 1+2 in (f 1)+(f)", RunNewRefactoring (ExtractFunction false source tree inScopeTree expressionRange "f"))
 
 [<TestFixture>]
 type CreateFunctionModule() =

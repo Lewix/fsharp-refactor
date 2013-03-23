@@ -98,4 +98,4 @@ let ExtractFunction doCheck source (tree : Ast.AstNode) (inScopeTree : Ast.AstNo
     
 
 let DoExtractFunction source (tree : Ast.AstNode) (inScopeTree : Ast.AstNode) (expressionRange : range) (functionName : string) =
-    RunRefactoring (ExtractFunction true source tree inScopeTree expressionRange functionName)
+    RunNewRefactoring (ExtractFunction true source tree inScopeTree expressionRange functionName)

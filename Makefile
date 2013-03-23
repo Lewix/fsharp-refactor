@@ -47,7 +47,7 @@ bin/FSharpRefactor.exe: libs/Options.dll libs/FSharp.Refactor.dll src/CommandLin
 	fsharpc $(OPTS) $(REFS) --target:exe -o:bin/FSharpRefactor.exe -r:libs/FSharp.Refactor.dll src/CommandLine.fs
 
 unit-tests: libs/FSharp.Refactor.Tests.dll
-	mono /usr/lib/nunit/nunit-console.exe -noresult -include:Evaluation libs/FSharp.Refactor.Tests.dll
+	mono /usr/lib/nunit/nunit-console.exe -noresult -exclude:Evaluation libs/FSharp.Refactor.Tests.dll
 
 tests: libs/FSharp.Refactor.Tests.dll libs/FSharp.Refactor.IntegrationTests.dll bin/FSharpRefactor.exe tests/command-line-tests.sh
 	mono /usr/lib/nunit/nunit-console.exe -noresult libs/FSharp.Refactor.Tests.dll libs/FSharp.Refactor.IntegrationTests.dll
