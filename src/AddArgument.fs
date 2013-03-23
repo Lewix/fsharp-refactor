@@ -90,7 +90,7 @@ let AddArgument doCheck source (tree : Ast.AstNode) (bindingRange : range) (argu
     let sourceWithTempArgument = RunNewRefactoring (refactor (AddTempArgument doCheck source tree bindingRange unusedName defaultValue) source)
     let tree = (Ast.Parse sourceWithTempArgument).Value
     let identifier = (TryFindIdentifierWithName (makeScopeTrees tree) unusedName).Value
-    Rename doCheck sourceWithTempArgument tree identifier argumentName
-
+    refactor (Rename doCheck identifier argumentName) sourceWithTempArgument
+    
 let DoAddArgument source (tree : Ast.AstNode) (bindingRange : range) (argumentName : string) (defaultValue : string) =
     RunNewRefactoring (AddArgument true source tree bindingRange argumentName defaultValue)

@@ -82,16 +82,10 @@ let RenameTransform declarationIdentifier newName source =
     |> List.map (fun r -> (r,newName))
 
 
-
-let Rename doCheck source (tree: Ast.AstNode) (declarationIdentifier : Identifier) (newName : string) =
+let Rename doCheck (declarationIdentifier : Identifier) (newName : string) =
     let analysis source =
         CanRename (Ast.Parse source).Value declarationIdentifier newName
-    let rename =
-        { analysis = analysis;
-          transform = RenameTransform declarationIdentifier newName }
-
-    refactor rename source
-
+    { analysis = analysis; transform = RenameTransform declarationIdentifier newName }
 
 let DoRename source (tree: Ast.AstNode) (declarationIdentifier : Identifier) (newName : string) =
-    RunNewRefactoring (Rename true source tree declarationIdentifier newName)
+    RunNewRefactoring (refactor (Rename true declarationIdentifier newName) source)

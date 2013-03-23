@@ -94,7 +94,7 @@ let ExtractFunction doCheck source (tree : Ast.AstNode) (inScopeTree : Ast.AstNo
     let sourceWithTempFunction = RunRefactoring (ExtractTempFunction doCheck source tree inScopeTree expressionRange unusedName)
     let tree = (Ast.Parse sourceWithTempFunction).Value
     let identifier = (TryFindIdentifierWithName (makeScopeTrees tree) unusedName).Value
-    Rename doCheck sourceWithTempFunction tree identifier functionName
+    refactor (Rename doCheck identifier functionName) sourceWithTempFunction 
     
 
 let DoExtractFunction source (tree : Ast.AstNode) (inScopeTree : Ast.AstNode) (expressionRange : range) (functionName : string) =
