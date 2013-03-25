@@ -90,7 +90,7 @@ let RenameTransform declarationIdentifier newName (source, ()) =
     changes, updateIdentifier declarationIdentifier newName
 
 
-let Rename doCheck (declarationIdentifier : Identifier) (newName : string) =
+let Rename doCheck declarationIdentifier newName : NewRefactoring<unit,Identifier> =
     let analysis (source, ()) =
         CanRename (Ast.Parse source).Value declarationIdentifier newName
     { analysis = analysis; transform = RenameTransform declarationIdentifier newName }
