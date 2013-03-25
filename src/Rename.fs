@@ -87,7 +87,6 @@ let RenameTransform declarationIdentifier newName (source, ()) =
     let changes =
         rangesToReplace declarationIdentifier declarationScope
         |> List.map (fun r -> (r,newName))
-    //TODO: update the identifier
     changes, updateIdentifier declarationIdentifier newName
 
 
