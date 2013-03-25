@@ -19,7 +19,7 @@ type ExtractFunctionAnalysisModule() =
         let inScopeTree =
             List.head (FindNodesWithRange (mkRange "test.fs" (mkPos 1 0) (mkPos 1 11)) tree)
         let expressionRange = mkRange "test.fs" (mkPos 1 4) (mkPos 1 6)
-        let valid = CanExtractFunction tree inScopeTree expressionRange "f"
+        let valid = CanExtractFunction tree inScopeTree expressionRange
 
         Assert.AreEqual(Invalid("No expression found at the given range"),
                         valid,
@@ -32,7 +32,7 @@ type ExtractFunctionAnalysisModule() =
         let inScopeTree =
             List.head (FindNodesWithRange (mkRange "test.fs" (mkPos 1 0) (mkPos 1 5)) tree)
         let expressionRange = mkRange "test.fs" (mkPos 1 6) (mkPos 1 11)
-        let valid = CanExtractFunction tree inScopeTree expressionRange "f"
+        let valid = CanExtractFunction tree inScopeTree expressionRange
 
         Assert.AreEqual(Invalid("The expression is not contained within the specified scope"),
                         valid,
@@ -45,7 +45,7 @@ type ExtractFunctionAnalysisModule() =
         let inScopeTree =
             List.head (FindNodesWithRange (mkRange "test.fs" (mkPos 1 0) (mkPos 1 5)) tree)
         let expressionRange = mkRange "test.fs" (mkPos 1 0) (mkPos 1 4)
-        let valid = CanExtractFunction tree inScopeTree expressionRange "f"
+        let valid = CanExtractFunction tree inScopeTree expressionRange
 
         Assert.AreEqual(Invalid("The expression is a partial application of an infix function"),
                         valid,
@@ -141,7 +141,7 @@ type ExtractFunctionTransformModule() =
             List.head (FindNodesWithRange (mkRange "test.fs" (mkPos 1 15) (mkPos 1 26)) tree)
         let expressionRange = mkRange "test.fs" (mkPos 1 21) (mkPos 1 26)
 
-        Assert.AreEqual("let f a = 1 in let f = 1+2 in (f 1)+(f)", RunNewRefactoring (ExtractFunction false source tree inScopeTree expressionRange "f"))
+        Assert.AreEqual("let f a = 1 in let f = 1+2 in (f 1)+(f)", RunNewRefactoring (refactor (ExtractFunction false inScopeTree expressionRange "f") () source))
 
 [<TestFixture>]
 type CreateFunctionModule() =

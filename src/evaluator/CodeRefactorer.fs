@@ -76,4 +76,4 @@ let randomExtractFunction source functionName expressionIndex scopeIndex =
         if List.isEmpty potentialScopes then raise CouldNotRefactor
         else
             let inScopeTree = potentialScopes.[scopeIndex % potentialScopes.Length]
-            tryRefactoring (fun check -> RunNewRefactoring (ExtractFunction check source tree inScopeTree expressionRange functionName))
+            tryRefactoring (fun check -> RunNewRefactoring (refactor (ExtractFunction check inScopeTree expressionRange functionName) () source))
