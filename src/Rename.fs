@@ -85,7 +85,10 @@ let RenameTransform newName (source, declarationIdentifier) =
 
 let Rename doCheck newName : Refactoring<Identifier,unit> =
     let analysis (source, declarationIdentifier) =
-        CanRename (Ast.Parse source).Value declarationIdentifier newName
+        if doCheck then
+            CanRename (Ast.Parse source).Value declarationIdentifier newName
+        else
+            Valid
     { analysis = analysis; transform = RenameTransform newName }
 
 let DoRename source (tree: Ast.AstNode) (declarationIdentifier : Identifier) (newName : string) =

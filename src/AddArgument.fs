@@ -80,7 +80,11 @@ let CanAddArgument source (tree : Ast.AstNode) (bindingRange : range) (defaultVa
 
 //TODO: Check arguments such as argumentName or defaultValue have a valid form
 let AddTempArgument doCheck bindingRange defaultValue : Refactoring<unit,Identifier> =
-    let analysis (source, ()) = CanAddArgument source (Ast.Parse source).Value bindingRange defaultValue
+    let analysis (source, ()) =
+        if doCheck then
+            CanAddArgument source (Ast.Parse source).Value bindingRange defaultValue
+        else
+            Valid
     let transform (source, ()) =
         let tree = (Ast.Parse source).Value
         let argumentName = FindUnusedName tree

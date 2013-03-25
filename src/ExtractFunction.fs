@@ -85,8 +85,11 @@ let CanExtractFunction (tree : Ast.AstNode) (inScopeTree : Ast.AstNode) (express
 
 let ExtractTempFunction doCheck inScopeTree (expressionRange : range) : Refactoring<unit,Identifier> =
     let analysis (source,()) =
-        let tree = (Ast.Parse source).Value
-        CanExtractFunction tree inScopeTree expressionRange
+        if doCheck then
+            let tree = (Ast.Parse source).Value
+            CanExtractFunction tree inScopeTree expressionRange
+        else
+            Valid
     let transform (source,()) =
         let tree = (Ast.Parse source).Value
         let functionName = FindUnusedName tree
