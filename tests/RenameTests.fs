@@ -95,11 +95,4 @@ type RenameTransformModule() =
         let source = "let a = 1 in let b = 2 in a"
         let expected = "let a = 1 in let a = 2 in a"
         let declarationRange = mkRange "test.fs" (mkPos 1 17) (mkPos 1 18)
-        Assert.AreEqual(expected, RunNewRefactoring (refactor (Rename false ("b", declarationRange) "a") () source))
-
-    [<Test>]
-    member this.``Can compute output declarationIdentifier from input one``() =
-        let source = "let a = 1 in let b = 2 in a"
-        let expected = "longIdentifier", mkRange "test.fs" (mkPos 1 17) (mkPos 1 31)
-        let declarationRange = mkRange "test.fs" (mkPos 1 17) (mkPos 1 18)
-        Assert.AreEqual(expected, updateIdentifier ("b",declarationRange) "longIdentifier")
+        Assert.AreEqual(expected, RunNewRefactoring (refactor (Rename false "a") ("b", declarationRange) source))

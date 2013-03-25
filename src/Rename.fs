@@ -12,12 +12,6 @@ let rangeOfIdent (name : string) (identifiers : Identifier list) =
     let identifier = List.tryFind (fun (n,_) -> n = name) identifiers
     if Option.isNone identifier then None else Some(snd identifier.Value)
     
-let updateIdentifier ((name, declarationRange) : Identifier) newName =
-    let newRange = 
-        mkPos (declarationRange.End.Line) (declarationRange.End.Column + (String.length newName) - (String.length name))
-        |> mkRange declarationRange.FileName declarationRange.Start 
-    newName, newRange
-
 let rec findDeclarationInScopeTrees trees (name, declarationRange) =
     match trees with
         | [] -> None
@@ -79,7 +73,7 @@ let CanRename (tree : Ast.AstNode) (name : string, declarationRange : range) (ne
                 else Valid
     else Invalid("Could not find a declaration at the given range")
 
-let RenameTransform declarationIdentifier newName (source, ()) =
+let RenameTransform newName (source, declarationIdentifier) =
     let tree = (Ast.Parse source).Value
     let declarationScope =
         findDeclarationInScopeTrees (makeScopeTrees tree) declarationIdentifier
@@ -87,13 +81,13 @@ let RenameTransform declarationIdentifier newName (source, ()) =
     let changes =
         rangesToReplace declarationIdentifier declarationScope
         |> List.map (fun r -> (r,newName))
-    changes, updateIdentifier declarationIdentifier newName
+    changes, ()
 
 
-let Rename doCheck declarationIdentifier newName : NewRefactoring<unit,Identifier> =
-    let analysis (source, ()) =
+let Rename doCheck newName : NewRefactoring<Identifier,unit> =
+    let analysis (source, declarationIdentifier) =
         CanRename (Ast.Parse source).Value declarationIdentifier newName
-    { analysis = analysis; transform = RenameTransform declarationIdentifier newName }
+    { analysis = analysis; transform = RenameTransform newName }
 
 let DoRename source (tree: Ast.AstNode) (declarationIdentifier : Identifier) (newName : string) =
-    RunNewRefactoring (refactor (Rename true declarationIdentifier newName) () source)
+    RunNewRefactoring (refactor (Rename true newName) declarationIdentifier source)

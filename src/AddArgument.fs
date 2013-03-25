@@ -76,7 +76,7 @@ let CanAddArgument source (tree : Ast.AstNode) (bindingRange : range) (argumentN
         | RefactoringFailure(m) -> Invalid(m)
 
 //TODO: Check arguments such as argumentName or defaultValue have a valid form
-let AddTempArgument doCheck source (tree : Ast.AstNode) (bindingRange : range) (argumentName : string) (defaultValue : string) =
+let AddTempArgument doCheck source tree bindingRange argumentName defaultValue =
     let analysis (source, ()) = CanAddArgument source (Ast.Parse source).Value bindingRange argumentName defaultValue
     let usageRefactorings =
         findFunctionName source tree bindingRange
@@ -90,7 +90,7 @@ let AddArgument doCheck source (tree : Ast.AstNode) (bindingRange : range) (argu
     let sourceWithTempArgument = RunNewRefactoring (refactor (AddTempArgument doCheck source tree bindingRange unusedName defaultValue) () source)
     let tree = (Ast.Parse sourceWithTempArgument).Value
     let identifier = (TryFindIdentifierWithName (makeScopeTrees tree) unusedName).Value
-    refactor (Rename doCheck identifier argumentName) () sourceWithTempArgument
+    refactor (Rename doCheck argumentName) identifier sourceWithTempArgument
     
 let DoAddArgument source (tree : Ast.AstNode) (bindingRange : range) (argumentName : string) (defaultValue : string) =
     RunNewRefactoring (AddArgument true source tree bindingRange argumentName defaultValue)

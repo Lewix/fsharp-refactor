@@ -50,7 +50,7 @@ let randomRename code newName identifierIndex =
     let identifier = identifiers.[identifierIndex % identifiers.Length]
     let tree = (Ast.Parse code).Value
 
-    tryRefactoring (fun check -> RunNewRefactoring (refactor (Rename check identifier newName) () code))
+    tryRefactoring (fun check -> RunNewRefactoring (refactor (Rename check newName) identifier code))
 
 let randomAddArgument code argumentName defaultValue bindingIndex =
     let tree = (Ast.Parse code).Value
