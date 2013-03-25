@@ -24,7 +24,7 @@ let DefaultInScopeTree (tree : Ast.AstNode) (expressionRange : range) =
             | SynBinding.Binding(_,_,_,_,_,_,_,_,_,expression,_,_) -> Some(expression)
     else outermostExpression
 
-let CreateFunction functionName arguments body isMultiLine =
+let CreateFunction functionName arguments body isMultiLine indentString (declarationRange : range) : NewRefactoring<unit,Identifier> =
     let transform (source,()) =
         let parametersChange =
             if List.isEmpty arguments then
@@ -37,13 +37,25 @@ let CreateFunction functionName arguments body isMultiLine =
             else
                 FunctionDefinition.BodyRange isMultiLine, stripBrackets body
         let nameChange = FunctionDefinition.NameRange isMultiLine, functionName
-
         source, [parametersChange; bodyChange; nameChange], ()
+    let declarationSource =
+        RunNewRefactoring (refactor { analysis = (fun (_,_) -> Valid); transform = transform } () (FunctionDefinition.Template isMultiLine))
 
-    RunNewRefactoring (refactor { analysis = (fun (_,_) -> Valid); transform = transform } () (FunctionDefinition.Template isMultiLine))
-    
-let CallFunction functionName arguments =
+    let transform (source,()) =
+        let nameRange =
+            mkRange "test.fs" (mkPos 1 4) (mkPos 1 16)
+        let startColumn, startLine =
+            declarationRange.StartLine, declarationRange.StartColumn+(String.length indentString)+nameRange.StartColumn
+        let endLine =
+            startLine + (String.length functionName)
+        let identifierRange =
+            mkRange declarationRange.FileName (mkPos startColumn startLine) (mkPos startColumn endLine)
+        source, [declarationRange, Indent declarationSource indentString], (functionName, identifierRange)
+    { analysis = (fun (_,_) -> Valid); transform = transform }
+ 
+let CallFunction functionName arguments callRange : NewRefactoring<unit,unit> =
     //TODO: don't always put brackets around function body
+    //TODO: this is contrived, just get rid of the templates...
     let transform (source,()) =
         let parameterChange =
             if List.isEmpty arguments then
@@ -52,7 +64,10 @@ let CallFunction functionName arguments =
                 FunctionCall.ParameterRange, " " + (String.concat " " arguments)
         source, [(FunctionCall.NameRange, functionName); parameterChange], ()
 
-    RunNewRefactoring (refactor { analysis = (fun (_,_) -> Valid); transform = transform } () FunctionCall.Template)
+    let callSource =
+        RunNewRefactoring (refactor { analysis = (fun (_,_) -> Valid); transform = transform } () FunctionCall.Template)
+
+    { analysis = (fun (_,_) -> Valid); transform = (fun (s,_) -> s, [callRange, callSource], ()) }
 
 let CanExtractFunction (tree : Ast.AstNode) (inScopeTree : Ast.AstNode) (expressionRange : range) =
     let expressionRangeIsInInScopeTree =
@@ -75,7 +90,9 @@ let ExtractTempFunction doCheck inScopeTree (expressionRange : range) : NewRefac
     let transform (source,()) =
         let tree = (Ast.Parse source).Value
         let functionName = FindUnusedName tree
-        let body = TextOfRange source expressionRange
+        let unindentedBody = 
+            (String.replicate (expressionRange.StartColumn) " ") + (TextOfRange source expressionRange)
+            |> RemoveLeading ' '
         let bodyExpression = TryFindExpressionAtRange expressionRange inScopeTree
         let arguments =
             GetFreeIdentifiers (makeScopeTrees inScopeTree) DefaultDeclared
@@ -83,24 +100,19 @@ let ExtractTempFunction doCheck inScopeTree (expressionRange : range) : NewRefac
             |> Set.toList
 
         let inScopeRange = (Ast.GetRange inScopeTree).Value
-        let definitionChange =
-            if inScopeRange.EndLine = inScopeRange.StartLine then
-                let functionDefinition = CreateFunction functionName arguments body false
-                (Ast.GetRange inScopeTree).Value.StartRange, functionDefinition
+        let definitionRefactoring =
+            if inScopeRange.StartLine = inScopeRange.EndLine then
+                CreateFunction functionName arguments unindentedBody false "" inScopeRange.StartRange
             else
-                let unindentedBody = 
-                    (String.replicate (expressionRange.StartColumn) " ") + body
-                    |> RemoveLeading ' '
-                let functionDefinition = CreateFunction functionName arguments unindentedBody true
-                let inScopeTreeStart = (Ast.GetRange inScopeTree).Value.StartRange
+                let inScopeTreeStart = inScopeRange.StartRange
                 let startOfLine = mkRange "test.fs" (mkPos inScopeTreeStart.StartLine 0) inScopeTreeStart.End
                 let indentString = String.replicate inScopeTreeStart.StartColumn " "
-                startOfLine, Indent functionDefinition indentString
-        let callChange =
-            expressionRange, CallFunction functionName arguments
+                CreateFunction functionName arguments unindentedBody true indentString startOfLine
+        let callRefactoring =
+            CallFunction functionName arguments expressionRange
 
-        //TODO: function declaration's identifier
-        source, [callChange; definitionChange], createIdentifier (1,0) "todo" expressionRange.FileName
+        (interleave definitionRefactoring callRefactoring).transform (source, ())
+
     { analysis = analysis; transform = transform }
 
 let ExtractFunction doCheck inScopeTree expressionRange functionName : NewRefactoring<unit,unit> =

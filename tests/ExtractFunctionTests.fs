@@ -147,10 +147,12 @@ type ExtractFunctionTransformModule() =
 type CreateFunctionModule() =
     [<Test>]
     member this.``Can add a function to an expression``() =
-        let expected = "let f a b = a+b in "
-        Assert.AreEqual(expected, CreateFunction "f" ["a";"b"] "a+b" false)
+        let expected = "let f a b =\n    a+b\n"
+        let insertRange = mkRange "test.fs" (mkPos 1 0) (mkPos 1 0)
+        Assert.AreEqual(expected, RunNewRefactoring (refactor (CreateFunction "f" ["a";"b"] "a+b" true "" insertRange) () ""))
 
     [<Test>]
     member this.``Can add a function with multiple lines in its body to an expression``() =
         let expected = "let f a b =\n    match a,b with\n        | (a,b) -> 1\n"
-        Assert.AreEqual(expected, CreateFunction "f" ["a";"b"] "match a,b with\n    | (a,b) -> 1" true)
+        let insertRange = mkRange "test.fs" (mkPos 1 0) (mkPos 1 0)
+        Assert.AreEqual(expected, RunNewRefactoring (refactor (CreateFunction "f" ["a";"b"] "match a,b with\n    | (a,b) -> 1" true "" insertRange) () ""))
