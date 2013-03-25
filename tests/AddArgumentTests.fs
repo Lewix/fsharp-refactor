@@ -98,7 +98,7 @@ type AddArgumentModule() =
         let source = "let f a b = a+b"
         let tree = (Ast.Parse source).Value
         let range = mkRange "test.fs" (mkPos 1 3) (mkPos 1 5)
-        let valid = CanAddArgument source tree range "c" "0"
+        let valid = CanAddArgument source tree range "0"
 
         Assert.AreEqual(Invalid("No binding found at the given range"),
                         valid,
@@ -124,4 +124,4 @@ type AddArgumentModule() =
         let tree = (Ast.Parse source).Value
         let range = mkRange "test.fs" (mkPos 1 8) (mkPos 1 17)
 
-        Assert.AreEqual("let rec f a a = f 0 a", RunNewRefactoring (AddArgument false source tree range "a" "0"))
+        Assert.AreEqual("let rec f a a = f 0 a", RunNewRefactoring (refactor (AddArgument false range "a" "0") () source))

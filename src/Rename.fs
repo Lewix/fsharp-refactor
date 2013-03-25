@@ -4,7 +4,6 @@ open Microsoft.FSharp.Compiler.Range
 open Microsoft.FSharp.Compiler.Ast
 open FSharpRefactor.Engine.Ast
 open FSharpRefactor.Engine.CodeAnalysis.ScopeAnalysis
-open FSharpRefactor.Engine.CodeTransforms
 open FSharpRefactor.Engine.RefactoringWorkflow
 
 
@@ -81,7 +80,7 @@ let RenameTransform newName (source, declarationIdentifier) =
     let changes =
         rangesToReplace declarationIdentifier declarationScope
         |> List.map (fun r -> (r,newName))
-    changes, ()
+    source, changes, ()
 
 
 let Rename doCheck newName : NewRefactoring<Identifier,unit> =

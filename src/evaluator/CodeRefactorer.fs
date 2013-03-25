@@ -62,7 +62,7 @@ let randomAddArgument code argumentName defaultValue bindingIndex =
     if List.isEmpty bindings then raise CouldNotRefactor
     else
         let bindingRange = (Ast.GetRange (bindings.[bindingIndex % bindings.Length])).Value
-        tryRefactoring (fun check -> RunNewRefactoring (AddArgument check code tree bindingRange argumentName (string defaultValue)))
+        tryRefactoring (fun check -> RunNewRefactoring (refactor (AddArgument check bindingRange argumentName (string defaultValue)) () code))
 
 let randomExtractFunction source functionName expressionIndex scopeIndex =
     let tree = (Ast.Parse source).Value

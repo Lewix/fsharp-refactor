@@ -93,7 +93,12 @@ type CodeTransformsModule() =
         let source = "let a = 1 in let b = 2 in a"
         let expected = "longIdentifier", mkRange "test.fs" (mkPos 1 17) (mkPos 1 31)
         let declarationRange = mkRange "test.fs" (mkPos 1 17) (mkPos 1 18)
-        Assert.AreEqual(expected, updateIdentifier ("b",declarationRange) "longIdentifier")
+        Assert.AreEqual(expected, CodeTransforms.updateIdentifier ("b",declarationRange) "longIdentifier")
+
+    [<Test>]
+    member this.``Can create an identifier starting at a given position``() =
+        let expected = "longIdentifier", mkRange "test.fs" (mkPos 1 17) (mkPos 1 31)
+        Assert.AreEqual(expected, CodeTransforms.createIdentifier (1, 17) "longIdentifier" "test.fs")
 
 [<TestFixture>]
 type ScopeAnalysisModule() =

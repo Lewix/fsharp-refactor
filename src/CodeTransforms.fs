@@ -84,3 +84,6 @@ module CodeTransforms =
             mkPos (declarationRange.End.Line) (declarationRange.End.Column + (String.length newName) - (String.length name))
             |> mkRange declarationRange.FileName declarationRange.Start 
         newName, newRange
+
+    let createIdentifier (startLine, startColumn) newName filename =
+        newName, mkRange filename (mkPos startLine startColumn) (mkPos startLine (startColumn + (String.length newName)))
