@@ -4,7 +4,7 @@ open System.Text.RegularExpressions
 open Microsoft.FSharp.Compiler.Range
 open FSharpRefactor.Engine.Ast
 open FSharpRefactor.Engine.CodeAnalysis.RangeAnalysis
-open FSharpRefactor.Engine.RefactoringWorkflow
+open FSharpRefactor.Engine.Refactoring
 open FSharpRefactor.Refactorings.Rename
 open FSharpRefactor.Refactorings.AddArgument
 open FSharpRefactor.Refactorings.ExtractFunction

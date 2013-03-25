@@ -7,7 +7,7 @@ open FSharpRefactor.Engine.Ast
 open FSharpRefactor.Engine.CodeTransforms.CodeTransforms
 open FSharpRefactor.Engine.CodeAnalysis.ScopeAnalysis
 open FSharpRefactor.Engine.CodeAnalysis.RangeAnalysis
-open FSharpRefactor.Engine.RefactoringWorkflow
+open FSharpRefactor.Engine.Refactoring
 open FSharpRefactor.Engine.CodeTemplates
 open FSharpRefactor.Refactorings.Rename
 

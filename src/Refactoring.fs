@@ -1,4 +1,4 @@
-module FSharpRefactor.Engine.RefactoringWorkflow
+module FSharpRefactor.Engine.Refactoring
 
 open Microsoft.FSharp.Compiler.Range
 open FSharpRefactor.Engine.CodeTransforms

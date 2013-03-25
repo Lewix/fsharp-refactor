@@ -4,7 +4,7 @@ open Microsoft.FSharp.Compiler.Range
 open Microsoft.FSharp.Compiler.Ast
 open FSharpRefactor.Engine.Ast
 open FSharpRefactor.Engine.CodeAnalysis.ScopeAnalysis
-open FSharpRefactor.Engine.RefactoringWorkflow
+open FSharpRefactor.Engine.Refactoring
 
 
 let rangeOfIdent (name : string) (identifiers : Identifier list) =

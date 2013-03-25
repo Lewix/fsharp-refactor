@@ -5,7 +5,7 @@ open Microsoft.FSharp.Compiler.Range
 open Microsoft.FSharp.Compiler.Ast
 open FSharpRefactor.Engine.Ast
 open FSharpRefactor.Engine.CodeTransforms
-open FSharpRefactor.Engine.RefactoringWorkflow
+open FSharpRefactor.Engine.Refactoring
 open FSharpRefactor.Refactorings.AddArgument
 
 [<TestFixture>]

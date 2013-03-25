@@ -8,7 +8,7 @@ open FSharpRefactor.Engine.Ast
 open FSharpRefactor.Engine.CodeAnalysis.RangeAnalysis
 open FSharpRefactor.Engine.CodeAnalysis.ScopeAnalysis
 open FSharpRefactor.Engine.CodeTransforms.CodeTransforms
-open FSharpRefactor.Engine.RefactoringWorkflow
+open FSharpRefactor.Engine.Refactoring
 open FSharpRefactor.Refactorings.Rename
 
 let DefaultBindingRange source (tree : Ast.AstNode) (position : pos) =

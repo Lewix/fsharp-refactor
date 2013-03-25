@@ -8,7 +8,7 @@ OPTS=--target:library --nologo --lib:libs
 SOURCES=src/Ast.fs \
 		src/CodeAnalysis.fs \
 		src/CodeTransforms.fs \
-		src/RefactoringWorkflow.fs \
+		src/Refactoring.fs \
 		src/CodeTemplates.fs \
 		src/Rename.fs \
 		src/ExtractFunction.fs \
