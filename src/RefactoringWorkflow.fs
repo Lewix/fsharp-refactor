@@ -86,15 +86,18 @@ let refactor (refactoring : NewRefactoring<_,_>) args source =
             let resultingSource = CodeTransforms.ChangeTextOf source changes
             Success(resultingSource, output)
 
-//TODO: interleavedAnalysis
 let interleave (r1 : NewRefactoring<unit,_>) (r2 : NewRefactoring<unit,_>) =
     let interleavedTransform (source, ()) =
         let source1, _ = r1.transform (source, ())
         let source2, _ = r2.transform (source, ())
         (List.append source1 source2, ())
-    { r1 with transform = interleavedTransform }
+    let interleavedAnalysis (source, ()) =
+        let validity1 = r1.analysis (source, ())
+        let validity2 = r2.analysis (source, ())
+        CombineValidity validity1 validity2
+    { analysis = interleavedAnalysis; transform = interleavedTransform }
 
-//TODO: exception handling
+//TODO: exception handling? Error handling in general
 let sequence (r1 : NewRefactoring<unit,'T>) (r2 : NewRefactoring<'T,_>) =
     let analysis (source, args) =
         let r1Analysis = r1.analysis (source, args)
