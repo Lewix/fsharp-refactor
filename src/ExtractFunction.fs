@@ -24,7 +24,7 @@ let DefaultInScopeTree (tree : Ast.AstNode) (expressionRange : range) =
             | SynBinding.Binding(_,_,_,_,_,_,_,_,_,expression,_,_) -> Some(expression)
     else outermostExpression
 
-let CreateFunction functionName arguments body isMultiLine indentString (declarationRange : range) : NewRefactoring<unit,Identifier> =
+let CreateFunction functionName arguments body isMultiLine indentString (declarationRange : range) : Refactoring<unit,Identifier> =
     let transform (source,()) =
         let parametersChange =
             if List.isEmpty arguments then
@@ -39,7 +39,7 @@ let CreateFunction functionName arguments body isMultiLine indentString (declara
         let nameChange = FunctionDefinition.NameRange isMultiLine, functionName
         source, [parametersChange; bodyChange; nameChange], ()
     let declarationSource =
-        RunNewRefactoring (refactor { analysis = (fun (_,_) -> Valid); transform = transform } () (FunctionDefinition.Template isMultiLine))
+        RunRefactoring { analysis = (fun (_,_) -> Valid); transform = transform } () (FunctionDefinition.Template isMultiLine)
 
     let transform (source,()) =
         let nameRange =
@@ -53,7 +53,7 @@ let CreateFunction functionName arguments body isMultiLine indentString (declara
         source, [declarationRange, Indent declarationSource indentString], (functionName, identifierRange)
     { analysis = (fun (_,_) -> Valid); transform = transform }
  
-let CallFunction functionName arguments callRange : NewRefactoring<unit,unit> =
+let CallFunction functionName arguments callRange : Refactoring<unit,unit> =
     //TODO: don't always put brackets around function body
     //TODO: this is contrived, just get rid of the templates...
     let transform (source,()) =
@@ -65,7 +65,7 @@ let CallFunction functionName arguments callRange : NewRefactoring<unit,unit> =
         source, [(FunctionCall.NameRange, functionName); parameterChange], ()
 
     let callSource =
-        RunNewRefactoring (refactor { analysis = (fun (_,_) -> Valid); transform = transform } () FunctionCall.Template)
+        RunRefactoring { analysis = (fun (_,_) -> Valid); transform = transform } () FunctionCall.Template
 
     { analysis = (fun (_,_) -> Valid); transform = (fun (s,_) -> s, [callRange, callSource], ()) }
 
@@ -83,7 +83,7 @@ let CanExtractFunction (tree : Ast.AstNode) (inScopeTree : Ast.AstNode) (express
     List.reduce CombineValidity
                 [expressionRangeIsValid; expressionRangeIsInInScopeTree; expressionIsInfix]
 
-let ExtractTempFunction doCheck inScopeTree (expressionRange : range) : NewRefactoring<unit,Identifier> =
+let ExtractTempFunction doCheck inScopeTree (expressionRange : range) : Refactoring<unit,Identifier> =
     let analysis (source,()) =
         let tree = (Ast.Parse source).Value
         CanExtractFunction tree inScopeTree expressionRange
@@ -115,9 +115,9 @@ let ExtractTempFunction doCheck inScopeTree (expressionRange : range) : NewRefac
 
     { analysis = analysis; transform = transform }
 
-let ExtractFunction doCheck inScopeTree expressionRange functionName : NewRefactoring<unit,unit> =
+let ExtractFunction doCheck inScopeTree expressionRange functionName : Refactoring<unit,unit> =
     let extractTempRefactoring = ExtractTempFunction doCheck inScopeTree expressionRange
     sequence extractTempRefactoring (Rename doCheck functionName)
     
 let DoExtractFunction source (tree : Ast.AstNode) (inScopeTree : Ast.AstNode) (expressionRange : range) (functionName : string) =
-    RunNewRefactoring (refactor (ExtractFunction true inScopeTree expressionRange functionName) () source)
+    RunRefactoring (ExtractFunction true inScopeTree expressionRange functionName) () source

@@ -95,5 +95,5 @@ type RenameTransformModule() =
         let source = "let a = 1 in let b = 2 in a"
         let expected = "let a = 1 in let a = 2 in a"
         let declarationRange = mkRange "test.fs" (mkPos 1 17) (mkPos 1 18)
-        Assert.AreEqual(expected, RunNewRefactoring (refactor (Rename false "a") ("b", declarationRange) source))
+        Assert.AreEqual(expected, RunRefactoring (Rename false "a") ("b", declarationRange) source)
 

@@ -141,7 +141,7 @@ type ExtractFunctionTransformModule() =
             List.head (FindNodesWithRange (mkRange "test.fs" (mkPos 1 15) (mkPos 1 26)) tree)
         let expressionRange = mkRange "test.fs" (mkPos 1 21) (mkPos 1 26)
 
-        Assert.AreEqual("let f a = 1 in let f = 1+2 in (f 1)+(f)", RunNewRefactoring (refactor (ExtractFunction false inScopeTree expressionRange "f") () source))
+        Assert.AreEqual("let f a = 1 in let f = 1+2 in (f 1)+(f)", RunRefactoring (ExtractFunction false inScopeTree expressionRange "f") () source)
 
 [<TestFixture>]
 type CreateFunctionModule() =
@@ -149,10 +149,10 @@ type CreateFunctionModule() =
     member this.``Can add a function to an expression``() =
         let expected = "let f a b =\n    a+b\n"
         let insertRange = mkRange "test.fs" (mkPos 1 0) (mkPos 1 0)
-        Assert.AreEqual(expected, RunNewRefactoring (refactor (CreateFunction "f" ["a";"b"] "a+b" true "" insertRange) () ""))
+        Assert.AreEqual(expected, RunRefactoring (CreateFunction "f" ["a";"b"] "a+b" true "" insertRange) () "")
 
     [<Test>]
     member this.``Can add a function with multiple lines in its body to an expression``() =
         let expected = "let f a b =\n    match a,b with\n        | (a,b) -> 1\n"
         let insertRange = mkRange "test.fs" (mkPos 1 0) (mkPos 1 0)
-        Assert.AreEqual(expected, RunNewRefactoring (refactor (CreateFunction "f" ["a";"b"] "match a,b with\n    | (a,b) -> 1" true "" insertRange) () ""))
+        Assert.AreEqual(expected, RunRefactoring (CreateFunction "f" ["a";"b"] "match a,b with\n    | (a,b) -> 1" true "" insertRange) () "")

@@ -50,7 +50,7 @@ let randomRename code newName identifierIndex =
     let identifier = identifiers.[identifierIndex % identifiers.Length]
     let tree = (Ast.Parse code).Value
 
-    tryRefactoring (fun check -> RunNewRefactoring (refactor (Rename check newName) identifier code))
+    tryRefactoring (fun check -> RunRefactoring (Rename check newName) identifier code)
 
 let randomAddArgument code argumentName defaultValue bindingIndex =
     let tree = (Ast.Parse code).Value
@@ -62,7 +62,7 @@ let randomAddArgument code argumentName defaultValue bindingIndex =
     if List.isEmpty bindings then raise CouldNotRefactor
     else
         let bindingRange = (Ast.GetRange (bindings.[bindingIndex % bindings.Length])).Value
-        tryRefactoring (fun check -> RunNewRefactoring (refactor (AddArgument check bindingRange argumentName (string defaultValue)) () code))
+        tryRefactoring (fun check -> RunRefactoring (AddArgument check bindingRange argumentName (string defaultValue)) () code)
 
 let randomExtractFunction source functionName expressionIndex scopeIndex =
     let tree = (Ast.Parse source).Value
@@ -76,4 +76,4 @@ let randomExtractFunction source functionName expressionIndex scopeIndex =
         if List.isEmpty potentialScopes then raise CouldNotRefactor
         else
             let inScopeTree = potentialScopes.[scopeIndex % potentialScopes.Length]
-            tryRefactoring (fun check -> RunNewRefactoring (refactor (ExtractFunction check inScopeTree expressionRange functionName) () source))
+            tryRefactoring (fun check -> RunRefactoring (ExtractFunction check inScopeTree expressionRange functionName) () source)

@@ -28,7 +28,7 @@ let DefaultBindingRange source (tree : Ast.AstNode) (position : pos) =
     if Option.isNone deepestBinding then None
     else Ast.GetRange (Ast.AstNode.Binding deepestBinding.Value)
 
-let AddArgumentToBinding (bindingRange : range) argumentName : NewRefactoring<unit,Identifier> =
+let AddArgumentToBinding (bindingRange : range) argumentName : Refactoring<unit,Identifier> =
     let transform (source, ()) =
         let tree = (Ast.Parse source).Value
         let identEndRange =
@@ -79,7 +79,7 @@ let CanAddArgument source (tree : Ast.AstNode) (bindingRange : range) (defaultVa
         | RefactoringFailure(m) -> Invalid(m)
 
 //TODO: Check arguments such as argumentName or defaultValue have a valid form
-let AddTempArgument doCheck bindingRange defaultValue : NewRefactoring<unit,Identifier> =
+let AddTempArgument doCheck bindingRange defaultValue : Refactoring<unit,Identifier> =
     let analysis (source, ()) = CanAddArgument source (Ast.Parse source).Value bindingRange defaultValue
     let transform (source, ()) =
         let tree = (Ast.Parse source).Value
@@ -92,9 +92,9 @@ let AddTempArgument doCheck bindingRange defaultValue : NewRefactoring<unit,Iden
         (List.fold interleave bindingRefactoring usageRefactorings).transform (source, ())
     { analysis = analysis; transform = transform }
 
-let AddArgument doCheck (bindingRange : range) argumentName defaultValue : NewRefactoring<unit,unit> =
+let AddArgument doCheck (bindingRange : range) argumentName defaultValue : Refactoring<unit,unit> =
     let addTempArgumentRefactoring = AddTempArgument doCheck bindingRange defaultValue
     sequence addTempArgumentRefactoring (Rename doCheck argumentName)
     
 let DoAddArgument source (tree : Ast.AstNode) (bindingRange : range) (argumentName : string) (defaultValue : string) =
-    RunNewRefactoring (refactor (AddArgument true bindingRange argumentName defaultValue) () source)
+    RunRefactoring (AddArgument true bindingRange argumentName defaultValue) () source
