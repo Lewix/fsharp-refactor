@@ -12,6 +12,11 @@ let rangeOfIdent (name : string) (identifiers : Identifier list) =
     let identifier = List.tryFind (fun (n,_) -> n = name) identifiers
     if Option.isNone identifier then None else Some(snd identifier.Value)
     
+let updateIdentifier ((name, declarationRange) : Identifier) newName =
+    let newRange = 
+        mkPos (declarationRange.End.Line) (declarationRange.End.Column + (String.length newName) - (String.length name))
+        |> mkRange declarationRange.FileName declarationRange.Start 
+    newName, newRange
 
 let rec findDeclarationInScopeTrees trees (name, declarationRange) =
     match trees with
@@ -83,7 +88,7 @@ let RenameTransform declarationIdentifier newName (source, ()) =
         rangesToReplace declarationIdentifier declarationScope
         |> List.map (fun r -> (r,newName))
     //TODO: update the identifier
-    changes, declarationIdentifier
+    changes, updateIdentifier declarationIdentifier newName
 
 
 let Rename doCheck (declarationIdentifier : Identifier) (newName : string) =
