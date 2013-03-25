@@ -4,6 +4,7 @@ open System
 open Microsoft.FSharp.Compiler.Range
 open FSharpRefactor.Engine.Ast
 open FSharpRefactor.Engine.CodeAnalysis.RangeAnalysis
+open FSharpRefactor.Engine.CodeAnalysis.ScopeAnalysis
 
 module CodeTransforms =
     exception InvalidRange
@@ -77,3 +78,9 @@ module CodeTransforms =
             if range.StartLine = range.EndLine then (1, range.EndColumn-range.StartColumn)
             else (1 + range.EndLine - range.StartLine, range.EndColumn)
         fst (takeAroundPos after endPosInAfter)
+
+    let updateIdentifier ((name, declarationRange) : Identifier) newName =
+        let newRange = 
+            mkPos (declarationRange.End.Line) (declarationRange.End.Column + (String.length newName) - (String.length name))
+            |> mkRange declarationRange.FileName declarationRange.Start 
+        newName, newRange
