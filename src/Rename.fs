@@ -92,4 +92,4 @@ let Rename doCheck (declarationIdentifier : Identifier) (newName : string) =
     { analysis = analysis; transform = RenameTransform declarationIdentifier newName }
 
 let DoRename source (tree: Ast.AstNode) (declarationIdentifier : Identifier) (newName : string) =
-    RunNewRefactoring (refactor (Rename true declarationIdentifier newName) source)
+    RunNewRefactoring (refactor (Rename true declarationIdentifier newName) () source)
