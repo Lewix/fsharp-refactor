@@ -17,7 +17,7 @@ type AddArgumentModule() =
         let bindingRange = mkRange "test.fs" (mkPos 1 4) (mkPos 1 15)
         let expected = "let f c a b = a+b"
 
-        Assert.AreEqual(expected, RunNewRefactoring (refactor (AddArgumentToBinding bindingRange "c") source))
+        Assert.AreEqual(expected, RunNewRefactoring (refactor (AddArgumentToBinding bindingRange "c") () source))
 
     [<Test>]
     member this.``Can add an argument to a value binding``() =
@@ -26,7 +26,7 @@ type AddArgumentModule() =
         let bindingRange = mkRange "test.fs" (mkPos 1 4) (mkPos 1 11)
         let expected = "let x arg = 1+2"
 
-        Assert.AreEqual(expected, RunNewRefactoring (refactor (AddArgumentToBinding bindingRange "arg") source))
+        Assert.AreEqual(expected, RunNewRefactoring (refactor (AddArgumentToBinding bindingRange "arg") () source))
 
     [<Test>]
     member this.``Can add an argument to a function call``() =
@@ -35,7 +35,7 @@ type AddArgumentModule() =
         let usageRange = mkRange "test.fs" (mkPos 1 0) (mkPos 1 1)
         let expected ="f \"arg\" a \"b\" 3"
 
-        Assert.AreEqual(expected, RunNewRefactoring (refactor (AddArgumentToFunctionUsage "\"arg\"" usageRange) source))
+        Assert.AreEqual(expected, RunNewRefactoring (refactor (AddArgumentToFunctionUsage "\"arg\"" usageRange) () source))
 
     [<Test>]
     member this.``Can find all the App nodes calling a certain function``() =
