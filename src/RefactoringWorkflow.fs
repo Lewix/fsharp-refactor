@@ -67,9 +67,9 @@ type RefactoringResult =
     | Success of Source
     | Failure of ErrorMessage
 
-type NewRefactoring = {
-    analysis : Source -> RefactoringValidity;
-    transform : Source -> (range * string) list
+type NewRefactoring<'T,'U> = {
+    analysis : Source * 'T -> RefactoringValidity;
+    transform : Source * 'T -> Change list * 'U
     }
 
 let RunNewRefactoring refactoringResult =
@@ -77,36 +77,41 @@ let RunNewRefactoring refactoringResult =
         | Success(source) -> source
         | Failure(message) -> raise (RefactoringFailure message)
 
-let refactor (refactoring : NewRefactoring) source =
-    let validity = refactoring.analysis source 
+let refactor (refactoring : NewRefactoring<unit,_>) source =
+    let validity = refactoring.analysis (source, ())
     match validity with
         | Invalid(message) -> Failure(message)
         | Valid ->
-            let resultingSource =
-                refactoring.transform source
-                |> CodeTransforms.ChangeTextOf source 
+            let changes, _ = refactoring.transform (source, ())
+            let resultingSource = CodeTransforms.ChangeTextOf source changes
             Success(resultingSource)
 
 //TODO: interleavedAnalysis
-let interleave (r1 : NewRefactoring) (r2 : NewRefactoring) =
-    let interleavedTransform source =
-        List.append (r1.transform source) (r2.transform source)
+let interleave (r1 : NewRefactoring<unit,_>) (r2 : NewRefactoring<unit,_>) =
+    let interleavedTransform (source, ()) =
+        let source1, _ = r1.transform (source, ())
+        let source2, _ = r2.transform (source, ())
+        (List.append source1 source2, ())
     { r1 with transform = interleavedTransform }
 
 //TODO: exception handling
-let sequence (r1 : NewRefactoring) (r2 : NewRefactoring) =
-    let analysis source =
-        let r1Analysis = r1.analysis source
+//TODO: do someting about refactor. Shouldn't take a unit, should return the args
+let sequence (r1 : NewRefactoring<unit,'T>) (r2 : NewRefactoring<'T,_>) =
+    let analysis (source, args) =
+        let r1Analysis = r1.analysis (source, args)
         if r1Analysis = Valid then
+            //TODO: should only need one call
+            let _, r2Args = r1.transform (source, args)
             let r1Result = refactor r1 source
             match r1Result with
-                | Success(r1Source) -> r2.analysis r1Source
+                | Success(r1Source) -> r2.analysis (r1Source, r2Args)
                 | Failure(message) -> Invalid(message)
         else r1Analysis
-    let transform  source =
+    let transform (source, args) =
+        let _, r2Args = r1.transform (source, args)
         let r1Result = refactor r1 source
         match r1Result with
-            | Success(r1Source) -> r2.transform r1Source
+            | Success(r1Source) -> r2.transform (r1Source, r2Args)
             | Failure(message) -> raise (RefactoringFailure message)
 
     { analysis = analysis; transform = transform }

@@ -28,7 +28,7 @@ let DefaultBindingRange source (tree : Ast.AstNode) (position : pos) =
     else Ast.GetRange (Ast.AstNode.Binding deepestBinding.Value)
 
 let AddArgumentToBinding (bindingRange : range) (argumentName : string) =
-    let transform source =
+    let transform (source, ()) =
         let tree = (Ast.Parse source).Value
         let identEndRange =
             match FindBindingAtRange bindingRange tree with
@@ -37,13 +37,13 @@ let AddArgumentToBinding (bindingRange : range) (argumentName : string) =
                 | SynBinding.Binding(_,_,_,_,_,_,_,
                                      SynPat.Named(_,valueName,_,_,_),_,_,_,_) -> valueName.idRange.EndRange
                 | b -> raise (RefactoringFailure("Binding did not have the right form:" + (sprintf "%A" b)))
-        [identEndRange, " " + argumentName]
+        [identEndRange, " " + argumentName], ()
 
-    { analysis = (fun _ -> Valid); transform = transform }
+    { analysis = (fun (_,_) -> Valid); transform = transform }
 
 //TODO: Add brackets around usage if needed (if it's not an App)
 let AddArgumentToFunctionUsage (argument : string) (identRange : range) =
-    { analysis = (fun _ -> Valid); transform = fun _ -> [identRange.EndRange, " " + argument] }
+    { analysis = (fun (_,_) -> Valid); transform = fun (_,_) -> ([identRange.EndRange, " " + argument],()) }
 
 let FindFunctionUsageRanges source (tree : Ast.AstNode) (bindingRange : range) (functionName : string) =
     let isDeclarationOfFunction scopeTree =
@@ -77,7 +77,7 @@ let CanAddArgument source (tree : Ast.AstNode) (bindingRange : range) (argumentN
 
 //TODO: Check arguments such as argumentName or defaultValue have a valid form
 let AddTempArgument doCheck source (tree : Ast.AstNode) (bindingRange : range) (argumentName : string) (defaultValue : string) =
-    let analysis source = CanAddArgument source (Ast.Parse source).Value bindingRange argumentName defaultValue
+    let analysis (source, ()) = CanAddArgument source (Ast.Parse source).Value bindingRange argumentName defaultValue
     let usageRefactorings =
         findFunctionName source tree bindingRange
         |> FindFunctionUsageRanges source tree bindingRange

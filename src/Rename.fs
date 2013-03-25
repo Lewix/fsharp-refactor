@@ -12,6 +12,7 @@ let rangeOfIdent (name : string) (identifiers : Identifier list) =
     let identifier = List.tryFind (fun (n,_) -> n = name) identifiers
     if Option.isNone identifier then None else Some(snd identifier.Value)
     
+
 let rec findDeclarationInScopeTrees trees (name, declarationRange) =
     match trees with
         | [] -> None
@@ -73,17 +74,20 @@ let CanRename (tree : Ast.AstNode) (name : string, declarationRange : range) (ne
                 else Valid
     else Invalid("Could not find a declaration at the given range")
 
-let RenameTransform declarationIdentifier newName source =
+let RenameTransform declarationIdentifier newName (source, ()) =
     let tree = (Ast.Parse source).Value
     let declarationScope =
         findDeclarationInScopeTrees (makeScopeTrees tree) declarationIdentifier
         |> Option.get
-    rangesToReplace declarationIdentifier declarationScope
-    |> List.map (fun r -> (r,newName))
+    let changes =
+        rangesToReplace declarationIdentifier declarationScope
+        |> List.map (fun r -> (r,newName))
+    //TODO: update the identifier
+    changes, declarationIdentifier
 
 
 let Rename doCheck (declarationIdentifier : Identifier) (newName : string) =
-    let analysis source =
+    let analysis (source, ()) =
         CanRename (Ast.Parse source).Value declarationIdentifier newName
     { analysis = analysis; transform = RenameTransform declarationIdentifier newName }
 
