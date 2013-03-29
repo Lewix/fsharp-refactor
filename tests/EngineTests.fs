@@ -149,6 +149,22 @@ type ScopeAnalysisModule() =
 type ScopeTreeModule() =
     static member getScopeTrees source =
         ScopeAnalysis.makeScopeTrees (Ast.Parse source).Value
+
+    [<Test>]
+    member this.``Can recognise declared identifiers in LongIdentWithDots``() =
+        let scopeTrees = ScopeTreeModule.getScopeTrees "type TestClass = member self.x = 1"
+        match scopeTrees with
+            | [ScopeAnalysis.Declaration(["self",_;"x",_],_)] -> ()
+            | _ -> Assert.Fail("The scope tree for 'let a = 1 in a' was incorrect:\n" +
+                               (sprintf "%A" scopeTrees))
+
+    [<Test>]
+    member this.``Can recognise used identifiers in LongIdentWithDots``() =
+        let scopeTrees = ScopeTreeModule.getScopeTrees "ident1.ident2"
+        match scopeTrees with
+            | [ScopeAnalysis.Usage("ident1",_); ScopeAnalysis.Usage("ident2",_)] -> ()
+            | _ -> Assert.Fail("The scope tree for 'let a = 1 in a' was incorrect:\n" +
+                               (sprintf "%A" scopeTrees))
     
     [<Test>]
     member this.``Creates a scope tree for a simple let statement``() =

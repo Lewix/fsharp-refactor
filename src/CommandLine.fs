@@ -8,7 +8,7 @@ open Microsoft.FSharp.Compiler.Range
 open FSharpRefactor.Engine.Ast
 open FSharpRefactor.Engine.CodeAnalysis.RangeAnalysis
 open FSharpRefactor.Engine.CodeAnalysis.ScopeAnalysis
-open FSharpRefactor.Engine.RefactoringWorkflow
+open FSharpRefactor.Engine.Refactoring
 open FSharpRefactor.Refactorings.Rename
 open FSharpRefactor.Refactorings.ExtractFunction
 open FSharpRefactor.Refactorings.AddArgument
