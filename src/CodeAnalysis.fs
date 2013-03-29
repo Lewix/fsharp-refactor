@@ -172,6 +172,8 @@ module ScopeAnalysis =
         match tree with
             | Ast.ModuleOrNamespace(SynModuleOrNamespace.SynModuleOrNamespace(_,_,ds,_,_,_,_)) ->
                 makeNestedScopeTrees (List.map Ast.AstNode.ModuleDeclaration ds)
+            | Ast.TypeDefinitionRepresentation(SynTypeDefnRepr.ObjectModel(_,ms,_)) ->
+                makeNestedScopeTrees (List.map Ast.MemberDefinition ms)
             | Ast.AstNode.ModuleDeclaration(SynModuleDecl.Let(false,bs,_)) ->
                 makeNestedScopeTrees (List.map Ast.AstNode.Binding bs)
             | Ast.AstNode.ModuleDeclaration(SynModuleDecl.Let(true,bs,_)) ->

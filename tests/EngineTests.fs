@@ -154,7 +154,7 @@ type ScopeTreeModule() =
     member this.``Can recognise declared identifiers in LongIdentWithDots``() =
         let scopeTrees = ScopeTreeModule.getScopeTrees "type TestClass = member self.x = 1"
         match scopeTrees with
-            | [ScopeAnalysis.Declaration(["self",_;"x",_],_)] -> ()
+            | [ScopeAnalysis.Declaration(["self",_;"x",_],_);_] -> ()
             | _ -> Assert.Fail("The scope tree for 'let a = 1 in a' was incorrect:\n" +
                                (sprintf "%A" scopeTrees))
 
