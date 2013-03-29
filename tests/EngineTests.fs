@@ -151,6 +151,16 @@ type ScopeTreeModule() =
         ScopeAnalysis.makeScopeTrees (Ast.Parse source).Value
 
     [<Test>]
+    member this.``Can create a scope tree for a class with an implicit inherit``() =
+        let scopeTrees = ScopeTreeModule.getScopeTrees "type TestClass(x) = \n  inherit BaseClass(x)\n  let a = x"
+        match scopeTrees with
+            | [ScopeAnalysis.Declaration(["x",_],[ScopeAnalysis.Usage("x",_);
+                                                  ScopeAnalysis.Declaration(["a",_],[]);
+                                                  ScopeAnalysis.Usage("x",_)])] -> ()
+            | _ -> Assert.Fail("The scope tree for 'type TestClass(x) = inherit BaseClass(x)' was incorrect:\n" +
+                               (sprintf "%A" scopeTrees))
+
+    [<Test>]
     member this.``Can create a scope tree for a class with a self identifier in the implicit constructor``() =
         let scopeTrees = ScopeTreeModule.getScopeTrees "type TestClass(x, y) as this = let a = this"
         match scopeTrees with
@@ -219,9 +229,9 @@ type ScopeTreeModule() =
     member this.``Can create a scope tree for a match clause``() =
         let scopeTrees = ScopeTreeModule.getScopeTrees "match a with (a,b) -> a"
         match scopeTrees with
-            | [ScopeAnalysis.Usage("a",_);
-               ScopeAnalysis.Declaration([("a",_);("b",_)],
-                                     [ScopeAnalysis.Usage("a",_)])] -> ()
+            | [ScopeAnalysis.Declaration([("a",_);("b",_)],
+                                     [ScopeAnalysis.Usage("a",_)]);
+               ScopeAnalysis.Usage("a",_)] -> ()
             | _ -> Assert.Fail("The scope tree for 'match a with (a,b) -> a' was incorrect:\n" +
                                (sprintf "%A" scopeTrees))
 
@@ -231,9 +241,9 @@ type ScopeTreeModule() =
         let scopeTrees2 = ScopeTreeModule.getScopeTrees "match a with Tag(id)::_ -> id"
         let doMatch scopeTrees =
             match scopeTrees with
-                | [ScopeAnalysis.Usage("a",_);
-                   ScopeAnalysis.Declaration(["id",_],
-                                             [ScopeAnalysis.Usage("id",_)])] -> ()
+                | [ScopeAnalysis.Declaration(["id",_],
+                                             [ScopeAnalysis.Usage("id",_)]);
+                   ScopeAnalysis.Usage("a",_)] -> ()
                 | _ -> Assert.Fail("The scope tree for 'match a with Tag(id) -> id' was incorrect:\n" +
                                    (sprintf "%A" scopeTrees))
 

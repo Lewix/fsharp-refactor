@@ -110,7 +110,9 @@ module ScopeAnalysis =
     let addChildren (tree : ScopeTree) (children : ScopeTree list) =
         if List.isEmpty children then tree else
         match tree with
-            | Usage(text,range) -> Declaration([text,range],children)
+            | Usage(text,range) ->
+                printfn "transforming usage into decl"
+                Declaration([text,range],children)
             | Declaration(is, cs) -> Declaration(is, List.append cs children)
 
     let mergeBindings (bindingTrees : ScopeTree list list) =
@@ -137,10 +139,13 @@ module ScopeAnalysis =
                 | d::ds ->
                     let headScopeTrees = makeScopeTrees d
                     let tailScopeTrees = makeNestedScopeTrees ds
-                    if List.isEmpty headScopeTrees then
-                        tailScopeTrees
+                    let headDeclarations = List.filter isDeclaration headScopeTrees
+                    let headUsages = List.filter isUsage headScopeTrees
+
+                    if List.isEmpty headDeclarations then
+                        List.append headUsages tailScopeTrees
                     else
-                        (addChildren (List.head headScopeTrees) tailScopeTrees)::(List.tail headScopeTrees)
+                        (addChildren (List.head headDeclarations) tailScopeTrees)::(List.append headUsages (List.tail headDeclarations))
 
         let declarationsFromMatchPattern pattern =
             let rec declarationsFromAstNode node =
