@@ -151,11 +151,21 @@ type ScopeTreeModule() =
         ScopeAnalysis.makeScopeTrees (Ast.Parse source).Value
 
     [<Test>]
+    member this.``Can create a scope tree for a class with implicit constructor``() =
+        let scopeTrees = ScopeTreeModule.getScopeTrees "type TestClass(x, y) = member self.x = x"
+        match scopeTrees with
+            | [ScopeAnalysis.Declaration(["x",_;"y",_],
+                [ScopeAnalysis.Declaration(["self",_;"x",_],[]);
+                 ScopeAnalysis.Usage("x",_)])] -> ()
+            | _ -> Assert.Fail("The scope tree for 'type TestClass(x, y) = member self.x = x' was incorrect:\n" +
+                               (sprintf "%A" scopeTrees))
+                
+    [<Test>]
     member this.``Can recognise declared identifiers in LongIdentWithDots``() =
         let scopeTrees = ScopeTreeModule.getScopeTrees "type TestClass = member self.x = 1"
         match scopeTrees with
-            | [ScopeAnalysis.Declaration(["self",_;"x",_],_);_] -> ()
-            | _ -> Assert.Fail("The scope tree for 'let a = 1 in a' was incorrect:\n" +
+            | [ScopeAnalysis.Declaration(["self",_;"x",_],_)] -> ()
+            | _ -> Assert.Fail("The scope tree for 'type TestClass = member self.x = 1' was incorrect:\n" +
                                (sprintf "%A" scopeTrees))
 
     [<Test>]
@@ -163,7 +173,7 @@ type ScopeTreeModule() =
         let scopeTrees = ScopeTreeModule.getScopeTrees "ident1.ident2"
         match scopeTrees with
             | [ScopeAnalysis.Usage("ident1",_); ScopeAnalysis.Usage("ident2",_)] -> ()
-            | _ -> Assert.Fail("The scope tree for 'let a = 1 in a' was incorrect:\n" +
+            | _ -> Assert.Fail("The scope tree for 'ident1.ident2' was incorrect:\n" +
                                (sprintf "%A" scopeTrees))
     
     [<Test>]
