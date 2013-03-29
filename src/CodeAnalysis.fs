@@ -23,6 +23,9 @@ module ScopeAnalysis =
     let (|DeclaredIdent|_|) (node : Ast.AstNode) =
         match node with
             | Ast.Pattern(SynPat.Named(_,i,_,_,_)) -> Some(i.idText, i.idRange)
+            | Ast.Pattern(SynPat.LongIdent(LongIdentWithDots([_;_],_),_,_,_,_,_)) ->
+                // This is a member declaration of the form self.id, ignore both idents
+                None
             | Ast.Pattern(SynPat.LongIdent(LongIdentWithDots(i::_,_),_,_,_,_,_)) ->
                 Some(i.idText, i.idRange)
             | Ast.SimplePattern(SynSimplePat.Id(i,_,_,_,_,_)) ->
@@ -155,6 +158,11 @@ module ScopeAnalysis =
                 | Ast.Children cs -> List.collect getDeclarations cs
                 | _ -> []
 
+        let tryGetSelfIdentifier identWithDots =
+            match identWithDots with
+                | LongIdentWithDots([i;_],_) -> Some (i.idText, i.idRange)
+                | _ -> None
+
         let declarationsFromFunctionPatterns patterns =
             List.collect getDeclarations (List.map Ast.AstNode.Pattern patterns)
 
@@ -171,9 +179,12 @@ module ScopeAnalysis =
                 makeNestedScopeTrees (List.map Ast.AstNode.ModuleDeclaration ds)
             | Ast.TypeDefinitionRepresentation(SynTypeDefnRepr.ObjectModel(_,ms,_)) ->
                 makeNestedScopeTrees (List.map Ast.MemberDefinition ms)
-            | Ast.MemberDefinition(SynMemberDefn.ImplicitCtor(_,_,ps,i,_)) ->
+            | Ast.MemberDefinition(SynMemberDefn.ImplicitCtor(_,_,ps,selfId,_)) ->
                 let idsDeclaredInPatterns = declarationsFromSimplePatterns ps
-                [Declaration(idsDeclaredInPatterns, [])]
+                let idsInScopeInCtor =
+                    if Option.isNone selfId then idsDeclaredInPatterns
+                    else (selfId.Value.idText, selfId.Value.idRange)::idsDeclaredInPatterns
+                [Declaration(idsInScopeInCtor, [])]
             | Ast.AstNode.ModuleDeclaration(SynModuleDecl.Let(false,bs,_)) ->
                 makeNestedScopeTrees (List.map Ast.AstNode.Binding bs)
             | Ast.AstNode.ModuleDeclaration(SynModuleDecl.Let(true,bs,_)) ->
@@ -203,11 +214,17 @@ module ScopeAnalysis =
                 let scopeTreesFromBinding = makeScopeTrees (Ast.AstNode.Expression expression)
                 match pattern with
                     | SynPat.LongIdent(functionIdent,_,_,arguments,_,_) ->
-                        let idsFromArguments = declarationsFromFunctionPatterns arguments
+                        let selfIdentifier = tryGetSelfIdentifier functionIdent
+                        let idsFromArguments =
+                            declarationsFromFunctionPatterns arguments
+                        let idsInScopeInExpression =
+                            if Option.isNone selfIdentifier then idsFromArguments
+                            else selfIdentifier.Value::idsFromArguments
                         let argumentsScopeTrees =
-                            if idsFromArguments = [] then scopeTreesFromBinding
-                            else [Declaration(idsFromArguments, scopeTreesFromBinding)]
-                        Declaration(idsDeclaredInBinding, [])::argumentsScopeTrees
+                            if idsInScopeInExpression = [] then scopeTreesFromBinding
+                            else [Declaration(idsInScopeInExpression, scopeTreesFromBinding)]
+                        if idsDeclaredInBinding = [] then argumentsScopeTrees
+                        else Declaration(idsDeclaredInBinding, [])::argumentsScopeTrees
                     | _ -> Declaration(idsDeclaredInBinding, [])::scopeTreesFromBinding
             | UsedIdent(text,range) -> [Usage(text,range)]
             | Ast.Children(cs) -> List.concat (Seq.map makeScopeTrees cs)

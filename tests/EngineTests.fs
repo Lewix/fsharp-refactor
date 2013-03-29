@@ -151,15 +151,24 @@ type ScopeTreeModule() =
         ScopeAnalysis.makeScopeTrees (Ast.Parse source).Value
 
     [<Test>]
+    member this.``Can create a scope tree for a class with a self identifier in the implicit constructor``() =
+        let scopeTrees = ScopeTreeModule.getScopeTrees "type TestClass(x, y) as this = let a = this"
+        match scopeTrees with
+            | [ScopeAnalysis.Declaration(["this",_;"x",_;"y",_],
+                [ScopeAnalysis.Declaration(["a",_],[]);
+                 ScopeAnalysis.Usage("this",_)])] -> ()
+            | _ -> Assert.Fail("The scope tree for 'type TestClass(x, y) as this = let a = this' was incorrect:\n" +
+                               (sprintf "%A" scopeTrees))
+
+    [<Test>]
     member this.``Can create a scope tree for a class with implicit constructor``() =
         let scopeTrees = ScopeTreeModule.getScopeTrees "type TestClass(x, y) = member self.x = x"
         match scopeTrees with
             | [ScopeAnalysis.Declaration(["x",_;"y",_],
-                [ScopeAnalysis.Declaration(["self",_],[]);
-                 ScopeAnalysis.Usage("x",_)])] -> ()
+                [ScopeAnalysis.Declaration(["self",_],[ScopeAnalysis.Usage("x",_)])])] -> ()
             | _ -> Assert.Fail("The scope tree for 'type TestClass(x, y) = member self.x = x' was incorrect:\n" +
                                (sprintf "%A" scopeTrees))
-                
+
     [<Test>]
     member this.``Can recognise declared identifiers in LongIdentWithDots``() =
         let scopeTrees = ScopeTreeModule.getScopeTrees "type TestClass = member self.x = 1"
