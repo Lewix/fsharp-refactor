@@ -141,12 +141,12 @@ module Ast =
                     | SynTypeDefnRepr.Simple(_,_) -> None
             | MemberDefinition(m) ->
                 match m with
-                    | SynMemberDefn.Open(_,_) -> None
                     | SynMemberDefn.Member(b,_) -> Some [AstNode.Binding b]
                     | SynMemberDefn.ImplicitCtor(_,_,ps,None,_) -> Some(List.map AstNode.SimplePattern ps)
                     | SynMemberDefn.ImplicitCtor(_,_,ps,Some i,_) -> Some((AstNode.Ident i)::(List.map AstNode.SimplePattern ps))
+                    | SynMemberDefn.ImplicitInherit(_,e,_,_) -> Some [AstNode.Expression e]
                     | SynMemberDefn.LetBindings(bs,_,_,_) -> Some(List.map AstNode.Binding bs)
-                    | d -> raise (new NotImplementedException("Add a new entry to pattern for MemberDefinition: " + (string d)))
+                    | _ -> None
     let (|Range|_|) (node : AstNode) =
         match node with
             | File _ -> None
