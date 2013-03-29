@@ -26,7 +26,6 @@ module ScopeAnalysis =
     let (|DeclaredIdent|_|) (node : Ast.AstNode) =
         match node with
             | Ast.Pattern(SynPat.Named(_,i,_,_,_)) -> Some [i.idText, i.idRange]
-            //TODO: Make everything work with LongIdentWithDots
             | Ast.Pattern(SynPat.LongIdent(LongIdentWithDots(is,_),_,_,_,_,_)) ->
                 Some (identsFromList is)
             | Ast.SimplePattern(SynSimplePat.Id(i,_,_,_,_,_)) ->
