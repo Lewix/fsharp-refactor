@@ -66,12 +66,10 @@ let FindFunctionUsageRanges source (tree : Ast.AstNode) (bindingRange : range) (
     |> List.choose rangeIfUsageOfFunction
 
 let findFunctionName source (tree : Ast.AstNode) (bindingRange : range) =
-    let last ls =
-        List.reduceBack (fun _ l -> l) ls
     match FindBindingAtRange bindingRange tree with
         | SynBinding.Binding(_,_,_,_,_,_,_,p,_,_,_,_) ->
             match Ast.AstNode.Pattern p with
-                | DeclaredIdent(idents) -> fst (last idents)
+                | DeclaredIdent(text,range) -> text
                 | _ -> raise (RefactoringFailure("Binding was not a function"))
 
 

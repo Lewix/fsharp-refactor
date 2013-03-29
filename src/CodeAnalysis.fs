@@ -8,28 +8,25 @@ open FSharpRefactor.Engine.Ast
 
 module ScopeAnalysis =
     type Identifier = string * range
-    
+
     type ScopeTree =
         | Declaration of Identifier list * ScopeTree list
         | Usage of Identifier
-    
-    let identsFromList is =
-        List.map (fun (i : Ident) -> i.idText, i.idRange) is
 
     let (|UsedIdent|_|) (node : Ast.AstNode) =
         match node with
-            | Ast.AstNode.Expression(SynExpr.Ident(i)) -> Some [i.idText, i.idRange]
-            | Ast.AstNode.Expression(SynExpr.LongIdent(_,LongIdentWithDots(is,_),_,_)) ->
-                Some (identsFromList is)
+            | Ast.AstNode.Expression(SynExpr.Ident(i)) -> Some(i.idText, i.idRange)
+            | Ast.AstNode.Expression(SynExpr.LongIdent(_,LongIdentWithDots(i::_,_),_,_)) ->
+                Some(i.idText, i.idRange)
             | _ -> None
 
     let (|DeclaredIdent|_|) (node : Ast.AstNode) =
         match node with
-            | Ast.Pattern(SynPat.Named(_,i,_,_,_)) -> Some [i.idText, i.idRange]
-            | Ast.Pattern(SynPat.LongIdent(LongIdentWithDots(is,_),_,_,_,_,_)) ->
-                Some (identsFromList is)
+            | Ast.Pattern(SynPat.Named(_,i,_,_,_)) -> Some(i.idText, i.idRange)
+            | Ast.Pattern(SynPat.LongIdent(LongIdentWithDots(i::_,_),_,_,_,_,_)) ->
+                Some(i.idText, i.idRange)
             | Ast.SimplePattern(SynSimplePat.Id(i,_,_,_,_,_)) ->
-                Some [i.idText, i.idRange]
+                Some(i.idText, i.idRange)
             | _ -> None
 
     let DefaultDeclared = Set ["op_Addition"]
@@ -147,14 +144,14 @@ module ScopeAnalysis =
                 match node with
                     | Ast.AstNode.Pattern(SynPat.LongIdent(patternDiscriminator,_,_,arguments,_,_)) ->
                         List.collect declarationsFromAstNode (List.map Ast.AstNode.Pattern arguments)
-                    | DeclaredIdent(idents) -> idents
+                    | DeclaredIdent(text,range) -> [text,range]
                     | Ast.Children cs -> List.collect declarationsFromAstNode cs
                     | _ -> []
             declarationsFromAstNode (Ast.AstNode.Pattern pattern)
 
         let rec getDeclarations pattern =
             match pattern with
-                | DeclaredIdent(idents) -> idents
+                | DeclaredIdent(text,range) -> [text,range]
                 | Ast.Children cs -> List.collect getDeclarations cs
                 | _ -> []
 
@@ -212,7 +209,7 @@ module ScopeAnalysis =
                             else [Declaration(idsFromArguments, scopeTreesFromBinding)]
                         Declaration(idsDeclaredInBinding, [])::argumentsScopeTrees
                     | _ -> Declaration(idsDeclaredInBinding, [])::scopeTreesFromBinding
-            | UsedIdent(idents) -> List.map Usage idents
+            | UsedIdent(text,range) -> [Usage(text,range)]
             | Ast.Children(cs) -> List.concat (Seq.map makeScopeTrees cs)
             | _ -> []
 
