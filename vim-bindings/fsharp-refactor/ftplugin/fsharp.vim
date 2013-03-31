@@ -49,7 +49,7 @@ function! RestoreCursorPosition(position)
 endfunction
 
 function! Refactor(command)
-    let command = "export MONO_PATH=/mnt/media/git/university/personalproj/fsharp-refactor/libs/; mono /mnt/media/bookmarks/p/bin/FSharpRefactor.exe ".a:command
+    let command = "fsharp-refactor ".a:command
     let position = SaveCursorPosition()
     let result = RunWithErrors(command, GetBufferContents())
     if result.has_errors
