@@ -22,12 +22,6 @@ let readFromStdin () =
     stdin.Read(buffer, 0, 10000) |> ignore
     new String(Array.map char buffer)
 
-let writeToStderr message =
-    let stderr = Console.OpenStandardError()
-    let buffer : byte array = Array.zeroCreate (String.length message)
-    String.iteri (fun i c -> Array.set buffer i (byte c)) message
-    stderr.Write(buffer, 0, String.length message)
-
 let readFromFile filename =
     if File.Exists filename then
         File.ReadAllText filename
@@ -190,5 +184,7 @@ let main(args : string[]) =
         with
             | ArgumentException message
             | RefactoringFailure message ->
-                writeToStderr message
+                stderr.Write(message)
+                printfn "\n"
+                printUsage ()
                 1
