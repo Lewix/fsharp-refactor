@@ -28,7 +28,7 @@ endfunction
 function! RunWithErrors(command, input)
     let old_shellredir = &shellredir
     let error_file = tempname()
-    let &shellredir = "2>".error_file." >"
+    let &shellredir = "2>\"".error_file."\" >"
     let stdout = system(a:command, a:input)
     let stderr = join(readfile(error_file), "\n")
     if stderr == ""
