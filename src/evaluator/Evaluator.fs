@@ -23,8 +23,6 @@ type RefactoringResult = {
     identThreshold : int
     }
 
-let last ls = List.reduceBack (fun _ l -> l) ls
-
 let randomIdent (random : Random) =
     { defaultState with randomNumbers = Seq.initInfinite (fun i -> random.Next()) }
     |> generateIdent Int
