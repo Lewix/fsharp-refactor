@@ -8,7 +8,6 @@ SOURCES=src/Ast.fs \
 		src/CodeAnalysis.fs \
 		src/CodeTransforms.fs \
 		src/Refactoring.fs \
-		src/CodeTemplates.fs \
 		src/Rename.fs \
 		src/ExtractFunction.fs \
 		src/AddArgument.fs
