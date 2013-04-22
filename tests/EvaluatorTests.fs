@@ -162,6 +162,6 @@ type CodeRefactorerModule() =
         Assert.AreEqual(Some("let f a = a in let g a = (f a)"), randomExtractFunction "let g a = a" "f" 0 1)
         Assert.AreEqual(None, randomExtractFunction "let g a = a" "a" 0 1)
 
-    [<Test>]
-    member this.``Is not a test``() =
-        Assert.Fail(sprintf "%A" (evaluateRefactorings evaluateExtractFunction "/home/lewis/results.csv"))
+//    [<Test>]
+//    member this.``Is not a test``() =
+//        Assert.Fail(sprintf "%A" (evaluateRefactorings evaluateExtractFunction "/home/lewis/results.csv"))
