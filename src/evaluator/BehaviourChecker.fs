@@ -48,11 +48,16 @@ let assemblyBehaviourHasChanged entryFunction beforePath afterPath =
     let after = loadFunction afterPath defaultModule entryFunction
     functionBehaviourHasChanged before after
 
-let resultsBehaviourHasChanged entryFunction (afterResults : CompilerResults, afterAssembly) (beforeResults : CompilerResults, beforeAssembly) =
-    match afterResults.Errors.HasErrors, beforeResults.Errors.HasErrors with
-        | true, true -> false
-        | false, false -> assemblyBehaviourHasChanged entryFunction beforeAssembly afterAssembly
-        | _ -> true
+type BehaviourChange =
+    | Changed of bool
+    | Unchanged of bool
 
 let BehaviourHasChanged entryFunction (beforeSource : string) (afterSource : string) =
-    resultsBehaviourHasChanged entryFunction (compile afterSource) (compile beforeSource)
+    let beforeResults, beforeAssembly = compile beforeSource
+    let afterResults, afterAssembly = compile afterSource
+    let changed =
+        match afterResults.Errors.HasErrors, beforeResults.Errors.HasErrors with
+            | false, false -> assemblyBehaviourHasChanged entryFunction beforeAssembly afterAssembly
+            | true, true -> false
+            | _ -> true
+    not beforeResults.Errors.HasErrors, not afterResults.Errors.HasErrors, changed

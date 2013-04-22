@@ -13,6 +13,8 @@ type Status =
     | Exception
 
 type RefactoringResult = {
+    beforeCompiles: bool;
+    afterCompiles: bool;
     changed : bool;
     status : Status;
     sourceBefore : string;
@@ -47,6 +49,8 @@ let evaluateExtractFunction idents source (random : Random) =
       sourceAfter = sourceAfter;
       refactoring = "extract-function";
       time = DateTime.Now;
+      beforeCompiles = false;
+      afterCompiles = false;
       changed = false;
       errorMessage = message;
       identThreshold = idents }
@@ -59,6 +63,8 @@ let evaluateAddArgument idents source (random : Random) =
       sourceAfter = sourceAfter;
       refactoring = "add-argument";
       time = DateTime.Now;
+      beforeCompiles = false;
+      afterCompiles = false;
       changed = false;
       errorMessage = message;
       identThreshold = idents }
@@ -71,6 +77,8 @@ let evaluateRename idents source (random : Random) =
       sourceAfter = sourceAfter;
       refactoring = "rename";
       time = DateTime.Now;
+      beforeCompiles = false;
+      afterCompiles = false;
       changed = false;
       errorMessage = message;
       identThreshold = idents }
@@ -81,29 +89,32 @@ let evaluateRefactoring idents refactoring =
         let codeTemplate, code = generateEntryPoint entryPoint { defaultState with identThreshold = idents }
         let random = new Random()
         let refactoringResult = refactoring idents code random
-        let changed =
+        let beforeCompiles, afterCompiles, changed =
             if Option.isSome refactoringResult.sourceAfter then
                 BehaviourHasChanged entryPoint (codeTemplate refactoringResult.sourceBefore) (codeTemplate refactoringResult.sourceAfter.Value)
             else
-                false
+                false, false, false
 
-        Some { refactoringResult with changed = changed }
+        Some { refactoringResult with changed = changed; beforeCompiles = beforeCompiles; afterCompiles = afterCompiles }
     with
         | CouldNotRefactor -> None
         | :? DivideByZeroException -> None
+        | e -> None
 
 let evaluateRefactorings refactoring (resultsFile : string) =
     let identsOnIteration i = (5 * (i/1000 + 1) % 30)
     let refactorings = [evaluateAddArgument; evaluateRename; evaluateExtractFunction]
     let evaluations = Seq.initInfinite (fun i -> evaluateRefactoring (identsOnIteration i) (refactorings.[i%3]))
     let fileWriter = new StreamWriter(resultsFile, true)
-    ignore (fprintfn fileWriter "status,changed,before,after,refactoring,time,error message,ident threshold")
+    ignore (fprintfn fileWriter "status,beforeCompiles,afterCompiles,changed,before,after,refactoring,time,error message,ident threshold")
 
     let writeResultLine result =
         if Option.isSome result then
             let sourceAfter =
                 if Option.isSome result.Value.sourceAfter then result.Value.sourceAfter.Value else ""
-            fprintfn fileWriter "%A,%A,%A,%A,%A,%A,%A,%A" result.Value.status
+            fprintfn fileWriter "%A,%A,%A,%A,%A,%A,%A,%A,%A,%A" result.Value.status
+                                                          result.Value.beforeCompiles
+                                                          result.Value.afterCompiles
                                                           result.Value.changed
                                                           result.Value.sourceBefore
                                                           sourceAfter

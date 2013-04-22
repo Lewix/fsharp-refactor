@@ -5,4 +5,5 @@ open FSharpRefactor.Evaluator.BehaviourChecker
 
 [<EntryPoint>]
 let main(args : string[]) =
+    sprintf "%A" (evaluateRefactorings evaluateExtractFunction "/mnt/media/git/university/personalproj/evaluation_results/results2.csv") |> ignore
     0
