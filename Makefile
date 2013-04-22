@@ -22,8 +22,7 @@ EVALUATOR_SOURCES=src/evaluator/GenerationState.fs \
 TESTS=tests/EngineTests.fs \
       tests/RenameTests.fs \
       tests/ExtractFunctionTests.fs \
-      tests/AddArgumentTests.fs \
-      tests/EvaluatorTests.fs
+      tests/AddArgumentTests.fs
 
 INTEGRATION_TESTS=tests/integration_tests/CompilerTests.fs \
 				  tests/integration_tests/EvaluatorTests.fs
