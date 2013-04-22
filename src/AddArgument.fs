@@ -44,7 +44,7 @@ let AddArgumentToBinding (bindingRange : range) argumentName : Refactoring<unit,
 
     { analysis = (fun (_,_) -> Valid); transform = transform }
 
-//TODO: Add brackets around usage if needed (if it's not an App)
+//TODO: Only add arguments around usage if needed
 let AddArgumentToFunctionUsage source (argument : string) (identRange : range) =
     let ident = TextOfRange source identRange
     { analysis = (fun (_,_) -> Valid); transform = fun (s,_) -> (s,[identRange, sprintf "(%s %s)" ident argument],()) }
