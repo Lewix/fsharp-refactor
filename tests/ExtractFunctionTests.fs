@@ -89,7 +89,7 @@ type ExtractFunctionTransformModule() =
     [<Test>]
     member this.``Can extract an expression into a value, if it needs no arguments``() =
         let source = "1+3+4+4"
-        let expected = "let a = 1+3+4+4 in (a)"
+        let expected = "let a = 1+3+4+4 in a"
         let tree = (Ast.Parse source).Value
         let letTree =
             List.head (FindNodesWithRange (mkRange "test.fs" (mkPos 1 0) (mkPos 1 7)) tree)
@@ -123,7 +123,7 @@ type ExtractFunctionTransformModule() =
     [<Test>]
     member this.``Can indent a multiline function definition before inserting it``() =
         let source = "let f a =\n    match a with\n        | Some(x) -> x\n        | None -> 0"
-        let expected = "let f a =\n    let g =\n        match a with\n            | Some(x) -> x\n            | None -> 0\n    (g)"
+        let expected = "let f a =\n    let g =\n        match a with\n            | Some(x) -> x\n            | None -> 0\n    g"
         let tree = (Ast.Parse source).Value
         let matchTree =
             List.head (FindNodesWithRange (mkRange "test.fs" (mkPos 2 4) (mkPos 4 19)) tree)
@@ -141,7 +141,7 @@ type ExtractFunctionTransformModule() =
             List.head (FindNodesWithRange (mkRange "test.fs" (mkPos 1 15) (mkPos 1 26)) tree)
         let expressionRange = mkRange "test.fs" (mkPos 1 21) (mkPos 1 26)
 
-        Assert.AreEqual("let f a = 1 in let f = 1+2 in (f 1)+(f)", RunRefactoring (ExtractFunction false inScopeTree expressionRange "f") () source)
+        Assert.AreEqual("let f a = 1 in let f = 1+2 in (f 1)+f", RunRefactoring (ExtractFunction false inScopeTree expressionRange "f") () source)
 
 [<TestFixture>]
 type CreateFunctionModule() =

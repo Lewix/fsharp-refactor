@@ -8,7 +8,6 @@ open FSharpRefactor.Engine.CodeTransforms.CodeTransforms
 open FSharpRefactor.Engine.CodeAnalysis.ScopeAnalysis
 open FSharpRefactor.Engine.CodeAnalysis.RangeAnalysis
 open FSharpRefactor.Engine.Refactoring
-open FSharpRefactor.Engine.CodeTemplates
 open FSharpRefactor.Refactorings.Rename
 
 let rec stripBrackets (body : string) =
@@ -56,18 +55,16 @@ let CreateFunction functionName arguments body isMultiLine indentString (declara
 let CallFunction functionName arguments callRange : Refactoring<unit,unit> =
     //TODO: don't always put brackets around function body
     //TODO: this is contrived, just get rid of the templates...
-    let transform (source,()) =
-        let parameterChange =
-            if List.isEmpty arguments then
-                FunctionCall.ParameterRange, ""
-            else
-                FunctionCall.ParameterRange, " " + (String.concat " " arguments)
-        source, [(FunctionCall.NameRange, functionName); parameterChange], ()
-
-    let callSource =
-        RunRefactoring { analysis = (fun (_,_) -> Valid); transform = transform } () FunctionCall.Template
-
-    { analysis = (fun (_,_) -> Valid); transform = (fun (s,_) -> s, [callRange, callSource], ()) }
+    let transform (source, ()) =
+        let functionCall =
+            List.map (fun s -> " " + s) arguments
+            |> List.fold (+) functionName 
+        if List.isEmpty arguments then
+            source, [callRange, functionCall], ()
+        else
+            source, [callRange, sprintf "(%s)" functionCall], ()
+            
+    { analysis = (fun (_,_) -> Valid); transform = transform }
 
 let CanExtractFunction (tree : Ast.AstNode) (inScopeTree : Ast.AstNode) (expressionRange : range) =
     let expressionRangeIsInInScopeTree =
