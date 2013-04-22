@@ -33,9 +33,9 @@ type AddArgumentModule() =
         let source = "f a \"b\" 3"
         let tree = (Ast.Parse source).Value
         let usageRange = mkRange "test.fs" (mkPos 1 0) (mkPos 1 1)
-        let expected ="f \"arg\" a \"b\" 3"
+        let expected ="(f \"arg\") a \"b\" 3"
 
-        Assert.AreEqual(expected, RunRefactoring (AddArgumentToFunctionUsage "\"arg\"" usageRange) () source)
+        Assert.AreEqual(expected, RunRefactoring (AddArgumentToFunctionUsage source "\"arg\"" usageRange) () source)
 
     [<Test>]
     member this.``Can find all the App nodes calling a certain function``() =
@@ -60,7 +60,7 @@ type AddArgumentModule() =
         let source = "(let f a b c = 1 in (f 1 2 3) + ((f 2) 2) + (1 + (2 + (f 3 3 4)))) + (f 1)"
         let tree = (Ast.Parse source).Value
         let bindingRange = mkRange "test.fs" (mkPos 1 5) (mkPos 1 16)
-        let expected = "(let f arg a b c = 1 in (f 0 1 2 3) + ((f 0 2) 2) + (1 + (2 + (f 0 3 3 4)))) + (f 1)"
+        let expected = "(let f arg a b c = 1 in ((f 0) 1 2 3) + (((f 0) 2) 2) + (1 + (2 + ((f 0) 3 3 4)))) + (f 1)"
 
         Assert.AreEqual(expected, DoAddArgument source tree bindingRange "arg" "0")
 
@@ -69,7 +69,7 @@ type AddArgumentModule() =
         let source = "let f a = 1 in let g a = f in g 1 1"
         let tree = (Ast.Parse source).Value
         let bindingRange = mkRange "test.fs" (mkPos 1 4) (mkPos 1 11)
-        let expected = "let f arg a = 1 in let g a = f \"value\" in g 1 1"
+        let expected = "let f arg a = 1 in let g a = (f \"value\") in g 1 1"
 
         Assert.AreEqual(expected, DoAddArgument source tree bindingRange "arg" "\"value\"")
         
@@ -124,4 +124,4 @@ type AddArgumentModule() =
         let tree = (Ast.Parse source).Value
         let range = mkRange "test.fs" (mkPos 1 8) (mkPos 1 17)
 
-        Assert.AreEqual("let rec f a a = f 0 a", RunRefactoring (AddArgument false range "a" "0") () source)
+        Assert.AreEqual("let rec f a a = (f 0) a", RunRefactoring (AddArgument false range "a" "0") () source)

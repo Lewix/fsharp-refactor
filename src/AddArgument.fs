@@ -45,8 +45,9 @@ let AddArgumentToBinding (bindingRange : range) argumentName : Refactoring<unit,
     { analysis = (fun (_,_) -> Valid); transform = transform }
 
 //TODO: Add brackets around usage if needed (if it's not an App)
-let AddArgumentToFunctionUsage (argument : string) (identRange : range) =
-    { analysis = (fun (_,_) -> Valid); transform = fun (s,_) -> (s,[identRange.EndRange, " " + argument],()) }
+let AddArgumentToFunctionUsage source (argument : string) (identRange : range) =
+    let ident = TextOfRange source identRange
+    { analysis = (fun (_,_) -> Valid); transform = fun (s,_) -> (s,[identRange, sprintf "(%s %s)" ident argument],()) }
 
 let FindFunctionUsageRanges source (tree : Ast.AstNode) (bindingRange : range) (functionName : string) =
     let isDeclarationOfFunction scopeTree =
@@ -59,6 +60,7 @@ let FindFunctionUsageRanges source (tree : Ast.AstNode) (bindingRange : range) (
             | Usage(n,r) -> if n = functionName then Some r else None
             | _ -> None
             
+    //TODO: Make this traverse the tree rather than listing all the nodes
     makeScopeTrees tree
     |> List.collect ListNodes
     |> List.find isDeclarationOfFunction
@@ -91,7 +93,7 @@ let AddTempArgument doCheck bindingRange defaultValue : Refactoring<unit,Identif
         let usageRefactorings =
             findFunctionName source tree bindingRange
             |> FindFunctionUsageRanges source tree bindingRange
-            |> List.map (AddArgumentToFunctionUsage defaultValue)
+            |> List.map (AddArgumentToFunctionUsage source defaultValue)
         let bindingRefactoring = AddArgumentToBinding bindingRange argumentName
         (List.fold interleave bindingRefactoring usageRefactorings).transform (source, ())
     { analysis = analysis; transform = transform }
