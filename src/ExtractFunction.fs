@@ -15,6 +15,10 @@ let rec stripBrackets (body : string) =
     then stripBrackets (body.[1..(String.length body)-2])
     else body
 
+let formatArguments functionName arguments =
+    List.map (fun s -> " " + s) arguments
+    |> List.fold (+) functionName
+
 let DefaultInScopeTree (tree : Ast.AstNode) (expressionRange : range) =
     let outermostBinding = TryFindBindingAroundRange expressionRange tree
     let outermostExpression = TryFindExpressionAroundRange expressionRange tree
@@ -24,21 +28,18 @@ let DefaultInScopeTree (tree : Ast.AstNode) (expressionRange : range) =
     else outermostExpression
 
 let CreateFunction functionName arguments body isMultiLine indentString (declarationRange : range) : Refactoring<unit,Identifier> =
-    let transform (source,()) =
-        let parametersChange =
-            if List.isEmpty arguments then
-                FunctionDefinition.ParameterRange isMultiLine, ""
-            else
-                FunctionDefinition.ParameterRange isMultiLine, " " + (String.concat " " arguments);
-        let bodyChange =
-            if isMultiLine then
-                FunctionDefinition.BodyRange isMultiLine, Indent (stripBrackets body) "    "
-            else
-                FunctionDefinition.BodyRange isMultiLine, stripBrackets body
-        let nameChange = FunctionDefinition.NameRange isMultiLine, functionName
-        source, [parametersChange; bodyChange; nameChange], ()
     let declarationSource =
-        RunRefactoring { analysis = (fun (_,_) -> Valid); transform = transform } () (FunctionDefinition.Template isMultiLine)
+        let parameters =
+            formatArguments functionName arguments
+        let body =
+            if isMultiLine then
+                Indent (stripBrackets body) "    "
+            else
+                stripBrackets body
+        if isMultiLine then
+            sprintf "let %s =\n%s\n" parameters body
+        else
+            sprintf "let %s = %s in " parameters body
 
     let transform (source,()) =
         let nameRange =
@@ -54,11 +55,9 @@ let CreateFunction functionName arguments body isMultiLine indentString (declara
  
 let CallFunction functionName arguments callRange : Refactoring<unit,unit> =
     //TODO: don't always put brackets around function body
-    //TODO: this is contrived, just get rid of the templates...
     let transform (source, ()) =
         let functionCall =
-            List.map (fun s -> " " + s) arguments
-            |> List.fold (+) functionName 
+            formatArguments functionName arguments
         if List.isEmpty arguments then
             source, [callRange, functionCall], ()
         else
