@@ -56,6 +56,15 @@ type AddArgumentModule() =
         Assert.AreEqual([mkRange "test.fs" (mkPos 1 17) (mkPos 1 18); mkRange "test.fs" (mkPos 1 19) (mkPos 1 20); mkRange "test.fs" (mkPos 1 21) (mkPos 1 22)], functionUsageRanges)
 
     [<Test>]
+    member this.``Can stop finding App nodes when an identifier is redefined``() =
+        let source = "let f = 2\n\nlet f = 1 in (fun f -> f)"
+        let tree = (Ast.Parse source).Value
+        let bindingRange = mkRange "test.fs" (mkPos 3 4) (mkPos 3 8)
+        let functionUsageRanges = FindFunctionUsageRanges source tree bindingRange "f"
+
+        Assert.AreEqual([], functionUsageRanges)
+
+    [<Test>]
     member this.``Can add an argument to a function``() =
         let source = "(let f a b c = 1 in (f 1 2 3) + ((f 2) 2) + (1 + (2 + (f 3 3 4)))) + (f 1)"
         let tree = (Ast.Parse source).Value

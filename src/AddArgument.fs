@@ -44,28 +44,42 @@ let AddArgumentToBinding (bindingRange : range) argumentName : Refactoring<unit,
 
     { analysis = (fun (_,_) -> Valid); transform = transform }
 
-//TODO: Only add arguments around usage if needed
+//TODO: Only add brackets around usage if needed
 let AddArgumentToFunctionUsage source (argument : string) (identRange : range) =
     let ident = TextOfRange source identRange
     { analysis = (fun (_,_) -> Valid); transform = fun (s,_) -> (s,[identRange, sprintf "(%s %s)" ident argument],()) }
 
 let FindFunctionUsageRanges source (tree : Ast.AstNode) (bindingRange : range) (functionName : string) =
-    let isDeclarationOfFunction scopeTree =
+    let bindingContainsNode scopeTree =
         match scopeTree with
-            | Declaration(is,ts) ->
-                List.exists (fun (n,r) -> rangeContainsRange bindingRange r && n = functionName) is
+            | Declaration(is,_) -> List.exists (fun (_,r) -> rangeContainsRange bindingRange r) is
+            | Usage(_,r) -> rangeContainsRange bindingRange r
+
+    let nodeDeclaresIdentifier scopeTree =
+        match scopeTree with
+            | Declaration(is,_) -> List.exists (fun (n,_) -> functionName = n) is
             | _ -> false
-    let rangeIfUsageOfFunction scopeTree =
-        match scopeTree with
-            | Usage(n,r) -> if n = functionName then Some r else None
-            | _ -> None
-            
-    //TODO: Make this traverse the tree rather than listing all the nodes
+
+    let rec findDeclarationOfFunction scopeTrees =
+        match scopeTrees with
+            | (Declaration(is,ts1) as d)::ts2 ->
+                if nodeDeclaresIdentifier d && bindingContainsNode d then ts1
+                else findDeclarationOfFunction (ts1 @ ts2)
+            | _::ts -> findDeclarationOfFunction ts
+            | _ -> failwith (sprintf "%A, %A" bindingRange (makeScopeTrees tree))
+
+    let rec findUsagesInScopeTrees scopeTrees =
+        match scopeTrees with
+            | (Declaration(is,ts1) as d)::ts2 ->
+                if nodeDeclaresIdentifier d then findUsagesInScopeTrees ts2
+                else (findUsagesInScopeTrees ts1) @ (findUsagesInScopeTrees ts2)
+            | Usage(n,r)::ts2 ->
+                if functionName = n then r::(findUsagesInScopeTrees ts2) else findUsagesInScopeTrees ts2
+            | [] -> []
+
     makeScopeTrees tree
-    |> List.collect ListNodes
-    |> List.find isDeclarationOfFunction
-    |> ListNodes
-    |> List.choose rangeIfUsageOfFunction
+    |> findDeclarationOfFunction
+    |> findUsagesInScopeTrees
 
 let findFunctionName source (tree : Ast.AstNode) (bindingRange : range) =
     match FindBindingAtRange bindingRange tree with
