@@ -93,10 +93,20 @@ let ExtractTempFunction doCheck inScopeTree (expressionRange : range) : Refactor
             (String.replicate (expressionRange.StartColumn) " ") + (TextOfRange source expressionRange)
             |> RemoveLeading ' '
         let bodyExpression = TryFindExpressionAtRange expressionRange inScopeTree
+
+        let getFreeIdentifierDeclarations expression =
+            GetFreeIdentifierUsages (makeScopeTrees expression) DefaultDeclared
+            |> List.map (TryFindIdentifierDeclaration (makeScopeTrees inScopeTree))
+            |> List.collect Option.toList
+            // Can't compare ranges or positions, so use a tuple of ints...
+            |> List.map (fun (n,r) -> (n, (r.StartLine, r.StartColumn))) 
+            |> Set.ofList
+
         let arguments =
-            GetFreeIdentifiers (makeScopeTrees inScopeTree) DefaultDeclared
-            |> Set.difference (GetFreeIdentifiers (makeScopeTrees bodyExpression.Value) DefaultDeclared)
+            getFreeIdentifierDeclarations inScopeTree
+            |> Set.difference (getFreeIdentifierDeclarations bodyExpression.Value)
             |> Set.toList
+            |> List.map fst
 
         let inScopeRange = (Ast.GetRange inScopeTree).Value
         let definitionRefactoring =

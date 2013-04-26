@@ -45,17 +45,17 @@ module ScopeAnalysis =
             | Usage(name, range)::rest -> (name,range)::(ListIdentifiers rest)
             | Declaration(is,ts)::rest -> List.append is (ListIdentifiers (List.append ts rest))
 
-    let GetFreeIdentifiers (trees : ScopeTree list) (declared : Set<string>) =
+    let GetFreeIdentifierUsages (trees : ScopeTree list) (declared : Set<string>) =
         let rec freeIdentifiersInSingleTree foundFree declared tree =
             match tree with
-                | Usage(n,_) ->
+                | Usage(n,r) ->
                     if Set.contains n declared then foundFree
-                    else Set.add n foundFree
+                    else (n,r)::foundFree
                 | Declaration(is, ts) ->
                     let updatedDeclared = Set.union declared (Set(List.map fst is))
-                    Set.unionMany (Seq.map (freeIdentifiersInSingleTree foundFree updatedDeclared) ts)
+                    List.collect (freeIdentifiersInSingleTree foundFree updatedDeclared) ts
                     
-        Set.unionMany (Seq.map (freeIdentifiersInSingleTree (Set []) declared) trees)
+        List.collect (freeIdentifiersInSingleTree [] declared) trees
 
     let IsDeclared (name : string) (identifiers : Identifier list) =
         List.exists (fun (n,_) -> n = name) identifiers

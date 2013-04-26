@@ -97,6 +97,18 @@ type ExtractFunctionTransformModule() =
         let expressionRange = mkRange "test.fs" (mkPos 1 0) (mkPos 1 7)
 
         Assert.AreEqual(expected, DoExtractFunction source tree letTree expressionRange "a")
+
+    [<Test>]
+    member this.``Can disambiguate between identifiers with the same name``() = 
+        let source = "let f a = (let a = 1+a in a+2)"
+        let expected = "let f a = let g a = (a+2) in (let a = 1+a in (g a))"
+        let tree = (Ast.Parse source).Value
+        let letTree =
+            List.head (FindNodesWithRange (mkRange "test.fs" (mkPos 1 10) (mkPos 1 30)) tree)
+
+        let expressionRange = mkRange "test.fs" (mkPos 1 26) (mkPos 1 29)
+
+        Assert.AreEqual(expected, DoExtractFunction source tree letTree expressionRange "g")
     
     [<Test>]
     member this.``Can extract an expression into a function around a LetOrUse expression``() =
