@@ -89,7 +89,7 @@ type ExtractFunctionTransformModule() =
     [<Test>]
     member this.``Can extract an expression into a value, if it needs no arguments``() =
         let source = "1+3+4+4"
-        let expected = "let a = 1+3+4+4 in a"
+        let expected = "let a = (1+3+4+4) in a"
         let tree = (Ast.Parse source).Value
         let letTree =
             List.head (FindNodesWithRange (mkRange "test.fs" (mkPos 1 0) (mkPos 1 7)) tree)
@@ -101,7 +101,7 @@ type ExtractFunctionTransformModule() =
     [<Test>]
     member this.``Can extract an expression into a function around a LetOrUse expression``() =
         let source = "let c = 1 in let a b = 1+(b+c)+4"
-        let expected = "let c = 1 in let f b = b+c in let a b = 1+(f b)+4"
+        let expected = "let c = 1 in let f b = ((b+c)) in let a b = 1+(f b)+4"
         let tree = (Ast.Parse source).Value
         let letTree =
             List.head (FindNodesWithRange (mkRange "test.fs" (mkPos 1 13) (mkPos 1 32)) tree)
@@ -112,7 +112,7 @@ type ExtractFunctionTransformModule() =
     [<Test>]
     member this.``Can extract an expression into a function aroud a Let expression``() =
         let source = "let a b = b+b"
-        let expected = "let double b = b+b in let a b = (double b)"
+        let expected = "let double b = (b+b) in let a b = (double b)"
         let tree = (Ast.Parse source).Value
         let letTree =
             List.head (FindNodesWithRange (mkRange "test.fs" (mkPos 1 0) (mkPos 1 13)) tree)
@@ -141,7 +141,7 @@ type ExtractFunctionTransformModule() =
             List.head (FindNodesWithRange (mkRange "test.fs" (mkPos 1 15) (mkPos 1 26)) tree)
         let expressionRange = mkRange "test.fs" (mkPos 1 21) (mkPos 1 26)
 
-        Assert.AreEqual("let f a = 1 in let f = 1+2 in (f 1)+f", RunRefactoring (ExtractFunction false inScopeTree expressionRange "f") () source)
+        Assert.AreEqual("let f a = 1 in let f = ((1+2)) in (f 1)+f", RunRefactoring (ExtractFunction false inScopeTree expressionRange "f") () source)
 
 [<TestFixture>]
 type CreateFunctionModule() =

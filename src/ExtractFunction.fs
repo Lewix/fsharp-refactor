@@ -35,7 +35,7 @@ let CreateFunction functionName arguments body isMultiLine indentString (declara
             if isMultiLine then
                 Indent (stripBrackets body) "    "
             else
-                stripBrackets body
+                sprintf "(%s)" body
         if isMultiLine then
             sprintf "let %s =\n%s\n" parameters body
         else
