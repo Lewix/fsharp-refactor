@@ -108,6 +108,9 @@ let evaluateRefactorings refactoring (resultsFile : string) =
     let fileWriter = new StreamWriter(resultsFile, true)
     ignore (fprintfn fileWriter "status,beforeCompiles,afterCompiles,changed,before,after,refactoring,time,error message,ident threshold")
 
+    let tryJoinLines s =
+        (String.map (fun c -> if c = '\n' then ' ' else c) |> Option.map) s
+
     let writeResultLine result =
         if Option.isSome result then
             let sourceAfter =
@@ -120,7 +123,7 @@ let evaluateRefactorings refactoring (resultsFile : string) =
                                                           sourceAfter
                                                           result.Value.refactoring
                                                           result.Value.time
-                                                          result.Value.errorMessage
+                                                          (tryJoinLines result.Value.errorMessage)
                                                           result.Value.identThreshold
             fileWriter.Flush()
 
