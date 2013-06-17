@@ -1,6 +1,0 @@
-#!/bin/bash
-
-PREFIX=/mnt/media/git/university/personalproj/fsharp-refactor
-
-export MONO_PATH=$PREFIX/libs/
-mono $PREFIX/bin/Evaluator.exe "$@"
