@@ -17,9 +17,6 @@ TESTS=tests/EngineTests.fs \
       tests/AddArgumentTests.fs
 
 DEPS=lib/FSharp.Compiler.dll \
-     lib/FSharp.Core.dll \
-     lib/FSharp.Core.optdata \
-     lib/FSharp.Core.sigdata \
      lib/Options.dll
 
 fsharprefactor_DATA = $(DEPS) \
