@@ -1,7 +1,7 @@
-bin_SCRIPTS = fsharp-refactor
+bin_SCRIPTS = bin/fsharp-refactor
 
 fsharprefactordir=$(pkglibdir)
-fsharprefactor_SCRIPTS = FSharpRefactor.exe
+fsharprefactor_SCRIPTS = bin/FSharpRefactor.exe
 
 SOURCES=src/Ast.fs \
 		src/CodeAnalysis.fs \
@@ -28,13 +28,13 @@ REWRITE = \
 	    -e "s|\@bindir\@|$(bindir)|g"		\
 	    -e "s|\@MONO\@|$(MONO)|g" 
 
-$(bin_SCRIPTS): $(srcdir)/fsharp-refactor.in Makefile
-	$(REWRITE) $(srcdir)/fsharp-refactor.in > $@.tmp
+$(bin_SCRIPTS): bin/fsharp-refactor.in Makefile
+	$(REWRITE) bin/fsharp-refactor.in > $@.tmp
 	mv $@.tmp $@
 
 CLEANFILES = \
-	fsharp-refactor \
-	FSharpRefactor.exe \
+	bin/fsharp-refactor \
+	bin/FSharpRefactor.exe \
 	lib/FSharp.Refactor.dll
 
 DISTCLEANFILES = \
@@ -48,7 +48,7 @@ DISTCLEANFILES = \
 	COPYING \
 	missing
 
-EXTRA_DIST = fsharp-refactor.in \
+EXTRA_DIST = bin/fsharp-refactor.in \
 			 $(DEPS) \
 			 $(SOURCES) \
 			 src/CommandLine.fs
@@ -59,13 +59,13 @@ REFS=-r:lib/FSharp.Compiler.dll \
 OPTS=--target:library --nologo --lib:lib
 
 
-all: lib/FSharp.Refactor.dll FSharpRefactor.exe
+all: lib/FSharp.Refactor.dll bin/FSharpRefactor.exe
 
 lib/FSharp.Refactor.dll: $(SOURCES)
 	fsharpc $(OPTS) -o:lib/FSharp.Refactor.dll $(REFS) $(SOURCES)
 
-FSharpRefactor.exe: lib/Options.dll lib/FSharp.Refactor.dll src/CommandLine.fs
-	fsharpc $(OPTS) $(REFS) --target:exe -o:FSharpRefactor.exe -r:lib/FSharp.Refactor.dll src/CommandLine.fs
+bin/FSharpRefactor.exe: lib/Options.dll lib/FSharp.Refactor.dll src/CommandLine.fs
+	fsharpc $(OPTS) $(REFS) --target:exe -o:bin/FSharpRefactor.exe -r:lib/FSharp.Refactor.dll src/CommandLine.fs
 
 
 
