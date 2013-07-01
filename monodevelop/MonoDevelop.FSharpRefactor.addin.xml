@@ -1,0 +1,26 @@
+<Addin
+    namespace = "MonoDevelop"
+    id = "FSharpRefactor"
+    name = "fsharp-refactor"
+    author = "Lewis Brown"
+    url = "https://github.com/Lewix/fsharp-refactor"
+    description = "Provides bindings for F# refactorings in MonoDevelop"
+    category = "IDE extensions"
+    version = "0.1">
+
+    <Runtime>
+        <Import assembly="lib/FSharp.Refactor.dll" />
+        <Import assembly="lib/FSharp.Compiler.dll" />
+    </Runtime>
+
+    <Dependencies>
+        <Addin id="Ide" version="4.0" />
+        <Addin id="Refactoring" version="4.0" />
+    </Dependencies>
+
+    <Extension path="/MonoDevelop/Refactoring/Refactorings">
+        <Class
+            id="MonoDevelop.FSharpRefactor.Rename" 
+            class="MonoDevelop.FSharpRefactor.Rename.RenameRefactoring" />
+    </Extension>
+</Addin>
