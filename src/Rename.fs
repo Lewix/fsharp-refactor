@@ -101,6 +101,10 @@ let DoRename source (tree: Ast.AstNode) (declarationIdentifier : Identifier) (ne
 let IsValid (source:string) (filename:string) (position:(int*int) option, newName:string option) =
     let isSuccessful check argument =
         Option.isNone argument || check argument.Value
+    let pairOptions (x, y) = 
+        match x, y with
+            | Some a, Some b -> Some(a,b)
+            | _ -> None
 
     let pos =
         match position with
@@ -130,7 +134,7 @@ let IsValid (source:string) (filename:string) (position:(int*int) option, newNam
         //TODO: check newName is a valid name
         true
 
-    let checkPositionAndName newName =
+    let checkPositionAndName (position, newName) =
         let newNameIsNotBound =
             match declarationScope.Force().Value with
                 | Declaration(is,ts) -> not (IsDeclared newName is)
@@ -148,7 +152,7 @@ let IsValid (source:string) (filename:string) (position:(int*int) option, newNam
     
     isSuccessful checkPosition position
     |> (&&) (isSuccessful checkName newName)
-    |> (&&) (isSuccessful checkPositionAndName newName)
+    |> (&&) (isSuccessful checkPositionAndName (pairOptions (position, newName)))
 
 let GetChanges (source:string) (filename:string) ((line:int, col:int), newName:string) =
     []

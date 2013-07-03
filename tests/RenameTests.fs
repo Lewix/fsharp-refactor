@@ -17,6 +17,8 @@ type RenameAnalysisModule() =
         Assert.IsFalse(IsValid "let f a = 1" "test.fs" (Some(1,1), None), "Invalid position")
         Assert.IsTrue(IsValid "let f a b = 1" "test.fs" (Some(1,7), Some "c"), "Valid position and name")
         Assert.IsFalse(IsValid "let f a b = 1" "test.fs" (Some(1,7), Some "b"), "Invalid position and name")
+        Assert.IsTrue(IsValid "let f a b = 1" "test.fs" (None, Some "b"), "Valid name")
+        //TODO: invalid name
 
     [<Test>]
     member this.``Simple renaming analysis is correct``() =
