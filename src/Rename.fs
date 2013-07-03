@@ -96,15 +96,18 @@ let DoRename source (tree: Ast.AstNode) (declarationIdentifier : Identifier) (ne
     RunRefactoring (Rename true newName) declarationIdentifier source
 
 
-
 //TODO: these probably need to be put in an .fsi file
-let IsValid (source:string) (filename:string) (position:(int*int) option, newName:string option) =
-    let isSuccessful check argument =
-        Option.isNone argument || check argument.Value
+let GetErrorMessage (source:string) (filename:string) (position:(int*int) option, newName:string option) =
+    let IsSuccessful check argument =
+        if Option.isNone argument then lazy None
+        else lazy (check argument.Value)
     let pairOptions (x, y) = 
         match x, y with
             | Some a, Some b -> Some(a,b)
             | _ -> None
+    let andalso (message1:Lazy<string option>) message2 =
+        if Option.isSome (message1.Force()) then message1
+        else message2
 
     let pos =
         match position with
@@ -128,11 +131,12 @@ let IsValid (source:string) (filename:string) (position:(int*int) option, newNam
 
     //TODO: rename FindIdentifier -> TryFindIdentifier
     let checkPosition (line, col) =
-        Option.isSome (identifier.Force()) && Option.isSome (identifierDeclaration.Force())
+        if Option.isSome (identifier.Force()) && Option.isSome (identifierDeclaration.Force())
+        then None else Some "Could not find a declaration at the given range"
 
     let checkName newName =
         //TODO: check newName is a valid name
-        true
+        None
 
     let checkPositionAndName (position, newName) =
         let newNameIsNotBound =
@@ -141,18 +145,28 @@ let IsValid (source:string) (filename:string) (position:(int*int) option, newNam
                 | _ -> true
         let newNameIsNotFree =
             not (isFree newName (declarationScope.Value.Value))
+
+        let oldName, _ = identifierDeclaration.Force().Value
         let oldNameIsNotFree =
-            let oldName, _ = identifierDeclaration.Force().Value
             getTopLevelDeclarations newName (declarationScope.Value.Value)
             |> List.map (isFree oldName)
             |> List.fold (||) false
             |> not
 
-        newNameIsNotBound && newNameIsNotFree && oldNameIsNotFree
-    
-    isSuccessful checkPosition position
-    |> (&&) (isSuccessful checkName newName)
-    |> (&&) (isSuccessful checkPositionAndName (pairOptions (position, newName)))
+        match newNameIsNotBound, newNameIsNotBound, oldNameIsNotFree with
+            | false,_,_ -> Some("Could not find a declaration at the given range")
+            | _,false,_ -> Some(sprintf "%s is free in the scope of %s" newName oldName)
+            | _,_,false -> Some(sprintf "%s is free in the scope of a %s defined in its scope" oldName newName)
+            | _ -> None
+
+    IsSuccessful checkPosition position
+    |> andalso (IsSuccessful checkName newName)
+    |> andalso (IsSuccessful checkPositionAndName (pairOptions (position, newName)))
+    |> fun l -> l.Force()
+
+let IsValid (source:string) (filename:string) (position:(int*int) option, newName:string option) =
+    GetErrorMessage source filename (position, newName)
+    |> Option.isNone
 
 let GetChanges (source:string) (filename:string) ((line:int, col:int), newName:string) =
     []
