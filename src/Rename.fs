@@ -99,7 +99,6 @@ let DoRename source (tree: Ast.AstNode) (declarationIdentifier : Identifier) (ne
 
 //TODO: these probably need to be put in an .fsi file
 let IsValid (source:string) (filename:string) (position:(int*int) option, newName:string option) =
-    let tree = (Ast.Parse source).Value
     let isSuccessful check argument =
         Option.isNone argument || check argument.Value
 
@@ -107,35 +106,40 @@ let IsValid (source:string) (filename:string) (position:(int*int) option, newNam
         match position with
             | Some (line,col) -> Some (mkPos line (col-1))
             | None -> None
+
+    let scopeTrees =
+        lazy (makeScopeTrees (Ast.Parse source).Value)
     let identifier =
-        Option.bind (FindIdentifier source) pos
+        lazy (Option.bind (FindIdentifier source) pos)
     let identifierDeclaration =
-        let tryFindDeclaration =
-            TryFindIdentifierDeclaration (makeScopeTrees tree)
-        Option.bind tryFindDeclaration identifier
+        lazy
+            let tryFindDeclaration =
+                TryFindIdentifierDeclaration (scopeTrees.Force())
+            Option.bind tryFindDeclaration (identifier.Force())
     let declarationScope =
-        let tryFindDeclarationScope =
-            findDeclarationInScopeTrees (makeScopeTrees tree)
-        Option.bind tryFindDeclarationScope identifierDeclaration
+        lazy
+            let tryFindDeclarationScope =
+                findDeclarationInScopeTrees (scopeTrees.Force())
+            Option.bind tryFindDeclarationScope (identifierDeclaration.Force())
 
     //TODO: rename FindIdentifier -> TryFindIdentifier
     let checkPosition (line, col) =
-        Option.isSome identifier && Option.isSome identifierDeclaration
+        Option.isSome (identifier.Force()) && Option.isSome (identifierDeclaration.Force())
 
-    let checkName (newName) =
+    let checkName newName =
         //TODO: check newName is a valid name
         true
 
     let checkPositionAndName newName =
         let newNameIsNotBound =
-            match declarationScope.Value with
+            match declarationScope.Force().Value with
                 | Declaration(is,ts) -> not (IsDeclared newName is)
                 | _ -> true
         let newNameIsNotFree =
-            not (isFree newName declarationScope.Value)
+            not (isFree newName (declarationScope.Value.Value))
         let oldNameIsNotFree =
-            let oldName, _ = identifierDeclaration.Value
-            getTopLevelDeclarations newName declarationScope.Value
+            let oldName, _ = identifierDeclaration.Force().Value
+            getTopLevelDeclarations newName (declarationScope.Value.Value)
             |> List.map (isFree oldName)
             |> List.fold (||) false
             |> not
