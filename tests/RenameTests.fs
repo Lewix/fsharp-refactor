@@ -12,6 +12,13 @@ open FSharpRefactor.Refactorings.Rename
 [<TestFixture>]
 type RenameAnalysisModule() =
     [<Test>]
+    member this.``Can check arguments individually``() =
+        Assert.IsTrue(IsValid "let f a = 1" "test.fs" (Some(1,5), None), "Valid position")
+        Assert.IsFalse(IsValid "let f a = 1" "test.fs" (Some(1,1), None), "Invalid position")
+        Assert.IsTrue(IsValid "let f a b = 1" "test.fs" (Some(1,7), Some "c"), "Valid position and name")
+        Assert.IsFalse(IsValid "let f a b = 1" "test.fs" (Some(1,7), Some "b"), "Invalid position and name")
+
+    [<Test>]
     member this.``Simple renaming analysis is correct``() =
         let goodSource = "let a = 1 in a"
         let badSource = "let a = 1 in b"

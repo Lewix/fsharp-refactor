@@ -3,6 +3,7 @@ module FSharpRefactor.Refactorings.Rename
 open Microsoft.FSharp.Compiler.Range
 open FSharpRefactor.Engine.Ast
 open FSharpRefactor.Engine.CodeAnalysis.ScopeAnalysis
+open FSharpRefactor.Engine.CodeAnalysis.RangeAnalysis
 open FSharpRefactor.Engine.Refactoring
 
 
@@ -32,24 +33,25 @@ let rec rangesToReplace (name, declarationRange) tree =
                 if Option.isSome declarationRange then declarationRange.Value::remainingRanges
                 else remainingRanges
 
+let rec isFree targetName tree =
+    match tree with
+        | Usage(n,_) -> n = targetName
+        | Declaration(is, ts) ->
+            if IsDeclared targetName is then false
+            else List.fold (||) false (List.map (isFree targetName) ts)
+
+let rec getTopLevelDeclarations targetName tree =
+    match tree with
+        | Declaration(is, ts) as declaration->
+            if IsDeclared targetName is
+            then [declaration]
+            else List.collect (getTopLevelDeclarations targetName) ts
+        | _ -> []
+
 let CanRename (tree : Ast.AstNode) (name : string, declarationRange : range) (newName : string) =
     // Check if targetName is free in tree
-    // Call onDeclarationFun if declaration of targetName encountered
     let newNameIsFree = sprintf "%s is free in the scope of %s" newName name
     let oldNameIsFree = sprintf "%s is free in the scope of a %s defined in its scope" name newName
-    let rec isFree targetName tree =
-        match tree with
-            | Usage(n,_) -> n = targetName
-            | Declaration(is, ts) ->
-                if IsDeclared targetName is then false
-                else List.fold (||) false (List.map (isFree targetName) ts)
-    let rec getTopLevelDeclarations targetName tree =
-        match tree with
-            | Declaration(is, ts) as declaration->
-                if IsDeclared targetName is
-                then [declaration]
-                else List.collect (getTopLevelDeclarations targetName) ts
-            | _ -> []
 
     let declarationScope =
         findDeclarationInScopeTrees (makeScopeTrees tree) (name, declarationRange)
@@ -92,3 +94,57 @@ let Rename doCheck newName : Refactoring<Identifier,unit> =
 
 let DoRename source (tree: Ast.AstNode) (declarationIdentifier : Identifier) (newName : string) =
     RunRefactoring (Rename true newName) declarationIdentifier source
+
+
+
+//TODO: these probably need to be put in an .fsi file
+let IsValid (source:string) (filename:string) (position:(int*int) option, newName:string option) =
+    let tree = (Ast.Parse source).Value
+    let isSuccessful check argument =
+        Option.isNone argument || check argument.Value
+
+    let pos =
+        match position with
+            | Some (line,col) -> Some (mkPos line (col-1))
+            | None -> None
+    let identifier =
+        Option.bind (FindIdentifier source) pos
+    let identifierDeclaration =
+        let tryFindDeclaration =
+            TryFindIdentifierDeclaration (makeScopeTrees tree)
+        Option.bind tryFindDeclaration identifier
+    let declarationScope =
+        let tryFindDeclarationScope =
+            findDeclarationInScopeTrees (makeScopeTrees tree)
+        Option.bind tryFindDeclarationScope identifierDeclaration
+
+    //TODO: rename FindIdentifier -> TryFindIdentifier
+    let checkPosition (line, col) =
+        Option.isSome identifier && Option.isSome identifierDeclaration
+
+    let checkName (newName) =
+        //TODO: check newName is a valid name
+        true
+
+    let checkPositionAndName newName =
+        let newNameIsNotBound =
+            match declarationScope.Value with
+                | Declaration(is,ts) -> not (IsDeclared newName is)
+                | _ -> true
+        let newNameIsNotFree =
+            not (isFree newName declarationScope.Value)
+        let oldNameIsNotFree =
+            let oldName, _ = identifierDeclaration.Value
+            getTopLevelDeclarations newName declarationScope.Value
+            |> List.map (isFree oldName)
+            |> List.fold (||) false
+            |> not
+
+        newNameIsNotBound && newNameIsNotFree && oldNameIsNotFree
+    
+    isSuccessful checkPosition position
+    |> (&&) (isSuccessful checkName newName)
+    |> (&&) (isSuccessful checkPositionAndName newName)
+
+let GetChanges (source:string) (filename:string) ((line:int, col:int), newName:string) =
+    []
