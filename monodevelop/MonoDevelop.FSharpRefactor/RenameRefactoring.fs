@@ -34,7 +34,14 @@ type RenameRefactoring() as self =
     do
         self.Name <- "Rename (F#)"
     override self.IsValid(options) =
+        let doc = options.Document
+        let wholeFileChange = new TextReplaceChange()
+        let fileName = options.Document.FileName.ToString()
+        let source = doc.GetContent<ITextFile>().Text
+        let position = options.Location.Line, options.Location.Column
+
         options.MimeType = "text/x-fsharp"
+        |> (&&) (IsValid source fileName (Some position, None))
     override self.PerformChanges(options, properties) =
         let doc = options.Document
         let wholeFileChange = new TextReplaceChange()
