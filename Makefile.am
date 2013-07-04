@@ -6,6 +6,7 @@ fsharprefactor_SCRIPTS = bin/FSharpRefactor.exe
 SOURCES=src/Ast.fs \
 		src/CodeAnalysis.fs \
 		src/CodeTransforms.fs \
+		src/ValidityChecking.fs \
 		src/Refactoring.fs \
 		src/Rename.fs \
 		src/ExtractFunction.fs \

@@ -5,6 +5,7 @@ open FSharpRefactor.Engine.Ast
 open FSharpRefactor.Engine.CodeAnalysis.ScopeAnalysis
 open FSharpRefactor.Engine.CodeAnalysis.RangeAnalysis
 open FSharpRefactor.Engine.Refactoring
+open FSharpRefactor.Engine.ValidityChecking
 
 
 let rangeOfIdent (name : string) (identifiers : Identifier list) =
@@ -98,22 +99,8 @@ let DoRename source (tree: Ast.AstNode) (declarationIdentifier : Identifier) (ne
 
 //TODO: these probably need to be put in an .fsi file
 let GetErrorMessage (source:string) (filename:string) (position:(int*int) option, newName:string option) =
-    let IsSuccessful check argument =
-        if Option.isNone argument then lazy None
-        else lazy (check argument.Value)
-    let pairOptions (x, y) = 
-        match x, y with
-            | Some a, Some b -> Some(a,b)
-            | _ -> None
-    let andalso (message1:Lazy<string option>) message2 =
-        if Option.isSome (message1.Force()) then message1
-        else message2
 
-    let pos =
-        match position with
-            | Some (line,col) -> Some (mkPos line (col-1))
-            | None -> None
-
+    let pos = PosFromPositionOption position
     let scopeTrees =
         lazy (makeScopeTrees (Ast.Parse source).Value)
     let identifier =
@@ -160,9 +147,9 @@ let GetErrorMessage (source:string) (filename:string) (position:(int*int) option
             | _ -> None
 
     IsSuccessful checkPosition position
-    |> andalso (IsSuccessful checkName newName)
-    |> andalso (IsSuccessful checkPositionAndName (pairOptions (position, newName)))
-    |> fun l -> l.Force()
+    |> Andalso (IsSuccessful checkName newName)
+    |> Andalso (IsSuccessful checkPositionAndName (PairOptions (position, newName)))
+    |> fun (l:Lazy<_>) -> l.Force()
 
 let IsValid (source:string) (filename:string) (position:(int*int) option, newName:string option) =
     GetErrorMessage source filename (position, newName)
