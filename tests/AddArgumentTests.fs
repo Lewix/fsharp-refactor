@@ -11,6 +11,16 @@ open FSharpRefactor.Refactorings.AddArgument
 [<TestFixture>]
 type AddArgumentModule() =
     [<Test>]
+    member this.``Can check arguments separately``() =
+        Assert.IsTrue(IsValid "let f a = 1" "test.fs" (Some(1,10), None, None), sprintf "Valid position")
+        Assert.IsFalse(IsValid "1" "test.fs" (Some(1,1), None, None), "No binding around position")
+        Assert.IsFalse(IsValid "let a,b = 1,2" "test.fs" (Some(1,6), None, None), "Position not a function")
+        //TODO: renaming checks
+        //Assert.IsTrue(IsValid "let f a = 1" "test.fs" (Some(1,10), Some "b", None), sprintf "Valid name and position")
+        //Assert.IsFalse(IsValid "let f a = 1" "test.fs" (Some(1,10), Some "a", None), sprintf "Invalid name and position")
+        //TODO: check default value and name
+
+    [<Test>]
     member this.``Can add an argument to a binding``() =
         let source = "let f a b = a+b"
         let tree = (Ast.Parse source).Value

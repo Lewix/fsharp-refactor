@@ -9,6 +9,7 @@ open FSharpRefactor.Engine.CodeAnalysis.RangeAnalysis
 open FSharpRefactor.Engine.CodeAnalysis.ScopeAnalysis
 open FSharpRefactor.Engine.CodeTransforms.CodeTransforms
 open FSharpRefactor.Engine.Refactoring
+open FSharpRefactor.Engine.ValidityChecking
 open FSharpRefactor.Refactorings.Rename
 
 let DefaultBindingRange source (tree : Ast.AstNode) (position : pos) =
@@ -81,13 +82,18 @@ let FindFunctionUsageRanges source (tree : Ast.AstNode) (bindingRange : range) (
     |> findDeclarationOfFunction
     |> findUsagesInScopeTrees
 
-let findFunctionName source (tree : Ast.AstNode) (bindingRange : range) =
-    match FindBindingAtRange bindingRange tree with
+let tryFindFunctionName (binding:SynBinding) =
+    match binding with
         | SynBinding.Binding(_,_,_,_,_,_,_,p,_,_,_,_) ->
             match Ast.AstNode.Pattern p with
-                | DeclaredIdent(text,range) -> text
-                | _ -> raise (RefactoringFailure("Binding was not a function"))
+                | DeclaredIdent(name,range) -> Some name
+                | _ -> None
 
+let findFunctionName source (tree : Ast.AstNode) (bindingRange : range) =
+    let binding = FindBindingAtRange bindingRange tree
+    match tryFindFunctionName binding with
+        | Some name -> name
+        | None -> raise (RefactoringFailure("Binding was not a function"))
 
 let CanAddArgument source (tree : Ast.AstNode) (bindingRange : range) (defaultValue : string) =
     try findFunctionName source tree bindingRange |> ignore; Valid with
@@ -118,3 +124,30 @@ let AddArgument doCheck (bindingRange : range) argumentName defaultValue : Refac
     
 let DoAddArgument source (tree : Ast.AstNode) (bindingRange : range) (argumentName : string) (defaultValue : string) =
     RunRefactoring (AddArgument true bindingRange argumentName defaultValue) () source
+
+let GetErrorMessage (source:string) (filename:string) (position:(int*int) option, argumentName:string option, defaultValue:string option) =
+    let pos = PosFromPositionOption position
+    let binding =
+        lazy 
+            let tree = (Ast.Parse source).Value
+            let range = mkRange filename (pos.Value) (pos.Value)
+            TryFindBindingAroundRange range tree
+
+    let checkPosition (line, col) =
+        let bindingAtRange =
+            Option.isSome (binding.Force())
+        let bindingIsFunction =
+            bindingAtRange && (Option.isSome (tryFindFunctionName (binding.Value.Value)))
+
+        match bindingAtRange, bindingIsFunction with
+            | false,_ -> Some "No binding found at the given range"
+            | _,false -> Some "Binding was not a function"
+            | _,_ -> None
+
+    IsSuccessful checkPosition position
+    |> fun (l:Lazy<_>) -> l.Force()
+    
+
+let IsValid (source:string) (filename:string) (position:(int*int) option, argumentName:string option, defaultValue:string option) =
+    GetErrorMessage source filename (position, argumentName, defaultValue)
+    |> Option.isNone
