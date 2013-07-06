@@ -40,5 +40,5 @@ module FSharpRefactoring =
 
         Collections.Generic.List<Change>([wholeFileChange :> Change])
 
-    let GetPosition options =
+    let GetPosition (options:RefactoringOptions) =
         options.Location.Line, options.Location.Column
