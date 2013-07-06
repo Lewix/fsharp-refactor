@@ -28,5 +28,5 @@ type AddArgumentRefactoring() as self =
         let line, col = GetPosition options
         let refactorSource =
             fun source _ ->
-                addArgument source (mkPos line col) "testName" "value"
+                addArgument source (mkPos line (col-1)) "testName" "value"
         PerformChanges (options, properties) refactorSource
