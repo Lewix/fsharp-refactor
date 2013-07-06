@@ -135,7 +135,7 @@ let DoExtractFunction source (tree : Ast.AstNode) (inScopeTree : Ast.AstNode) (e
 let GetErrorMessage (range:((int*int)*(int*int)) option, functionName:string option) (source:string) (filename:string) =
     let checkRange ((startLine, startCol), (endLine, endCol)) =
         let tree = (Ast.Parse source).Value
-        let range = mkRange "test.fs" (mkPos startLine (startCol-1)) (mkPos endLine (endCol))
+        let range = mkRange "test.fs" (mkPos startLine (startCol-1)) (mkPos endLine (endCol-1))
         if Option.isSome (TryFindExpressionAtRange range tree)
         then None else Some "No expression found at the given range"
 

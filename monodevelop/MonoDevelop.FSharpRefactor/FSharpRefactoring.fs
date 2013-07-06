@@ -42,3 +42,9 @@ module FSharpRefactoring =
 
     let GetPosition (options:RefactoringOptions) =
         options.Location.Line, options.Location.Column
+
+    let GetSelectionRange (options:RefactoringOptions) =
+        let source = options.Document.GetContent<ITextFile>().Text
+        let textDocument = new TextDocument(source)
+        let region = options.Document.Editor.SelectionRange.GetRegion(textDocument)
+        (region.BeginLine, region.BeginColumn), (region.EndLine, region.EndColumn)

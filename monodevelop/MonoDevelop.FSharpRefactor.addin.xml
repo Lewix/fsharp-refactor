@@ -28,4 +28,9 @@
             id="MonoDevelop.FSharpRefactor.AddArgumentRefactoring" 
             class="MonoDevelop.FSharpRefactor.AddArgumentRefactoring" />
     </Extension>
+    <Extension path="/MonoDevelop/Refactoring/Refactorings">
+        <Class
+            id="MonoDevelop.FSharpRefactor.ExtractFunctionRefactoring" 
+            class="MonoDevelop.FSharpRefactor.ExtractFunctionRefactoring" />
+    </Extension>
 </Addin>
