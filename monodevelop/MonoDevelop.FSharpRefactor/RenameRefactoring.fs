@@ -12,6 +12,7 @@ open MonoDevelop.Core.ProgressMonitoring
 open Mono.TextEditor
 open Microsoft.FSharp.Compiler.Range
 
+open MonoDevelop.FSharpRefactor.FSharpRefactoring
 open FSharpRefactor.Engine.Ast
 open FSharpRefactor.Engine.CodeAnalysis.RangeAnalysis
 open FSharpRefactor.Engine.CodeAnalysis.ScopeAnalysis
@@ -37,7 +38,7 @@ type RenameRefactoring() as self =
 
     override self.IsValid(options) =
         let position = GetPosition options
-        FSharpRefactoring.IsValid options (Rename.IsValid (Some position, None))
+        IsValid options (Rename.IsValid (Some position, None))
 
     override self.PerformChanges(options, properties) =
         let renameProperties =
@@ -47,7 +48,7 @@ type RenameRefactoring() as self =
         let refactorSource =
             fun source _ ->
                 rename source position renameProperties.NewName
-        FSharpRefactoring.PerformChanges (options, properties) refactorSource
+        PerformChanges (options, properties) refactorSource
 
     override self.Run(options) =
         let itemDialog = new FSharpRenameItemDialog(options, self)
