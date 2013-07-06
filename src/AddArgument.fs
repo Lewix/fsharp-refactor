@@ -138,6 +138,7 @@ let GetErrorMessage (position:(int*int) option, argumentName:string option, defa
             Option.isSome (binding.Force())
         let bindingIsFunction =
             bindingAtRange && (Option.isSome (tryFindFunctionName (binding.Value.Value)))
+        //TODO: disallow mutable bindings
 
         match bindingAtRange, bindingIsFunction with
             | false,_ -> Some "No binding found at the given range"
