@@ -98,7 +98,7 @@ let DoRename source (tree: Ast.AstNode) (declarationIdentifier : Identifier) (ne
 
 
 //TODO: these probably need to be put in an .fsi file
-let GetErrorMessage (source:string) (filename:string) (position:(int*int) option, newName:string option) =
+let GetErrorMessage (position:(int*int) option, newName:string option) (source:string) (filename:string) =
 
     let pos = PosFromPositionOption position
     let scopeTrees =
@@ -151,9 +151,9 @@ let GetErrorMessage (source:string) (filename:string) (position:(int*int) option
     |> Andalso (IsSuccessful checkPositionAndName (PairOptions (position, newName)))
     |> fun (l:Lazy<_>) -> l.Force()
 
-let IsValid (source:string) (filename:string) (position:(int*int) option, newName:string option) =
-    GetErrorMessage source filename (position, newName)
+let IsValid (position:(int*int) option, newName:string option) (source:string) (filename:string) =
+    GetErrorMessage (position, newName) source filename
     |> Option.isNone
 
-let GetChanges (source:string) (filename:string) ((line:int, col:int), newName:string) =
+let GetChanges ((line:int, col:int), newName:string) (source:string) (filename:string) =
     []

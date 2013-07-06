@@ -125,7 +125,7 @@ let AddArgument doCheck (bindingRange : range) argumentName defaultValue : Refac
 let DoAddArgument source (tree : Ast.AstNode) (bindingRange : range) (argumentName : string) (defaultValue : string) =
     RunRefactoring (AddArgument true bindingRange argumentName defaultValue) () source
 
-let GetErrorMessage (source:string) (filename:string) (position:(int*int) option, argumentName:string option, defaultValue:string option) =
+let GetErrorMessage (position:(int*int) option, argumentName:string option, defaultValue:string option) (source:string) (filename:string) =
     let pos = PosFromPositionOption position
     let binding =
         lazy 
@@ -148,6 +148,6 @@ let GetErrorMessage (source:string) (filename:string) (position:(int*int) option
     |> fun (l:Lazy<_>) -> l.Force()
     
 
-let IsValid (source:string) (filename:string) (position:(int*int) option, argumentName:string option, defaultValue:string option) =
-    GetErrorMessage source filename (position, argumentName, defaultValue)
+let IsValid (position:(int*int) option, argumentName:string option, defaultValue:string option) (source:string) (filename:string) =
+    GetErrorMessage (position, argumentName, defaultValue) source filename
     |> Option.isNone
