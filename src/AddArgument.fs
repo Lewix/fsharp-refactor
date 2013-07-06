@@ -141,7 +141,8 @@ let GetErrorMessage (position:(int*int) option, argumentName:string option, defa
         //TODO: disallow mutable bindings
 
         match bindingAtRange, bindingIsFunction with
-            | false,_ -> Some "No binding found at the given range"
+            | false,_ ->
+                Some "No binding found around the given position"
             | _,false -> Some "Binding was not a function"
             | _,_ -> None
 
