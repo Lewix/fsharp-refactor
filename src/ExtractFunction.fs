@@ -8,6 +8,7 @@ open FSharpRefactor.Engine.CodeTransforms.CodeTransforms
 open FSharpRefactor.Engine.CodeAnalysis.ScopeAnalysis
 open FSharpRefactor.Engine.CodeAnalysis.RangeAnalysis
 open FSharpRefactor.Engine.Refactoring
+open FSharpRefactor.Engine.ValidityChecking
 open FSharpRefactor.Refactorings.Rename
 
 let rec stripBrackets (body : string) =
@@ -130,3 +131,17 @@ let ExtractFunction doCheck inScopeTree expressionRange functionName : Refactori
     
 let DoExtractFunction source (tree : Ast.AstNode) (inScopeTree : Ast.AstNode) (expressionRange : range) (functionName : string) =
     RunRefactoring (ExtractFunction true inScopeTree expressionRange functionName) () source
+
+let GetErrorMessage (range:((int*int)*(int*int)) option, functionName:string option) (source:string) (filename:string) =
+    let checkRange ((startLine, startCol), (endLine, endCol)) =
+        let tree = (Ast.Parse source).Value
+        let range = mkRange "test.fs" (mkPos startLine (startCol-1)) (mkPos endLine (endCol))
+        if Option.isSome (TryFindExpressionAtRange range tree)
+        then None else Some "No expression found at the given range"
+
+    IsSuccessful checkRange range
+    |> fun (l:Lazy<_>) -> l.Force()
+        
+
+let IsValid (range:((int*int)*(int*int)) option, functionName:string option) (source:string) (filename:string) =
+    Option.isNone (GetErrorMessage (range, functionName) source filename)

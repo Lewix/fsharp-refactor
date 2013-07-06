@@ -9,9 +9,13 @@ open FSharpRefactor.Engine.CodeTransforms
 open FSharpRefactor.Engine.Refactoring
 open FSharpRefactor.Refactorings.ExtractFunction
 
-
 [<TestFixture>]
 type ExtractFunctionAnalysisModule() =
+    [<Test>]
+    member this.``Can check arguments separately``() =
+        Assert.IsTrue(IsValid (Some ((1,9),(1,11)),None) "let x = 1+1" "test.fs", "Valid range")
+        Assert.IsFalse(IsValid (Some ((1,3),(1,11)),None) "let x = 1+1" "test.fs", "Invalid range")
+
     [<Test>]
     member this.``Cannot extract a function if there is no expression at expressionRange``() =
         let source = "(2+3)+(3+4)"
