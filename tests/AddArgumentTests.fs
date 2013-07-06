@@ -12,12 +12,12 @@ open FSharpRefactor.Refactorings.AddArgument
 type AddArgumentModule() =
     [<Test>]
     member this.``Can check arguments separately``() =
-        Assert.IsTrue(IsValid "let f a = 1" "test.fs" (Some(1,10), None, None), sprintf "Valid position")
-        Assert.IsFalse(IsValid "1" "test.fs" (Some(1,1), None, None), "No binding around position")
-        Assert.IsFalse(IsValid "let a,b = 1,2" "test.fs" (Some(1,6), None, None), "Position not a function")
+        Assert.IsTrue(IsValid (Some(1,10), None, None) "let f a = 1" "test.fs", sprintf "Valid position")
+        Assert.IsFalse(IsValid (Some(1,1), None, None) "1" "test.fs", "No binding around position")
+        Assert.IsFalse(IsValid (Some(1,6), None, None) "let a,b = 1,2" "test.fs", "Position not a function")
         //TODO: renaming checks
-        //Assert.IsTrue(IsValid "let f a = 1" "test.fs" (Some(1,10), Some "b", None), sprintf "Valid name and position")
-        //Assert.IsFalse(IsValid "let f a = 1" "test.fs" (Some(1,10), Some "a", None), sprintf "Invalid name and position")
+        //Assert.IsTrue(IsValid (Some(1,10), Some "b", None) "let f a = 1" "test.fs", sprintf "Valid name and position")
+        //Assert.IsFalse(IsValid (Some(1,10), Some "a", None) "let f a = 1" "test.fs", sprintf "Invalid name and position")
         //TODO: check default value and name
 
     [<Test>]

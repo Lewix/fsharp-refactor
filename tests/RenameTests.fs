@@ -13,11 +13,11 @@ open FSharpRefactor.Refactorings.Rename
 type RenameAnalysisModule() =
     [<Test>]
     member this.``Can check arguments individually``() =
-        Assert.IsTrue(IsValid "let f a = 1" "test.fs" (Some(1,5), None), "Valid position")
-        Assert.IsFalse(IsValid "let f a = 1" "test.fs" (Some(1,1), None), "Invalid position")
-        Assert.IsTrue(IsValid "let f a b = 1" "test.fs" (Some(1,7), Some "c"), "Valid position and name")
-        Assert.IsFalse(IsValid "let f a b = 1" "test.fs" (Some(1,7), Some "b"), "Invalid position and name")
-        Assert.IsTrue(IsValid "let f a b = 1" "test.fs" (None, Some "b"), "Valid name")
+        Assert.IsTrue(IsValid (Some(1,5), None) "let f a = 1" "test.fs", "Valid position")
+        Assert.IsFalse(IsValid (Some(1,1), None) "let f a = 1" "test.fs", "Invalid position")
+        Assert.IsTrue(IsValid (Some(1,7), Some "c") "let f a b = 1" "test.fs", "Valid position and name")
+        Assert.IsFalse(IsValid (Some(1,7), Some "b") "let f a b = 1" "test.fs", "Invalid position and name")
+        Assert.IsTrue(IsValid (None, Some "b") "let f a b = 1" "test.fs", "Valid name")
         //TODO: invalid name
 
     [<Test>]
