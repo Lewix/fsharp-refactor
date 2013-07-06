@@ -1,4 +1,4 @@
-namespace MonoDevelop.FSharpRefactor.Rename
+namespace MonoDevelop.FSharpRefactor
 
 open System
 open MonoDevelop.Components.Commands
@@ -16,6 +16,29 @@ open FSharpRefactor.Engine.Ast
 open FSharpRefactor.Engine.CodeAnalysis.RangeAnalysis
 open FSharpRefactor.Engine.CodeAnalysis.ScopeAnalysis
 open FSharpRefactor.Refactorings.Rename
+
+module FSharpRefactoring =
+    let IsValid (options:RefactoringOptions) (isSourceValid:string -> bool) =
+        let doc = options.Document
+        let wholeFileChange = new TextReplaceChange()
+        let fileName = options.Document.FileName.ToString()
+        let source = doc.GetContent<ITextFile>().Text
+
+        options.MimeType = "text/x-fsharp"
+        |> (&&) (isSourceValid source)
+
+    let PerformChanges(options:RefactoringOptions, properties) (refactorSource:string -> string) =
+        let fileName = options.Document.FileName.ToString()
+        let textFile = options.Document.GetContent<ITextFile>()
+
+        let wholeFileChange = new TextReplaceChange()
+        wholeFileChange.FileName <- fileName
+        wholeFileChange.Offset <- 0
+        wholeFileChange.RemovedChars <- textFile.Length
+        wholeFileChange.InsertedText <- refactorSource textFile.Text
+
+        Collections.Generic.List<Change>([wholeFileChange :> Change])
+
 
 type FSharpRenameItemDialog(options:RefactoringOptions, rename:RenameRefactoring) as self =
     inherit MonoDevelop.Refactoring.Rename.RenameItemDialog(options, rename)
@@ -47,18 +70,10 @@ type RenameRefactoring() as self =
 
     override self.PerformChanges(options, properties) =
         let renameProperties = properties :?> MonoDevelop.Refactoring.Rename.RenameRefactoring.RenameProperties
-        let doc = options.Document
-        let wholeFileChange = new TextReplaceChange()
-        let fileName = options.Document.FileName.ToString()
-        wholeFileChange.FileName <- fileName
-        wholeFileChange.Offset <- 0
-        let textFile = doc.GetContent<ITextFile>()
-        wholeFileChange.RemovedChars <- textFile.Length
         let position = mkPos options.Location.Line (options.Location.Column-1)
-        wholeFileChange.InsertedText <-
-            rename textFile.Text position renameProperties.NewName
-
-        Collections.Generic.List<Change>([wholeFileChange :> Change])
+        let refactorSource =
+            fun source -> rename source position renameProperties.NewName
+        FSharpRefactoring.PerformChanges (options, properties) refactorSource
 
     override self.Run(options) =
         MessageService.ShowCustomDialog(new FSharpRenameItemDialog(options, self)) |> ignore

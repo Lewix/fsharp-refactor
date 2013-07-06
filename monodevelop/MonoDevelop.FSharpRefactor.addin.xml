@@ -6,11 +6,11 @@
     url = "https://github.com/Lewix/fsharp-refactor"
     description = "Provides bindings for F# refactorings in MonoDevelop"
     category = "IDE extensions"
-    version = "0.1">
+    version = "0.2">
 
     <Runtime>
-        <Import assembly="lib/FSharp.Refactor.dll" />
-        <Import assembly="lib/FSharp.Compiler.dll" />
+        <Import assembly="FSharp.Refactor.dll" />
+        <Import assembly="FSharp.Compiler.dll" />
     </Runtime>
 
     <Dependencies>
@@ -20,7 +20,7 @@
 
     <Extension path="/MonoDevelop/Refactoring/Refactorings">
         <Class
-            id="MonoDevelop.FSharpRefactor.Rename" 
-            class="MonoDevelop.FSharpRefactor.Rename.RenameRefactoring" />
+            id="MonoDevelop.FSharpRefactor.RenameRefactoring" 
+            class="MonoDevelop.FSharpRefactor.RenameRefactoring" />
     </Extension>
 </Addin>
