@@ -23,4 +23,9 @@
             id="MonoDevelop.FSharpRefactor.RenameRefactoring" 
             class="MonoDevelop.FSharpRefactor.RenameRefactoring" />
     </Extension>
+    <Extension path="/MonoDevelop/Refactoring/Refactorings">
+        <Class
+            id="MonoDevelop.FSharpRefactor.AddArgumentRefactoring" 
+            class="MonoDevelop.FSharpRefactor.AddArgumentRefactoring" />
+    </Extension>
 </Addin>
