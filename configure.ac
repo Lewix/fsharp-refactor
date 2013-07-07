@@ -1,6 +1,6 @@
 AC_INIT(README)
 AC_CANONICAL_SYSTEM
-AM_INIT_AUTOMAKE(fsharp-refactor, 0.1)
+AM_INIT_AUTOMAKE(fsharp-refactor, 0.1.0.0)
 AM_MAINTAINER_MODE
 
 AC_PROG_INSTALL
@@ -28,7 +28,8 @@ AC_SUBST(FSC)
 
 AC_OUTPUT([
 Makefile
-src/AssemblyInfo.fs
+FSharpRefactor/AssemblyInfo.fs
+FSharpRefactor.CommandLine/AssemblyInfo.fs
 ])
 
 dnl Configuration summary

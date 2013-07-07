@@ -1,2 +1,2 @@
 #!/bin/sh
-exec @MONO@ @prefix@/lib/fsharp-refactor/FSharpRefactor.exe $MONO_EXTRA_ARGS "$@"
+exec @MONO@ @prefix@/lib/fsharp-refactor/FSharpRefactor.CommandLine.exe $MONO_EXTRA_ARGS "$@"

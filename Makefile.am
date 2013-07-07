@@ -1,27 +1,11 @@
-bin_SCRIPTS = bin/fsharp-refactor
-
-fsharprefactordir=$(pkglibdir)
-fsharprefactor_SCRIPTS = bin/FSharpRefactor.exe
-
-SOURCES=src/Ast.fs \
-		src/CodeAnalysis.fs \
-		src/CodeTransforms.fs \
-		src/ValidityChecking.fs \
-		src/Refactoring.fs \
-		src/Rename.fs \
-		src/ExtractFunction.fs \
-		src/AddArgument.fs
-
-TESTS=tests/EngineTests.fs \
-      tests/RenameTests.fs \
-      tests/ExtractFunctionTests.fs \
-      tests/AddArgumentTests.fs
-
 DEPS=lib/FSharp.Compiler.dll \
      lib/Options.dll
 
+bin_SCRIPTS = bin/fsharp-refactor
+fsharprefactordir=$(pkglibdir)
+fsharprefactor_SCRIPTS = bin/FSharpRefactor.CommandLine.exe
 fsharprefactor_DATA = $(DEPS) \
-					  lib/FSharp.Refactor.dll
+					  bin/FSharpRefactor.dll
 
 REWRITE = \
 	sed -e "s|\@prefix\@|$(prefix)|g"       \
@@ -35,8 +19,9 @@ $(bin_SCRIPTS): bin/fsharp-refactor.in Makefile
 
 CLEANFILES = \
 	bin/fsharp-refactor \
-	bin/FSharpRefactor.exe \
-	lib/FSharp.Refactor.dll
+	bin/FSharpRefactor.CommandLine.exe \
+	bin/FSharpRefactor.dll \
+	bin/FSharpRefactorTests.dll
 
 DISTCLEANFILES = \
 	configure \
@@ -46,36 +31,54 @@ DISTCLEANFILES = \
 	install-sh \
 	aclocal.m4 \
 	INSTALL \
-	COPYING \
 	missing
 
-EXTRA_DIST = bin/fsharp-refactor.in \
-			 $(DEPS) \
-			 $(SOURCES) \
-			 src/CommandLine.fs
+CORE_SOURCES=FSharpRefactor/Ast.fs \
+			 FSharpRefactor/CodeAnalysis.fs \
+             FSharpRefactor/CodeTransforms.fs \
+             FSharpRefactor/ValidityChecking.fs \
+             FSharpRefactor/Refactoring.fs \
+             FSharpRefactor/Rename.fs \
+             FSharpRefactor/ExtractFunction.fs \
+             FSharpRefactor/AddArgument.fs \
+             FSharpRefactor/AssemblyInfo.fs
 
-REFS=-r:lib/FSharp.Compiler.dll \
-	-r:lib/Options.dll
+CLI_SOURCES=FSharpRefactor.CommandLine/CommandLine.fs \
+			FSharpRefactor.CommandLine/AssemblyInfo.fs
 
-OPTS=--target:library --nologo --lib:lib
+TESTS=FSharpRefactorTests/EngineTests.fs \
+      FSharpRefactorTests/RenameTests.fs \
+      FSharpRefactorTests/ExtractFunctionTests.fs \
+      FSharpRefactorTests/AddArgumentTests.fs
+
+EXTRA_DIST = FSharpRefactor/FSharpRefactor.fsproj \
+             FSharpRefactor.CommandLine/FSharpRefactor.CommandLine.fsproj \
+             bin/fsharp-refactor.in \
+			 $(CORE_SOURCES) \
+             $(CLI_SOURCES) \
+			 $(DEPS)
 
 
-all: lib/FSharp.Refactor.dll bin/FSharpRefactor.exe
-
-lib/FSharp.Refactor.dll: $(SOURCES)
-	fsharpc $(OPTS) -o:lib/FSharp.Refactor.dll $(REFS) $(SOURCES)
-
-bin/FSharpRefactor.exe: lib/Options.dll lib/FSharp.Refactor.dll src/CommandLine.fs
-	fsharpc $(OPTS) $(REFS) --target:exe -o:bin/FSharpRefactor.exe -r:lib/FSharp.Refactor.dll src/CommandLine.fs
+all: bin/FSharpRefactor.dll bin/FSharpRefactor.CommandLine.exe
 
 
+bin/FSharpRefactor.dll: $(CORE_SOURCES) lib/FSharp.Compiler.dll FSharpRefactor/FSharpRefactor.fsproj
+	xbuild FSharpRefactor/FSharpRefactor.fsproj
+	cp FSharpRefactor/bin/Debug/FSharpRefactor.dll bin
 
-lib/FSharp.Refactor.Tests.dll: lib/FSharp.Refactor.dll $(TESTS)
-	fsharpc $(OPTS) -o:lib/FSharp.Refactor.Tests.dll -r:lib/FSharp.Refactor.dll $(REFS) -r:/usr/lib/nunit/nunit.framework.dll $(TESTS)
+bin/FSharpRefactor.CommandLine.exe: $(CLI_SOURCES) lib/Options.dll FSharpRefactor.CommandLine/FSharpRefactor.CommandLine.fsproj
+	xbuild FSharpRefactor.CommandLine/FSharpRefactor.CommandLine.fsproj
+	cp FSharpRefactor.CommandLine/bin/Debug/FSharpRefactor.CommandLine.exe bin
 
-unit-tests: lib/FSharp.Refactor.Tests.dll
-	mono /usr/lib/nunit/nunit-console.exe -noresult lib/FSharp.Refactor.Tests.dll
+bin/FSharpRefactorTests.dll: $(TESTS) FSharpRefactorTests/FSharpRefactorTests.fsproj
+	xbuild FSharpRefactorTests/FSharpRefactorTests.fsproj
+	cp FSharpRefactorTests/bin/Debug/FSharpRefactorTests.dll bin
 
-tests: lib/FSharp.Refactor.Tests.dll bin/FSharpRefactor.exe tests/command-line-tests.sh
-	mono /usr/lib/nunit/nunit-console.exe -noresult lib/FSharp.Refactor.Tests.dll
-	export MONO_PATH=lib; tests/command-line-tests.sh
+
+unit-tests: bin/FSharpRefactorTests.dll
+	mono /usr/lib/nunit/nunit-console.exe -noresult bin/FSharpRefactorTests.dll
+
+cli-tests: bin/FSharpRefactor.dll bin/FSharpRefactor.CommandLine.exe FSharpRefactorTests/command-line-tests.sh
+	export MONO_PATH=lib; FSharpRefactorTests/command-line-tests.sh
+
+tests: unit-tests cli-tests
