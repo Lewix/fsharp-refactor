@@ -28,7 +28,7 @@ AC_SUBST(FSC)
 
 AC_OUTPUT([
 Makefile
-src/AssemblyInfo.cs
+src/AssemblyInfo.fs
 ])
 
 dnl Configuration summary

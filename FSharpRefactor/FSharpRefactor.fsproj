@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>10.0.0</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{611A68B4-9B6A-4675-BF3C-6BCCAEA09BEF}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>FSharpRefactor</RootNamespace>
+    <AssemblyName>FSharpRefactor</AssemblyName>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <OutputPath>bin\Debug</OutputPath>
+    <DefineConstants>DEBUG</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <PlatformTarget />
+    <ConsolePause>false</ConsolePause>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release</OutputPath>
+    <ErrorReport>prompt</ErrorReport>
+    <PlatformTarget />
+    <ConsolePause>false</ConsolePause>
+    <Tailcalls>true</Tailcalls>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="mscorlib" />
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Numerics" />
+    <Reference Include="FSharp.Compiler">
+      <HintPath>..\lib\FSharp.Compiler.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <Import Project="$(MSBuildExtensionsPath32)\..\Microsoft F#\v4.0\Microsoft.FSharp.Targets" />
+  <ItemGroup>
+    <Compile Include="Ast.fs" />
+    <Compile Include="CodeAnalysis.fs" />
+    <Compile Include="CodeTransforms.fs" />
+    <Compile Include="ValidityChecking.fs" />
+    <Compile Include="Refactoring.fs" />
+    <Compile Include="Rename.fs" />
+    <Compile Include="ExtractFunction.fs" />
+    <Compile Include="AddArgument.fs" />
+    <Compile Include="AssemblyInfo.fs" />
+  </ItemGroup>
+</Project>

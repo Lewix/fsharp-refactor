@@ -1,4 +1,4 @@
-module FSharpRefactor.CommandLine
+module FSharpRefactor.CommandLine.Main
 
 open System
 open System.IO

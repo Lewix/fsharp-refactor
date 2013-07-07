@@ -1,0 +1,32 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{4925A630-B079-445d-BCD4-3A9C94FE9307}") = "FSharpRefactor", "FSharpRefactor\FSharpRefactor.fsproj", "{611A68B4-9B6A-4675-BF3C-6BCCAEA09BEF}"
+EndProject
+Project("{4925A630-B079-445d-BCD4-3A9C94FE9307}") = "FSharpRefactorTests", "FSharpRefactorTests\FSharpRefactorTests.fsproj", "{53F28E27-ED04-407B-9C85-010EE40A933F}"
+EndProject
+Project("{4925A630-B079-445d-BCD4-3A9C94FE9307}") = "FSharpRefactor.CommandLine", "FSharpRefactor.CommandLine\FSharpRefactor.CommandLine.fsproj", "{CE31FB40-324D-410B-8FF7-634B44AEB375}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{53F28E27-ED04-407B-9C85-010EE40A933F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{53F28E27-ED04-407B-9C85-010EE40A933F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{53F28E27-ED04-407B-9C85-010EE40A933F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{53F28E27-ED04-407B-9C85-010EE40A933F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{611A68B4-9B6A-4675-BF3C-6BCCAEA09BEF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{611A68B4-9B6A-4675-BF3C-6BCCAEA09BEF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{611A68B4-9B6A-4675-BF3C-6BCCAEA09BEF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{611A68B4-9B6A-4675-BF3C-6BCCAEA09BEF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CE31FB40-324D-410B-8FF7-634B44AEB375}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CE31FB40-324D-410B-8FF7-634B44AEB375}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CE31FB40-324D-410B-8FF7-634B44AEB375}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CE31FB40-324D-410B-8FF7-634B44AEB375}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(MonoDevelopProperties) = preSolution
+		StartupItem = FSharpRefactor\FSharpRefactor.fsproj
+	EndGlobalSection
+EndGlobal
