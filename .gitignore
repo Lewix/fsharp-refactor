@@ -6,6 +6,7 @@ TAGS
 *.sigdata
 *.optdata
 *.tar.gz
+*.mdb
 TestResult.xml
 FSharp.Refactor.Tests.dll.VisualState.xml
 INSTALL
@@ -20,6 +21,8 @@ config.sub
 configure
 install-sh
 missing
-src/AssemblyInfo.cs
+AssemblyInfo.fs
 test-driver
 bin/fsharp-refactor
+test-results
+obj
