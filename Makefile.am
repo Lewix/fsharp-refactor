@@ -1,4 +1,4 @@
-DEPS=lib/FSharp.Compiler.dll \
+DEPS=lib/FSharp.Compiler.Editor.dll \
      lib/Options.dll
 
 bin_SCRIPTS = bin/fsharp-refactor
@@ -62,7 +62,7 @@ EXTRA_DIST = FSharpRefactor/FSharpRefactor.fsproj \
 all: bin/FSharpRefactor.dll bin/FSharpRefactor.CommandLine.exe
 
 
-bin/FSharpRefactor.dll: $(CORE_SOURCES) lib/FSharp.Compiler.dll FSharpRefactor/FSharpRefactor.fsproj
+bin/FSharpRefactor.dll: $(CORE_SOURCES) lib/FSharp.Compiler.Editor.dll FSharpRefactor/FSharpRefactor.fsproj
 	xbuild FSharpRefactor/FSharpRefactor.fsproj
 	cp FSharpRefactor/bin/Debug/FSharpRefactor.dll bin
 

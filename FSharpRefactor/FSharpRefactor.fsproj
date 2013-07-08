@@ -34,8 +34,8 @@
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Numerics" />
-    <Reference Include="FSharp.Compiler">
-      <HintPath>..\lib\FSharp.Compiler.dll</HintPath>
+    <Reference Include="FSharp.Compiler.Editor">
+      <HintPath>..\lib\FSharp.Compiler.Editor.dll</HintPath>
     </Reference>
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\..\Microsoft F#\v4.0\Microsoft.FSharp.Targets" />

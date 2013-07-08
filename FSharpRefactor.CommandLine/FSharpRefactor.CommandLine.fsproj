@@ -37,8 +37,8 @@
     <Reference Include="Options">
       <HintPath>..\lib\Options.dll</HintPath>
     </Reference>
-    <Reference Include="FSharp.Compiler">
-      <HintPath>..\lib\FSharp.Compiler.dll</HintPath>
+    <Reference Include="FSharp.Compiler.Editor">
+      <HintPath>..\lib\FSharp.Compiler.Editor.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
