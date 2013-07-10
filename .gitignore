@@ -7,6 +7,7 @@ TAGS
 *.optdata
 *.tar.gz
 *.mdb
+*.userprefs
 TestResult.xml
 FSharp.Refactor.Tests.dll.VisualState.xml
 INSTALL
