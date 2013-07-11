@@ -331,7 +331,7 @@ type ScopeTreeModule() =
 [<TestFixture>]
 type RangeAnalysisModule() =
     [<Test>]
-    member this.``Can find identifier a position``() =
+    member this.``Can find identifier at position``() =
         let filename = "test.fs"
         let source = "let functio a b c = a+b+c in functio 1 2 3"
         let aDeclarationRange = mkRange "test.fs" (mkPos 1 12) (mkPos 1 13)
