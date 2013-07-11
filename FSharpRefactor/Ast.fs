@@ -79,6 +79,7 @@ module Ast =
                 match m with
                     | SynModuleDecl.Let(_,bs,_) -> Some(List.map AstNode.Binding bs)
                     | SynModuleDecl.DoExpr(_,e,_) -> Some([AstNode.Expression e])
+                    | SynModuleDecl.Exception(_,_)
                     | SynModuleDecl.Open(_,_) -> None
                     | SynModuleDecl.NestedModule(_,ds,_,_) -> Some(List.map AstNode.ModuleDeclaration ds)
                     | SynModuleDecl.Types(ts,_) -> Some(List.map AstNode.TypeDefinition ts)
