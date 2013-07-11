@@ -292,6 +292,10 @@ module RangeAnalysis =
     let TryFindBindingAroundRange range (tree : Ast.AstNode) =
         FindNodesAroundRange range tree
         |> List.tryPick chooseBinding
+        
+    let TryFindBindingAroundPos pos (tree : Ast.AstNode) =
+        let range = mkRange "test.fs" pos pos
+        TryFindBindingAroundRange range tree
 
     let TryFindExpressionAroundRange range (tree : Ast.AstNode) =
         let chooseExpression node =

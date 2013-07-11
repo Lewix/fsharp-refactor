@@ -130,8 +130,7 @@ let GetErrorMessage (position:(int*int) option, argumentName:string option, defa
     let binding =
         lazy 
             let tree = (Ast.Parse source).Value
-            let range = mkRange "test.fs" (pos.Value) (pos.Value)
-            TryFindBindingAroundRange range tree
+            TryFindBindingAroundPos pos.Value tree
 
     let checkPosition (line, col) =
         let bindingAtRange =
