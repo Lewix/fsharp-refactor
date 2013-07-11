@@ -121,7 +121,7 @@ let AddTempArgument doCheck bindingRange defaultValue : Refactoring<unit,Identif
 let AddArgument doCheck (bindingRange : range) argumentName defaultValue : Refactoring<unit,unit> =
     let addTempArgumentRefactoring = AddTempArgument doCheck bindingRange defaultValue
     sequence addTempArgumentRefactoring (Rename doCheck argumentName)
-    
+
 let DoAddArgument source (tree : Ast.AstNode) (bindingRange : range) (argumentName : string) (defaultValue : string) =
     RunRefactoring (AddArgument true bindingRange argumentName defaultValue) () source
 
@@ -147,9 +147,17 @@ let GetErrorMessage (position:(int*int) option, argumentName:string option, defa
 
     IsSuccessful checkPosition position
     |> fun (l:Lazy<_>) -> l.Force()
-    
 
 let IsValid (position:(int*int) option, argumentName:string option, defaultValue:string option) (source:string) (filename:string) =
     GetErrorMessage (position, argumentName, defaultValue) source filename
     |> Option.isNone
 
+let GetChanges ((line, col):int*int, argumentName:string, defaultValue:string) (source:string) (filename:string) =
+    let pos = mkPos line (col-1)
+    let tree = (Ast.Parse source).Value
+    let bindingRange = 
+        (Ast.GetRange (Ast.Binding (FindBindingAroundPos pos tree))).Value
+    let newSource = DoAddArgument source tree bindingRange argumentName defaultValue
+    let lines = source.Split([|'\n'|])
+    let lineCount = Array.length lines
+    [(1, 1), (lineCount, String.length (lines.[lineCount-1])), newSource]

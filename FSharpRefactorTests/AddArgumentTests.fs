@@ -11,6 +11,12 @@ open FSharpRefactor.Refactorings.AddArgument
 [<TestFixture>]
 type AddArgumentModule() =
     [<Test>]
+    member this.``Can get changes``() =
+        let source = "let f a = 1"
+        let expected = [(1,1),(1,11),"let f b a = 1"]
+        Assert.AreEqual(expected, GetChanges ((1,7), "b", "0") source "test.fs", sprintf "%A" (GetChanges ((1,7), "b", "0") source "test.fs"))
+
+    [<Test>]
     member this.``Can check arguments separately``() =
         Assert.IsTrue(IsValid (Some(1,10), None, None) "let f a = 1" "test.fs", sprintf "Valid position")
         Assert.IsFalse(IsValid (Some(1,1), None, None) "1" "test.fs", "No binding around position")
