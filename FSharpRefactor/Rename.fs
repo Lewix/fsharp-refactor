@@ -97,14 +97,14 @@ let DoRename source (tree: Ast.AstNode) (declarationIdentifier : Identifier) (ne
     RunRefactoring (Rename true newName) declarationIdentifier source
 
 
+
 //TODO: these probably need to be put in an .fsi file
 let GetErrorMessage (position:(int*int) option, newName:string option) (source:string) (filename:string) =
-
     let pos = PosFromPositionOption position
     let scopeTrees =
         lazy (makeScopeTrees (Ast.Parse source).Value)
     let identifier =
-        lazy (Option.bind (FindIdentifier source) pos)
+        lazy (Option.bind (TryFindIdentifier source) pos)
     let identifierDeclaration =
         lazy
             let tryFindDeclaration =

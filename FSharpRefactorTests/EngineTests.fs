@@ -337,15 +337,15 @@ type RangeAnalysisModule() =
         let aDeclarationRange = mkRange "test.fs" (mkPos 1 12) (mkPos 1 13)
         let fDeclarationRange = mkRange "test.fs" (mkPos 1 4) (mkPos 1 11)
 
-        Assert.AreEqual(Some("a",aDeclarationRange), RangeAnalysis.FindIdentifier source aDeclarationRange.Start)
-        Assert.AreEqual(Some("functio",fDeclarationRange), RangeAnalysis.FindIdentifier source fDeclarationRange.Start)
+        Assert.AreEqual(Some("a",aDeclarationRange), RangeAnalysis.TryFindIdentifier source aDeclarationRange.Start)
+        Assert.AreEqual(Some("functio",fDeclarationRange), RangeAnalysis.TryFindIdentifier source fDeclarationRange.Start)
 
     [<Test>]
     member this.``Can find identifier position when identifiers are just next to each other``() =
         let source = "a+b"
         let range = mkRange "test.fs" (mkPos 1 2) (mkPos 1 3)
 
-        Assert.AreEqual(Some("b", range), RangeAnalysis.FindIdentifier source range.Start)
+        Assert.AreEqual(Some("b", range), RangeAnalysis.TryFindIdentifier source range.Start)
     
     [<Test>]
     member this.``Can find the AstNode.Expression corresponding to a range``() =

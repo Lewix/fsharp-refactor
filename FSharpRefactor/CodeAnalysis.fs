@@ -297,7 +297,7 @@ module RangeAnalysis =
         FindNodesAroundRange range tree
         |> List.tryPick chooseExpression
 
-    let FindIdentifier source (position : pos) =
+    let TryFindIdentifier source (position : pos) =
         let containsPos (name,range) =
             // Identifiers' ranges extend past the end of the text
             // so avoid range.End for cases like b in a+b
