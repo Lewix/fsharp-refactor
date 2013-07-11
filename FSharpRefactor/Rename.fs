@@ -156,8 +156,8 @@ let IsValid (position:(int*int) option, newName:string option) (source:string) (
     |> Option.isNone
 
 let GetChanges ((line:int, col:int), newName:string) (source:string) (filename:string) =
-    let position = mkPos line col
+    let position = mkPos line (col-1)
     let identifierDeclaration =
         FindIdentifierDeclaration (makeScopeTrees (Ast.Parse source).Value) (FindIdentifier source position)
     let _, changes, _ = RenameTransform newName (source, identifierDeclaration)
-    changes
+    List.map (fun (r,s) -> RangeToTuple r, s) changes

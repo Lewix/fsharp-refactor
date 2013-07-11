@@ -54,6 +54,12 @@ type RenameAnalysisModule() =
 [<TestFixture>]
 type RenameTransformModule() =
     [<Test>]
+    member this.``Can get changes``() =
+        let source = "let f x = x+x"
+        let expected = [((1,7),(1,8)),"y"; ((1,11),(1,12)),"y"; ((1,13),(1,14)),"y"]
+        Assert.AreEqual(expected, GetChanges ((1,7), "y") source "test.fs")
+        
+    [<Test>]
     member this.``Can carry out renaming transformation``() =
         let source = "let a = 1 in let b = 2 in a + b + (let a = 3 in a)"
         let expected = "let c = 1 in let b = 2 in c + b + (let a = 3 in a)"
