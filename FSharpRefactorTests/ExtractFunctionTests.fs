@@ -162,6 +162,12 @@ type ExtractFunctionTransformModule() =
 [<TestFixture>]
 type CreateFunctionModule() =
     [<Test>]
+    member this.``Can get changes``() =
+        let source = "let f a = 1+1"
+        let expected = [(1,1),(1,13),"let f a = let g = (1+1) in g"]
+        Assert.AreEqual(expected, GetChanges (((1,11),(1,14)), "g") source "test.fs")
+        
+    [<Test>]
     member this.``Can add a function to an expression``() =
         let expected = "let f a b =\n    a+b\n"
         let insertRange = mkRange "test.fs" (mkPos 1 0) (mkPos 1 0)
