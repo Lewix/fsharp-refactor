@@ -153,3 +153,4 @@ let GetErrorMessage (position:(int*int) option, argumentName:string option, defa
 let IsValid (position:(int*int) option, argumentName:string option, defaultValue:string option) (source:string) (filename:string) =
     GetErrorMessage (position, argumentName, defaultValue) source filename
     |> Option.isNone
+

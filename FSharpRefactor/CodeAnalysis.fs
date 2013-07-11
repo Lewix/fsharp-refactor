@@ -76,6 +76,10 @@ module ScopeAnalysis =
                         List.tryPick (tryFindIdentifierAndDeclaration previousDeclaration) ts
 
         List.tryPick (tryFindIdentifierAndDeclaration None) trees
+        
+    let FindIdentifierDeclaration (trees : ScopeTree list) ((name, range) : Identifier) =
+        TryFindIdentifierDeclaration trees (name, range)
+        |> Option.get
 
     let TryFindIdentifierWithName (trees : ScopeTree list) (name : string) =
         let rec tryFindIdentifierWithName tree =
@@ -307,3 +311,7 @@ module RangeAnalysis =
         |> ScopeAnalysis.makeScopeTrees
         |> ScopeAnalysis.ListIdentifiers
         |> List.tryFind containsPos
+
+    let FindIdentifier source (position : pos) =
+        TryFindIdentifier source position
+        |> Option.get
