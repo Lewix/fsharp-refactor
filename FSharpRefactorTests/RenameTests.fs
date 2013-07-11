@@ -56,8 +56,8 @@ type RenameTransformModule() =
     [<Test>]
     member this.``Can get changes``() =
         let source = "let f x = x+x"
-        let expected = [((1,7),(1,8)),"y"; ((1,11),(1,12)),"y"; ((1,13),(1,14)),"y"]
-        Assert.AreEqual(expected, GetChanges ((1,7), "y") source "test.fs")
+        let expected = "let f y = y+y"
+        Assert.AreEqual(expected, Transform ((1,7), "y") source "test.fs")
         
     [<Test>]
     member this.``Can carry out renaming transformation``() =

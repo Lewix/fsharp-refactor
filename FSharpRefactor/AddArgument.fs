@@ -152,10 +152,9 @@ let IsValid (position:(int*int) option, argumentName:string option, defaultValue
     GetErrorMessage (position, argumentName, defaultValue) source filename
     |> Option.isNone
 
-let GetChanges ((line, col):int*int, argumentName:string, defaultValue:string) (source:string) (filename:string) =
+let Transform ((line, col):int*int, argumentName:string, defaultValue:string) (source:string) (filename:string) =
     let pos = mkPos line (col-1)
     let tree = (Ast.Parse source).Value
     let bindingRange =
         (Ast.GetRange (Ast.Binding (FindBindingAroundPos pos tree))).Value
-    let newSource = DoAddArgument source tree bindingRange argumentName defaultValue
-    [(1, 1), GetEndPosition source, newSource]
+    DoAddArgument source tree bindingRange argumentName defaultValue

@@ -146,10 +146,8 @@ let GetErrorMessage (range:((int*int)*(int*int)) option, functionName:string opt
 let IsValid (range:((int*int)*(int*int)) option, functionName:string option) (source:string) (filename:string) =
     Option.isNone (GetErrorMessage (range, functionName) source filename)
 
-let GetChanges (((startLine, startColumn), (endLine, endColumn)), functionName) source filename =
+let Transform (((startLine, startColumn), (endLine, endColumn)), functionName) source filename =
     let tree = (Ast.Parse source).Value
     let expressionRange = mkRange "test.fs" (mkPos startLine (startColumn-1)) (mkPos endLine (endColumn-1))
     let inScopeTree = DefaultInScopeTree tree expressionRange
-    let newSource =
-        DoExtractFunction source tree (Ast.AstNode.Expression inScopeTree.Value) expressionRange functionName
-    [(1, 1), GetEndPosition source, newSource]
+    DoExtractFunction source tree (Ast.AstNode.Expression inScopeTree.Value) expressionRange functionName

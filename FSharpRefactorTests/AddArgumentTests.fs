@@ -13,8 +13,8 @@ type AddArgumentModule() =
     [<Test>]
     member this.``Can get changes``() =
         let source = "let f a = 1"
-        let expected = [(1,1),(1,11),"let f b a = 1"]
-        Assert.AreEqual(expected, GetChanges ((1,7), "b", "0") source "test.fs", sprintf "%A" (GetChanges ((1,7), "b", "0") source "test.fs"))
+        let expected = "let f b a = 1"
+        Assert.AreEqual(expected, Transform ((1,7), "b", "0") source "test.fs")
 
     [<Test>]
     member this.``Can check arguments separately``() =
