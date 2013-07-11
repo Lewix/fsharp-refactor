@@ -152,6 +152,4 @@ let GetChanges (((startLine, startColumn), (endLine, endColumn)), functionName) 
     let inScopeTree = DefaultInScopeTree tree expressionRange
     let newSource =
         DoExtractFunction source tree (Ast.AstNode.Expression inScopeTree.Value) expressionRange functionName
-    let lines = source.Split([|'\n'|])
-    let lineCount = Array.length lines
-    [(1, 1), (lineCount, String.length (lines.[lineCount-1])), newSource]
+    [(1, 1), GetEndPosition source, newSource]

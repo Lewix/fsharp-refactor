@@ -326,3 +326,8 @@ module RangeAnalysis =
         
     let RangeToTuple (range : range) =
         (range.StartLine, range.StartColumn+1), (range.EndLine, range.EndColumn+1)
+        
+    let GetEndPosition (source : string) =
+        let lines = source.Split([|'\n'|])
+        let lineCount = Array.length lines
+        lineCount, String.length (lines.[lineCount-1])

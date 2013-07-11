@@ -155,9 +155,7 @@ let IsValid (position:(int*int) option, argumentName:string option, defaultValue
 let GetChanges ((line, col):int*int, argumentName:string, defaultValue:string) (source:string) (filename:string) =
     let pos = mkPos line (col-1)
     let tree = (Ast.Parse source).Value
-    let bindingRange = 
+    let bindingRange =
         (Ast.GetRange (Ast.Binding (FindBindingAroundPos pos tree))).Value
     let newSource = DoAddArgument source tree bindingRange argumentName defaultValue
-    let lines = source.Split([|'\n'|])
-    let lineCount = Array.length lines
-    [(1, 1), (lineCount, String.length (lines.[lineCount-1])), newSource]
+    [(1, 1), GetEndPosition source, newSource]
