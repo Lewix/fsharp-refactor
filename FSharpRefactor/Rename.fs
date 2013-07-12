@@ -60,7 +60,8 @@ let CanRename (tree : Ast.AstNode) (name : string, declarationRange : range) (ne
     if Option.isSome declarationScope then
         let isNameBoundTwice =
             match declarationScope.Value with
-                | Declaration(is,ts) -> IsDeclared newName is
+                | Declaration(is,ts) -> 
+                    name <> newName && IsDeclared newName is
                 | _ -> false
         if isNameBoundTwice then Invalid(sprintf "%s is already declared in that pattern" newName)
         else
