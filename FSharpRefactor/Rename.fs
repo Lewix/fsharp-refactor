@@ -126,14 +126,15 @@ let GetErrorMessage (position:(int*int) option, newName:string option) (source:s
         None
 
     let checkPositionAndName (position, newName) =
+        let oldName, _ = identifierDeclaration.Force().Value
         let newNameIsNotBound =
             match declarationScope.Force().Value with
-                | Declaration(is,ts) -> not (IsDeclared newName is)
+                | Declaration(is,ts) ->
+                    newName = oldName || not (IsDeclared newName is)
                 | _ -> true
         let newNameIsNotFree =
             not (isFree newName (declarationScope.Value.Value))
 
-        let oldName, _ = identifierDeclaration.Force().Value
         let oldNameIsNotFree =
             getTopLevelDeclarations newName (declarationScope.Value.Value)
             |> List.map (isFree oldName)
