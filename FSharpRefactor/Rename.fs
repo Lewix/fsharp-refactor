@@ -140,7 +140,7 @@ let GetErrorMessage (position:(int*int) option, newName:string option) (source:s
             |> List.fold (||) false
             |> not
 
-        match newNameIsNotBound, newNameIsNotBound, oldNameIsNotFree with
+        match newNameIsNotBound, newNameIsNotFree, oldNameIsNotFree with
             | false,_,_ -> Some(sprintf "%s is already declared in that pattern" newName)
             | _,false,_ -> Some(sprintf "%s is free in the scope of %s" newName oldName)
             | _,_,false -> Some(sprintf "%s is free in the scope of a %s defined in its scope" oldName newName)
