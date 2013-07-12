@@ -323,6 +323,9 @@ module RangeAnalysis =
     let FindIdentifier source (position : pos) =
         TryFindIdentifier source position
         |> Option.get
+
+    let FindIdentifierFromTuple source (line, col) =
+        FindIdentifier source (mkPos line col)
         
     let RangeToTuple (range : range) =
         (range.StartLine, range.StartColumn+1), (range.EndLine, range.EndColumn+1)
