@@ -327,7 +327,7 @@ module RangeAnalysis =
         |> Option.get
 
     let FindIdentifierName source (line, col) =
-        let name, _ = FindIdentifier source (mkPos line col)
+        let name, _ = FindIdentifier source (mkPos line (col-1))
         name
         
     let RangeToTuple (range : range) =
