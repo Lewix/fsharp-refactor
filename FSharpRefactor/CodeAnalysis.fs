@@ -200,6 +200,8 @@ module ScopeAnalysis =
                 let scopeTreesFromBindings =
                     List.map makeScopeTrees (List.map Ast.AstNode.Binding bs)
                 [mergeBindings scopeTreesFromBindings]
+            | Ast.AstNode.ModuleDeclaration(SynModuleDecl.NestedModule(_,ds,_,_)) ->
+                makeNestedScopeTrees (List.map Ast.AstNode.ModuleDeclaration ds)
             | Ast.AstNode.Expression(SynExpr.LetOrUse(false,_,bs,e,_)) ->
                 let bindingScopeTrees = makeNestedScopeTrees (List.map Ast.AstNode.Binding bs)
                 let expressionScopeTrees = makeScopeTrees (Ast.AstNode.Expression e)

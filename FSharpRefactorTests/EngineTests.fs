@@ -152,6 +152,15 @@ type ScopeAnalysisModule() =
 type ScopeTreeModule() =
     static member getScopeTrees source =
         ScopeAnalysis.makeScopeTrees (Ast.Parse source).Value
+        
+    [<Test>]
+    member this.``Can create a scope tree for a nested module``() =
+        let scopeTrees = ScopeTreeModule.getScopeTrees "module nestedModule =\n  let x = 1\n  let y = x"
+        match scopeTrees with
+            | [ScopeAnalysis.Declaration(["x",_],[ScopeAnalysis.Declaration(["y",_],[]);ScopeAnalysis.Usage("x",_)])]
+                -> ()
+            | _ -> Assert.Fail("The scope tree for 'module nestedModule =\n  let x = 1\n let y = x' was incorrect:\n" +
+                               (sprintf "%A" scopeTrees))
 
     [<Test>]
     member this.``Can create a scope tree for a class with an implicit inherit``() =
