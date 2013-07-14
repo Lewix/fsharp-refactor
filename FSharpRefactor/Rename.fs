@@ -85,20 +85,6 @@ let RenameTransform newName (source, declarationIdentifier) =
         |> List.map (fun r -> (r,newName))
     source, changes, ()
 
-
-let Rename doCheck newName : Refactoring<Identifier,unit> =
-    let analysis (source, declarationIdentifier) =
-        if doCheck then
-            CanRename (Ast.Parse source).Value declarationIdentifier newName
-        else
-            Valid
-    { analysis = analysis; transform = RenameTransform newName }
-
-let DoRename source (tree: Ast.AstNode) (declarationIdentifier : Identifier) (newName : string) =
-    RunRefactoring (Rename true newName) declarationIdentifier source
-
-
-
 //TODO: these probably need to be put in an .fsi file
 let GetErrorMessage (position:(int*int) option, newName:string option) (source:string) (filename:string) =
     let pos = PosFromPositionOption position
@@ -156,6 +142,21 @@ let GetErrorMessage (position:(int*int) option, newName:string option) (source:s
 let IsValid (position:(int*int) option, newName:string option) (source:string) (filename:string) =
     GetErrorMessage (position, newName) source filename
     |> Option.isNone
+
+let Rename doCheck newName : Refactoring<Identifier,unit> =
+    let analysis (source, (_, identifierRange) : Identifier) =
+        if doCheck then
+            IsValid (Some (identifierRange.Start.Line, identifierRange.Start.Column+1), Some newName) source "test.fs"
+        else
+            true
+    let getErrorMessage (source, (_, range : range)) =
+        let pos = range.Start
+        GetErrorMessage (Some (pos.Line, pos.Column+1), Some newName) source "test.fs"
+    { analysis = analysis; transform = RenameTransform newName; getErrorMessage = getErrorMessage }
+
+let DoRename source (tree: Ast.AstNode) (declarationIdentifier : Identifier) (newName : string) =
+    RunRefactoring (Rename true newName) declarationIdentifier source
+
 
 let Transform ((line:int, col:int), newName:string) (source:string) (filename:string) =
     let position = mkPos line (col-1)

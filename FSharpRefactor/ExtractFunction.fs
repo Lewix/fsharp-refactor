@@ -52,7 +52,7 @@ let CreateFunction functionName arguments body isMultiLine indentString (declara
         let identifierRange =
             mkRange declarationRange.FileName (mkPos startColumn startLine) (mkPos startColumn endLine)
         source, [declarationRange, Indent declarationSource indentString], (functionName, identifierRange)
-    { analysis = (fun (_,_) -> Valid); transform = transform }
+    { analysis = (fun (_,_) -> true); transform = transform; getErrorMessage = fun (s,()) -> None }
  
 let CallFunction functionName arguments callRange : Refactoring<unit,unit> =
     //TODO: don't always put brackets around function body
@@ -64,7 +64,7 @@ let CallFunction functionName arguments callRange : Refactoring<unit,unit> =
         else
             source, [callRange, sprintf "(%s)" functionCall], ()
             
-    { analysis = (fun (_,_) -> Valid); transform = transform }
+    { analysis = (fun (_,_) -> true); transform = transform; getErrorMessage = fun (s,()) -> None }
 
 let CanExtractFunction (tree : Ast.AstNode) (inScopeTree : Ast.AstNode) (expressionRange : range) =
     let expressionRangeIsInInScopeTree =
@@ -80,13 +80,26 @@ let CanExtractFunction (tree : Ast.AstNode) (inScopeTree : Ast.AstNode) (express
     List.reduce CombineValidity
                 [expressionRangeIsValid; expressionRangeIsInInScopeTree; expressionIsInfix]
 
+let GetErrorMessage (range:((int*int)*(int*int)) option, functionName:string option) (source:string) (filename:string) =
+    let checkRange ((startLine, startCol), (endLine, endCol)) =
+        let tree = (Ast.Parse source).Value
+        let range = mkRange "test.fs" (mkPos startLine (startCol-1)) (mkPos endLine (endCol-1))
+        if Option.isSome (TryFindExpressionAtRange range tree)
+        then None else Some "No expression found at the given range"
+
+    IsSuccessful checkRange range
+    |> fun (l:Lazy<_>) -> l.Force()
+
+let IsValid (range:((int*int)*(int*int)) option, functionName:string option) (source:string) (filename:string) =
+    Option.isNone (GetErrorMessage (range, functionName) source filename)
+        
 let ExtractTempFunction doCheck inScopeTree (expressionRange : range) : Refactoring<unit,Identifier> =
+    let range = (expressionRange.StartLine, expressionRange.StartColumn+1), (expressionRange.EndLine, expressionRange.EndColumn+1)
     let analysis (source,()) =
         if doCheck then
-            let tree = (Ast.Parse source).Value
-            CanExtractFunction tree inScopeTree expressionRange
+            IsValid (Some range, None) source "test.fs"
         else
-            Valid
+            true
     let transform (source,()) =
         let tree = (Ast.Parse source).Value
         let functionName = FindUnusedName tree
@@ -122,8 +135,10 @@ let ExtractTempFunction doCheck inScopeTree (expressionRange : range) : Refactor
             CallFunction functionName arguments expressionRange
 
         (interleave definitionRefactoring callRefactoring).transform (source, ())
+    let getErrorMessage (source,()) =
+        GetErrorMessage (Some range, None) source "test.fs"
 
-    { analysis = analysis; transform = transform }
+    { analysis = analysis; transform = transform; getErrorMessage = getErrorMessage }
 
 let ExtractFunction doCheck inScopeTree expressionRange functionName : Refactoring<unit,unit> =
     let extractTempRefactoring = ExtractTempFunction doCheck inScopeTree expressionRange
@@ -132,19 +147,7 @@ let ExtractFunction doCheck inScopeTree expressionRange functionName : Refactori
 let DoExtractFunction source (tree : Ast.AstNode) (inScopeTree : Ast.AstNode) (expressionRange : range) (functionName : string) =
     RunRefactoring (ExtractFunction true inScopeTree expressionRange functionName) () source
 
-let GetErrorMessage (range:((int*int)*(int*int)) option, functionName:string option) (source:string) (filename:string) =
-    let checkRange ((startLine, startCol), (endLine, endCol)) =
-        let tree = (Ast.Parse source).Value
-        let range = mkRange "test.fs" (mkPos startLine (startCol-1)) (mkPos endLine (endCol-1))
-        if Option.isSome (TryFindExpressionAtRange range tree)
-        then None else Some "No expression found at the given range"
 
-    IsSuccessful checkRange range
-    |> fun (l:Lazy<_>) -> l.Force()
-        
-
-let IsValid (range:((int*int)*(int*int)) option, functionName:string option) (source:string) (filename:string) =
-    Option.isNone (GetErrorMessage (range, functionName) source filename)
 
 let Transform (((startLine, startColumn), (endLine, endColumn)), functionName) source filename =
     let tree = (Ast.Parse source).Value

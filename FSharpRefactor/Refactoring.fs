@@ -25,24 +25,23 @@ let CombineValidity validity1 validity2 =
 exception RefactoringFailure of ErrorMessage
 
 type Refactoring<'T,'U> = {
-    analysis : Source * 'T -> RefactoringValidity;
-    transform : Source * 'T -> Source * Change list * 'U
+    analysis : Source * 'T -> bool;
+    transform : Source * 'T -> Source * Change list * 'U;
+    getErrorMessage : Source * 'T -> ErrorMessage option
     }
 
 let refactor (refactoring : Refactoring<_,_>) args source =
-    let validity = refactoring.analysis (source, args)
-    match validity with
-        | Invalid(message) -> Failure(message)
-        | Valid ->
-            let source, changes, output = refactoring.transform (source, args)
-            let resultingSource = CodeTransforms.ChangeTextOf source changes
-            Success(resultingSource, output)
+    let isValid = refactoring.analysis (source, args)
+    if isValid then
+        let source, changes, output = refactoring.transform (source, args)
+        CodeTransforms.ChangeTextOf source changes, output
+    else
+        let errorMessage = (refactoring.getErrorMessage (source, args)).Value
+        raise (RefactoringFailure errorMessage)
 
 let RunRefactoring refactoring args source =
-    let refactoringResult = refactor refactoring args source
-    match refactoringResult with
-        | Success(source, _) -> source
-        | Failure(message) -> raise (RefactoringFailure message)
+    let source, _ = refactor refactoring args source
+    source
 
 let interleave (r1 : Refactoring<unit,_>) (r2 : Refactoring<unit,_>) =
     let interleavedTransform (source, ()) =
@@ -54,25 +53,21 @@ let interleave (r1 : Refactoring<unit,_>) (r2 : Refactoring<unit,_>) =
     let interleavedAnalysis (source, ()) =
         let validity1 = r1.analysis (source, ())
         let validity2 = r2.analysis (source, ())
-        CombineValidity validity1 validity2
+        validity1 && validity2
 
-    { analysis = interleavedAnalysis; transform = interleavedTransform }
+    { analysis = interleavedAnalysis; transform = interleavedTransform; getErrorMessage = r1.getErrorMessage }
 
 //TODO: exception handling? Error handling in general
 let sequence (r1 : Refactoring<unit,'T>) (r2 : Refactoring<'T,_>) =
     let analysis (source, args) =
         let r1Analysis = r1.analysis (source, args)
-        if r1Analysis = Valid then
-            let r1Result = refactor r1 () source
-            match r1Result with
-                | Success(r1Source, r2Args) -> r2.analysis (r1Source, r2Args)
-                | Failure(message) -> Invalid(message)
+        if r1Analysis then
+            let r1Source, r2Args = refactor r1 () source
+            r2.analysis (r1Source, r2Args)
         else r1Analysis
+        
     let transform (source, args) =
-        let r1Result = refactor r1 () source
-        match r1Result with
-            | Success(r1Source, r2Args) ->
-                r2.transform (r1Source, r2Args)
-            | Failure(message) -> raise (RefactoringFailure message)
+        let r1Source, r2Args = refactor r1 () source
+        r2.transform (r1Source, r2Args)
 
-    { analysis = analysis; transform = transform }
+    { analysis = analysis; transform = transform; getErrorMessage = r1.getErrorMessage }
