@@ -17,6 +17,7 @@ type RenameAnalysisModule() =
         Assert.IsFalse(IsValid (Some(1,1), None) "let f a = 1" "test.fs", "Invalid position")
         Assert.IsTrue(IsValid (Some(1,7), Some "c") "let f a b = 1" "test.fs", "Valid position and name")
         Assert.IsFalse(IsValid (Some(1,7), Some "b") "let f a b = 1" "test.fs", "Invalid position and name")
+        Assert.IsFalse(IsValid (Some(1,1), Some "a") "let f a b = 1" "test.fs", "Invalid position and name")
         Assert.IsTrue(IsValid (Some(1,7), Some "a") "let f a b = 1" "test.fs", "Pointless rename")
         Assert.IsTrue(IsValid (None, Some "b") "let f a b = 1" "test.fs", "Valid name")
 
@@ -26,35 +27,35 @@ type RenameAnalysisModule() =
     member this.``Simple renaming analysis is correct``() =
         let goodSource = "let a = 1 in a"
         let badSource = "let a = 1 in b"
-        let declarationRange = mkRange "test.fs" (mkPos 1 4) (mkPos 1 5)
 
-        Assert.AreEqual(Valid,CanRename (Ast.Parse goodSource).Value ("a", declarationRange) "b",
+        Assert.AreEqual(true,IsValid (Some (1,5), Some "b") goodSource "test.fs",
                         "Should be able to rename a to b")
-        Assert.AreEqual(Invalid("b is free in the scope of a"),CanRename (Ast.Parse badSource).Value ("a", declarationRange) "b",
+        Assert.AreEqual(Some("b is free in the scope of a"),GetErrorMessage (Some (1,5), Some "b") badSource "test.fs",
                         "Shouldn't be able to rename a to b")
 
     [<Test>]
     member this.``Renaming analysis with nested declaration is correct``() =
         let goodSource = "let a = 1 in let b = 2 in b"
         let badSource = "let a = 1 in let b = 2 in a"
-        let declarationRange = mkRange "test.fs" (mkPos 1 4) (mkPos 1 5)
  
-        Assert.AreEqual(Valid,CanRename (Ast.Parse goodSource).Value ("a", declarationRange) "b",
+        Assert.AreEqual(true,IsValid (Some (1,5), Some "b") goodSource "test.fs",
                         "Should be able to rename a to b")
-        Assert.AreEqual(Invalid("a is free in the scope of a b defined in its scope"),
-                        CanRename (Ast.Parse badSource).Value ("a", declarationRange) "b",
+        Assert.AreEqual(Some("a is free in the scope of a b defined in its scope"),
+                        GetErrorMessage (Some (1,5), Some "b") badSource "test.fs",
                         "Shouldn't be able to rename a to b")
 
     [<Test>]
     member this.``Cannot rename to a name already bound in the same pattern``() =
         let source = "let f a b c = 1"
-        let declarationRange = mkRange "test.fs" (mkPos 1 6) (mkPos 1 7)
 
-        Assert.AreEqual(Invalid("b is already declared in that pattern"),
-                        CanRename (Ast.Parse source).Value ("a", declarationRange) "b")
+        Assert.AreEqual(Some("b is already declared in that pattern"),
+                        GetErrorMessage (Some (1,7), Some "b") source "test.fs")
 
 [<TestFixture>]
 type RenameTransformModule() =
+    let DoRename source (tree: Ast.AstNode) declarationIdentifier (newName : string) =
+        RunRefactoring (Rename true newName) declarationIdentifier source
+
     [<Test>]
     member this.``Can get changes``() =
         let source = "let f x = x+x"

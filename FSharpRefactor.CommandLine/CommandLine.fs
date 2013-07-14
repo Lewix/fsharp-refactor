@@ -9,7 +9,7 @@ open FSharpRefactor.Engine.Ast
 open FSharpRefactor.Engine.CodeAnalysis.RangeAnalysis
 open FSharpRefactor.Engine.CodeAnalysis.ScopeAnalysis
 open FSharpRefactor.Engine.Refactoring
-open FSharpRefactor.Refactorings.Rename
+open FSharpRefactor.Refactorings
 open FSharpRefactor.Refactorings.ExtractFunction
 open FSharpRefactor.Refactorings.AddArgument
 
@@ -35,17 +35,12 @@ let getSource filename =
 
 let Rename filename position newName =
     let source = getSource filename
-    let tree = (Ast.Parse source).Value
-    let identifier = TryFindIdentifier source position
-    if Option.isSome identifier then
-        let declarationIdentifier =
-            TryFindIdentifierDeclaration (makeScopeTrees tree) identifier.Value
-        if Option.isSome declarationIdentifier then
-            DoRename source tree declarationIdentifier.Value newName
-        else
-            raise (ArgumentException "The specified identifier was not declared in the given source")
+    if Rename.IsValid (Some position, Some newName) source "test.fs" then
+        Rename.Transform (position, newName) source "test.fs"
     else
-        raise (ArgumentException "No identifier found at the given range")
+        let errorMessage =
+            (Rename.GetErrorMessage (Some position, Some newName) source "test.fs").Value
+        raise (RefactoringFailure errorMessage)
 
 let ExtractFunction filename (startPosition,endPosition) functionName =
     let source = getSource filename
@@ -89,11 +84,20 @@ let parsePos (positionString : string) =
         mkPos line (column-1)
     else raise (ArgumentException (sprintf "%s is not a valid position" positionString))
 
+let parsePosition (positionString : string) =
+    let m = Regex.Match(positionString, "([0-9]+):([0-9]+)")
+    if m.Success then
+        let line = Int32.Parse m.Groups.[1].Value
+        let column = Int32.Parse m.Groups.[2].Value
+        line, column
+    else raise (ArgumentException (sprintf "%s is not a valid position" positionString))
+
+
 let parseRenameArguments (args : string list) =
     match List.length args with
         | 0 | 1 -> raise (ArgumentException "Too few arguments")
-        | 2 -> (parsePos args.[0], args.[1], None)
-        | 3 -> (parsePos args.[0], args.[1], Some args.[2])
+        | 2 -> (parsePosition args.[0], args.[1], None)
+        | 3 -> (parsePosition args.[0], args.[1], Some args.[2])
         | _ -> raise (ArgumentException "Too many arguments")
 
 let parseExtractFunctionArguments (args : string list) =

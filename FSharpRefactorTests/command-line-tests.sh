@@ -40,7 +40,7 @@ testRename()
 
     result=$(mono bin/FSharpRefactor.CommandLine.exe rename 1:14 c testfiles/functioncode.fs 2>&1 | head -n 1)
     assertEquals "Can report an error when the specified identifier is not declared in the source"\
-        "The specified identifier was not declared in the given source" "$result"
+        "The identifier \"op_Addition\" was not declared in the given source" "$result"
 }
 
 testExtractFunction()

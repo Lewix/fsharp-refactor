@@ -9,9 +9,9 @@ let PairOptions (x, y) =
     match x, y with
         | Some a, Some b -> Some(a,b)
         | _ -> None
-let Andalso (message1:Lazy<string option>) message2 =
-    if Option.isSome (message1.Force()) then message1
-    else message2
+let Andalso message1 (message2:Lazy<string option>) =
+    if Option.isSome (message2.Force()) then message2
+    else message1
 
 let PosFromPositionOption position =
     match position with

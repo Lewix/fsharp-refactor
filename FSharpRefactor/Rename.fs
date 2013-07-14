@@ -6,12 +6,7 @@ open FSharpRefactor.Engine.CodeAnalysis.ScopeAnalysis
 open FSharpRefactor.Engine.CodeAnalysis.RangeAnalysis
 open FSharpRefactor.Engine.Refactoring
 open FSharpRefactor.Engine.ValidityChecking
-
-
-let rangeOfIdent (name : string) (identifiers : Identifier list) =
-    let identifier = List.tryFind (fun (n,_) -> n = name) identifiers
-    if Option.isNone identifier then None else Some(snd identifier.Value)
-    
+ 
 let rec findDeclarationInScopeTrees trees (name, declarationRange) =
     match trees with
         | [] -> None
@@ -22,8 +17,12 @@ let rec findDeclarationInScopeTrees trees (name, declarationRange) =
             else findDeclarationInScopeTrees (List.append ts ds) (name, declarationRange)
 
 let rec rangesToReplace (name, declarationRange) tree =
+    let rangeOfIdent (name : string) (identifiers : Identifier list) =
+        let identifier = List.tryFind (fun (n,_) -> n = name) identifiers
+        if Option.isNone identifier then None else Some(snd identifier.Value)
     let isNestedDeclaration idents =
         List.exists (fun (n,r) -> n = name && not (rangeContainsRange r declarationRange)) idents
+        
     match tree with
         | Usage(n, r) -> if n = name then [r] else []
         | Declaration(is, ts) ->
@@ -34,59 +33,23 @@ let rec rangesToReplace (name, declarationRange) tree =
                 if Option.isSome declarationRange then declarationRange.Value::remainingRanges
                 else remainingRanges
 
-let rec isFree targetName tree =
-    match tree with
-        | Usage(n,_) -> n = targetName
-        | Declaration(is, ts) ->
-            if IsDeclared targetName is then false
-            else List.fold (||) false (List.map (isFree targetName) ts)
-
-let rec getTopLevelDeclarations targetName tree =
-    match tree with
-        | Declaration(is, ts) as declaration->
-            if IsDeclared targetName is
-            then [declaration]
-            else List.collect (getTopLevelDeclarations targetName) ts
-        | _ -> []
-
-let CanRename (tree : Ast.AstNode) (name : string, declarationRange : range) (newName : string) =
-    // Check if targetName is free in tree
-    let newNameIsFree = sprintf "%s is free in the scope of %s" newName name
-    let oldNameIsFree = sprintf "%s is free in the scope of a %s defined in its scope" name newName
-
-    let declarationScope =
-        findDeclarationInScopeTrees (makeScopeTrees tree) (name, declarationRange)
-        
-    if Option.isSome declarationScope then
-        let isNameBoundTwice =
-            match declarationScope.Value with
-                | Declaration(is,ts) -> 
-                    name <> newName && IsDeclared newName is
-                | _ -> false
-        if isNameBoundTwice then Invalid(sprintf "%s is already declared in that pattern" newName)
-        else
-            if isFree newName declarationScope.Value then Invalid(newNameIsFree)
-            else
-                let isOldNameFree =
-                    getTopLevelDeclarations newName declarationScope.Value
-                    |> List.map (isFree name)
-                    |> List.fold (||) false
-                if isOldNameFree then Invalid(oldNameIsFree)
-                else Valid
-    else Invalid("Could not find a declaration at the given range")
-
-let RenameTransform newName (source, declarationIdentifier) =
-    let tree = (Ast.Parse source).Value
-    let declarationScope =
-        findDeclarationInScopeTrees (makeScopeTrees tree) declarationIdentifier
-        |> Option.get
-    let changes =
-        rangesToReplace declarationIdentifier declarationScope
-        |> List.map (fun r -> (r,newName))
-    source, changes, ()
-
 //TODO: these probably need to be put in an .fsi file
 let GetErrorMessage (position:(int*int) option, newName:string option) (source:string) (filename:string) =
+    let rec isFree targetName tree =
+        match tree with
+            | Usage(n,_) -> n = targetName
+            | Declaration(is, ts) ->
+                if IsDeclared targetName is then false
+                else List.fold (||) false (List.map (isFree targetName) ts)
+
+    let rec getTopLevelDeclarations targetName tree =
+        match tree with
+            | Declaration(is, ts) as declaration->
+                if IsDeclared targetName is
+                then [declaration]
+                else List.collect (getTopLevelDeclarations targetName) ts
+            | _ -> []
+
     let pos = PosFromPositionOption position
     let scopeTrees =
         lazy (makeScopeTrees (Ast.Parse source).Value)
@@ -103,10 +66,13 @@ let GetErrorMessage (position:(int*int) option, newName:string option) (source:s
                 findDeclarationInScopeTrees (scopeTrees.Force())
             Option.bind tryFindDeclarationScope (identifierDeclaration.Force())
 
-    //TODO: rename FindIdentifier -> TryFindIdentifier
     let checkPosition (line, col) =
-        if Option.isSome (identifier.Force()) && Option.isSome (identifierDeclaration.Force())
-        then None else Some "Could not find a declaration at the given range"
+        match Option.isSome (identifier.Force()), Option.isSome (identifierDeclaration.Force()) with
+            | false,_ -> Some("No identifier found at the given range")
+            | _,false ->
+                let identifierName, _ = identifier.Value.Value
+                Some(sprintf "The identifier %A was not declared in the given source" identifierName)
+            | _ -> None
 
     let checkName newName =
         //TODO: check newName is a valid name
@@ -149,18 +115,25 @@ let Rename doCheck newName : Refactoring<Identifier,unit> =
             IsValid (Some (identifierRange.Start.Line, identifierRange.Start.Column+1), Some newName) source "test.fs"
         else
             true
+
+    let transform (source, identifier) =
+        let tree = (Ast.Parse source).Value
+        let declarationScope =
+            findDeclarationInScopeTrees (makeScopeTrees tree) identifier
+            |> Option.get
+        let changes =
+            rangesToReplace identifier declarationScope
+            |> List.map (fun r -> (r,newName))
+        source, changes, ()
+
     let getErrorMessage (source, (_, range : range)) =
         let pos = range.Start
         GetErrorMessage (Some (pos.Line, pos.Column+1), Some newName) source "test.fs"
-    { analysis = analysis; transform = RenameTransform newName; getErrorMessage = getErrorMessage }
-
-let DoRename source (tree: Ast.AstNode) (declarationIdentifier : Identifier) (newName : string) =
-    RunRefactoring (Rename true newName) declarationIdentifier source
-
+    { analysis = analysis; transform = transform; getErrorMessage = getErrorMessage }
 
 let Transform ((line:int, col:int), newName:string) (source:string) (filename:string) =
     let position = mkPos line (col-1)
     let tree = (Ast.Parse source).Value
-    let identifierDeclaration =
+    let declarationIdentifier =
         FindIdentifierDeclaration (makeScopeTrees (Ast.Parse source).Value) (FindIdentifier source position)
-    DoRename source tree identifierDeclaration newName
+    RunRefactoring (Rename true newName) declarationIdentifier source
