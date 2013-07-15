@@ -9,6 +9,10 @@ let PairOptions (x, y) =
     match x, y with
         | Some a, Some b -> Some(a,b)
         | _ -> None
+let TripleOptions (x, y, z) =
+    match x, y, z with
+        | Some a, Some b, Some c -> Some(a, b, c)
+        | _ -> None
 let Andalso message1 (message2:Lazy<string option>) =
     if Option.isSome (message2.Force()) then message2
     else message1

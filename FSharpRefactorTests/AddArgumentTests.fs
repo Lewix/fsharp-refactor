@@ -33,7 +33,7 @@ type AddArgumentModule() =
         let bindingRange = mkRange "test.fs" (mkPos 1 4) (mkPos 1 15)
         let expected = "let f c a b = a+b"
 
-        Assert.AreEqual(expected, RunRefactoring (AddArgumentToBinding bindingRange "c") () source)
+        Assert.AreEqual(expected, RunRefactoring (addArgumentToBinding bindingRange "c") () source)
 
     [<Test>]
     member this.``Can add an argument to a value binding``() =
@@ -42,7 +42,7 @@ type AddArgumentModule() =
         let bindingRange = mkRange "test.fs" (mkPos 1 4) (mkPos 1 11)
         let expected = "let x arg = 1+2"
 
-        Assert.AreEqual(expected, RunRefactoring (AddArgumentToBinding bindingRange "arg") () source)
+        Assert.AreEqual(expected, RunRefactoring (addArgumentToBinding bindingRange "arg") () source)
 
     [<Test>]
     member this.``Can add an argument to a function call``() =
@@ -51,7 +51,7 @@ type AddArgumentModule() =
         let usageRange = mkRange "test.fs" (mkPos 1 0) (mkPos 1 1)
         let expected ="(f \"arg\") a \"b\" 3"
 
-        Assert.AreEqual(expected, RunRefactoring (AddArgumentToFunctionUsage source "\"arg\"" usageRange) () source)
+        Assert.AreEqual(expected, RunRefactoring (addArgumentToFunctionUsage source "\"arg\"" usageRange) () source)
 
     [<Test>]
     member this.``Can find all the App nodes calling a certain function``() =
@@ -123,11 +123,9 @@ type AddArgumentModule() =
         let source = "let f a b = a+b"
         let tree = (Ast.Parse source).Value
         let range = mkRange "test.fs" (mkPos 1 3) (mkPos 1 5)
-        let valid = CanAddArgument source tree range "0"
+        let valid = IsValid (Some (1,3), None, Some "0") source "test.fs"
 
-        Assert.AreEqual(Invalid("No binding found at the given range"),
-                        valid,
-                        sprintf "Extract function validity was incorrect: %A" valid)                       
+        Assert.IsFalse(valid, sprintf "Extract function validity was incorrect: %A" valid)                       
 
     [<Test>]
     member this.``Cannot add an argument if there is already on with the same name``() =
@@ -140,8 +138,8 @@ type AddArgumentModule() =
         let range2 = mkRange "test.fs" (mkPos 1 8) (mkPos 1 22)
 
         Assert.AreEqual("let f f a b = a+b", DoAddArgument source1 tree1 range1 "f" "0")
-        Assert.Throws<RefactoringFailure>(fun () -> ignore (DoAddArgument source1 tree1 range1 "a" "0")) |> ignore
-        Assert.Throws<RefactoringFailure>(fun () -> ignore (DoAddArgument source2 tree2 range2 "f" "0")) |> ignore
+        Assert.IsFalse(IsValid (Some (1,5), Some "a", Some "0") source1 "test.fs")
+        Assert.IsFalse(IsValid (Some (1,9), Some "f", Some "0") source2 "test.fs")
 
     [<Test>]
     member this.``Can turn off add argument checks``() =

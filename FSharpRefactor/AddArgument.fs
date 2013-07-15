@@ -10,7 +10,7 @@ open FSharpRefactor.Engine.CodeAnalysis.ScopeAnalysis
 open FSharpRefactor.Engine.CodeTransforms.CodeTransforms
 open FSharpRefactor.Engine.Refactoring
 open FSharpRefactor.Engine.ValidityChecking
-open FSharpRefactor.Refactorings.Rename
+open FSharpRefactor.Refactorings
 
 let DefaultBindingRange source (tree : Ast.AstNode) (position : pos) =
     let range = mkRange "test.fs" position position
@@ -35,35 +35,8 @@ let tryFindFunctionName (binding:SynBinding) =
             match Ast.AstNode.Pattern p with
                 | DeclaredIdent(name,range) -> Some name
                 | _ -> None
-
-let GetErrorMessage (position:(int*int) option, argumentName:string option, defaultValue:string option) (source:string) (filename:string) =
-    let pos = PosFromPositionOption position
-    let binding =
-        lazy
-            let tree = (Ast.Parse source).Value
-            TryFindBindingAroundPos pos.Value tree
-
-    let checkPosition (line, col) =
-        let bindingAtRange =
-            Option.isSome (binding.Force())
-        let bindingIsFunction =
-            bindingAtRange && (Option.isSome (tryFindFunctionName (binding.Value.Value)))
-        //TODO: disallow mutable bindings
-
-        match bindingAtRange, bindingIsFunction with
-            | false,_ ->
-                Some "No binding found around the given position"
-            | _,false -> Some "Binding was not a function"
-            | _,_ -> None
-
-    IsSuccessful checkPosition position
-    |> fun (l:Lazy<_>) -> l.Force()
-
-let IsValid (position:(int*int) option, argumentName:string option, defaultValue:string option) (source:string) (filename:string) =
-    GetErrorMessage (position, argumentName, defaultValue) source filename
-    |> Option.isNone
     
-let AddArgumentToBinding (bindingRange : range) argumentName : Refactoring<unit,Identifier> =
+let addArgumentToBinding (bindingRange : range) argumentName : Refactoring<unit,Identifier> =
     let transform (source, ()) =
         let tree = (Ast.Parse source).Value
         let identEndRange =
@@ -77,19 +50,16 @@ let AddArgumentToBinding (bindingRange : range) argumentName : Refactoring<unit,
             createIdentifier (identEndRange.End.Line, (identEndRange.End.Column+1)) argumentName bindingRange.FileName
         source, [identEndRange, " " + argumentName], argumentIdentifier
     
-    let getErrorMessage (source,()) =
-        GetErrorMessage (Some (bindingRange.Start.Line, bindingRange.Start.Column+1), Some argumentName, None) source "test.fs"
-
     { analysis = (fun (_,_) -> true);
       transform = transform;
-      getErrorMessage = getErrorMessage }
+      getErrorMessage = fun _ -> None }
 
 //TODO: Only add brackets around usage if needed
-let AddArgumentToFunctionUsage source (argument : string) (identRange : range) =
+let addArgumentToFunctionUsage source (argument : string) (identRange : range) =
     let ident = TextOfRange source identRange
     { analysis = (fun (_,_) -> true);
       transform = fun (s,_) -> (s,[identRange, sprintf "(%s %s)" ident argument],());
-      getErrorMessage = fun (s,_) -> None }
+      getErrorMessage = fun _ -> None }
 
 let FindFunctionUsageRanges source (tree : Ast.AstNode) (bindingRange : range) (functionName : string) =
     let bindingContainsNode scopeTree =
@@ -136,30 +106,69 @@ let CanAddArgument source (tree : Ast.AstNode) (bindingRange : range) (defaultVa
 
 //TODO: Check arguments such as argumentName or defaultValue have a valid form
 let AddTempArgument doCheck (bindingRange : range) defaultValue : Refactoring<unit,Identifier> =
-    let analysis (source, ()) =
-        if doCheck then
-            IsValid (Some (bindingRange.Start.Line, bindingRange.Start.Column+1), None, Some defaultValue) source "test.fs"
-        else
-            true
     let transform (source, ()) =
         let tree = (Ast.Parse source).Value
         let argumentName = FindUnusedName tree
         let usageRefactorings =
             findFunctionName source tree bindingRange
             |> FindFunctionUsageRanges source tree bindingRange
-            |> List.map (AddArgumentToFunctionUsage source defaultValue)
-        let bindingRefactoring = AddArgumentToBinding bindingRange argumentName
+            |> List.map (addArgumentToFunctionUsage source defaultValue)
+        let bindingRefactoring = addArgumentToBinding bindingRange argumentName
         (List.fold interleave bindingRefactoring usageRefactorings).transform (source, ())
-        
-    let getErrorMessage (source, ()) =
-        GetErrorMessage (Some (bindingRange.Start.Line, bindingRange.Start.Column+1), None, Some defaultValue) source "test.fs"
-    { analysis = analysis;
+
+    { analysis = fun _ -> true;
       transform = transform;
-      getErrorMessage = getErrorMessage }
+      getErrorMessage = fun _ -> None }
+
+let GetErrorMessage (position:(int*int) option, argumentName:string option, defaultValue:string option) (source:string) (filename:string) =
+    let pos = PosFromPositionOption position
+    let binding =
+        lazy
+            let tree = (Ast.Parse source).Value
+            TryFindBindingAroundPos pos.Value tree
+
+    let checkPosition (line, col) =
+        let bindingAtRange =
+            Option.isSome (binding.Force())
+        let bindingIsFunction =
+            bindingAtRange && (Option.isSome (tryFindFunctionName (binding.Value.Value)))
+        //TODO: disallow mutable bindings
+
+        match bindingAtRange, bindingIsFunction with
+            | false,_ ->
+                Some "No binding found around the given position"
+            | _,false -> Some "Binding was not a function"
+            | _,_ -> None
+
+    let checkPositionNameAndValue (position, name, defaultValue) =
+        let bindingRange =
+            (Ast.GetRange (Ast.AstNode.Binding (binding.Value.Value))).Value
+        let oldSource, changes, (_, identifierRange) =
+            (AddTempArgument true bindingRange defaultValue).transform (source,())
+        let sourceWithIdentifier = ChangeTextOf oldSource changes
+        Rename.GetErrorMessage (Some (identifierRange.Start.Line, identifierRange.Start.Column+1), Some name) sourceWithIdentifier filename
+            
+    IsSuccessful checkPosition position
+    |> Andalso (IsSuccessful checkPositionNameAndValue (TripleOptions (position, argumentName, defaultValue)))
+    |> fun (l:Lazy<_>) -> l.Force()
+
+let IsValid (position:(int*int) option, argumentName:string option, defaultValue:string option) (source:string) (filename:string) =
+    GetErrorMessage (position, argumentName, defaultValue) source filename
+    |> Option.isNone
 
 let AddArgument doCheck (bindingRange : range) argumentName defaultValue : Refactoring<unit,unit> =
+    let analysis (source, ()) =
+        if doCheck then
+            IsValid (Some (bindingRange.Start.Line, bindingRange.Start.Column+1), Some argumentName, Some defaultValue) source "test.fs"
+        else
+            true
+            
+    let getErrorMessage (source, ()) =
+        GetErrorMessage (Some (bindingRange.Start.Line, bindingRange.Start.Column+1), Some argumentName, Some defaultValue) source "test.fs"
+        
     let addTempArgumentRefactoring = AddTempArgument doCheck bindingRange defaultValue
-    sequence addTempArgumentRefactoring (Rename doCheck argumentName)
+    let addArgumentRefactoring = sequence addTempArgumentRefactoring (Rename.Rename doCheck argumentName)
+    { addArgumentRefactoring with analysis = analysis; getErrorMessage = getErrorMessage }
 
 let DoAddArgument source (tree : Ast.AstNode) (bindingRange : range) (argumentName : string) (defaultValue : string) =
     RunRefactoring (AddArgument true bindingRange argumentName defaultValue) () source
