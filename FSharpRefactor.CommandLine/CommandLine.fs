@@ -11,7 +11,6 @@ open FSharpRefactor.Engine.CodeAnalysis.ScopeAnalysis
 open FSharpRefactor.Engine.Refactoring
 open FSharpRefactor.Refactorings
 open FSharpRefactor.Refactorings.ExtractFunction
-open FSharpRefactor.Refactorings.AddArgument
 
 exception ArgumentException of string
 
@@ -56,12 +55,12 @@ let ExtractFunction filename (startPosition,endPosition) functionName =
 
 let AddArgument filename position argumentName defaultValue =
     let source = getSource filename
-    let tree = (Ast.Parse source).Value
-    let bindingRange = DefaultBindingRange source tree position
-    if Option.isSome bindingRange then
-        DoAddArgument source tree bindingRange.Value argumentName defaultValue
+    if AddArgument.IsValid (Some position, Some argumentName, Some defaultValue) source "test.fs" then
+        AddArgument.Transform (position, argumentName, defaultValue) source "test.fs"
     else
-        raise (ArgumentException "No binding found around the given position")
+        let errorMessage =
+            (AddArgument.GetErrorMessage (Some position, Some argumentName, Some defaultValue) source "test.fs").Value
+        raise (RefactoringFailure errorMessage)
 
 let printUsage () =
     printfn "Usage:"
@@ -110,8 +109,8 @@ let parseExtractFunctionArguments (args : string list) =
 let parseAddArgumentArguments (args : string list) =
     match List.length args with
         | 0 | 1 | 2 -> raise (ArgumentException "Too few arguments")
-        | 3 -> (parsePos args.[0], args.[1], args.[2], None)
-        | 4 -> (parsePos args.[0], args.[1], args.[2], Some args.[3])
+        | 3 -> (parsePosition args.[0], args.[1], args.[2], None)
+        | 4 -> (parsePosition args.[0], args.[1], args.[2], Some args.[3])
         | _ -> raise (ArgumentException "Too many arguments")
 
 let filenameAndActionFromArguments args =
