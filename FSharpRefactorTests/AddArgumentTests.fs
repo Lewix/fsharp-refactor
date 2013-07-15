@@ -58,7 +58,7 @@ type AddArgumentModule() =
         let source = "(let f a b c = 1 in (f 1 2 3) + ((f 2) 2) + (1 + (2 + (f 3 3 4)))) + (f 1)"
         let tree = (Ast.Parse source).Value
         let bindingRange = mkRange "test.fs" (mkPos 1 5) (mkPos 1 16)
-        let functionUsageRanges = FindFunctionUsageRanges source tree bindingRange "f"
+        let functionUsageRanges = findFunctionUsageRanges source tree bindingRange "f"
 
         Assert.AreEqual([mkRange "test.fs" (mkPos 1 21) (mkPos 1 22); mkRange "test.fs" (mkPos 1 34) (mkPos 1 35); mkRange "test.fs" (mkPos 1 55) (mkPos 1 56)], functionUsageRanges)
 
@@ -67,7 +67,7 @@ type AddArgumentModule() =
         let source = "let f a b = 1 in f f f"
         let tree = (Ast.Parse source).Value
         let bindingRange = mkRange "test.fs" (mkPos 1 4) (mkPos 1 12)
-        let functionUsageRanges = FindFunctionUsageRanges source tree bindingRange "f"
+        let functionUsageRanges = findFunctionUsageRanges source tree bindingRange "f"
 
         Assert.AreEqual([mkRange "test.fs" (mkPos 1 17) (mkPos 1 18); mkRange "test.fs" (mkPos 1 19) (mkPos 1 20); mkRange "test.fs" (mkPos 1 21) (mkPos 1 22)], functionUsageRanges)
 
@@ -76,7 +76,7 @@ type AddArgumentModule() =
         let source = "let f = 2\n\nlet f = 1 in (fun f -> f)"
         let tree = (Ast.Parse source).Value
         let bindingRange = mkRange "test.fs" (mkPos 3 4) (mkPos 3 8)
-        let functionUsageRanges = FindFunctionUsageRanges source tree bindingRange "f"
+        let functionUsageRanges = findFunctionUsageRanges source tree bindingRange "f"
 
         Assert.AreEqual([], functionUsageRanges)
 
@@ -87,7 +87,7 @@ type AddArgumentModule() =
         let bindingRange = mkRange "test.fs" (mkPos 1 5) (mkPos 1 16)
         let expected = "(let f arg a b c = 1 in ((f 0) 1 2 3) + (((f 0) 2) 2) + (1 + (2 + ((f 0) 3 3 4)))) + (f 1)"
 
-        Assert.AreEqual(expected, DoAddArgument source tree bindingRange "arg" "0")
+        Assert.AreEqual(expected, Transform ((1,6), "arg", "0") source "test.fs")
 
     [<Test>]
     member this.``Can add an argument to a function, even if it is not being applied``() =
@@ -96,7 +96,7 @@ type AddArgumentModule() =
         let bindingRange = mkRange "test.fs" (mkPos 1 4) (mkPos 1 11)
         let expected = "let f arg a = 1 in let g a = (f \"value\") in g 1 1"
 
-        Assert.AreEqual(expected, DoAddArgument source tree bindingRange "arg" "\"value\"")
+        Assert.AreEqual(expected, Transform ((1,5), "arg", "\"value\"") source "test.fs")
         
     [<Test>]
     member this.``Can find the name of a function given its binding's range``() =
@@ -115,8 +115,8 @@ type AddArgumentModule() =
         let expected1 = "x = 3+4+5"
         let expected2 = "f a b =\n  let x = 3+4+5"
 
-        Assert.AreEqual(expected1, CodeTransforms.TextOfRange source (DefaultBindingRange source tree position1).Value)
-        Assert.AreEqual(expected2, CodeTransforms.TextOfRange source (DefaultBindingRange source tree position2).Value)
+        Assert.AreEqual(expected1, CodeTransforms.TextOfRange source (defaultBindingRange source tree position1).Value)
+        Assert.AreEqual(expected2, CodeTransforms.TextOfRange source (defaultBindingRange source tree position2).Value)
 
     [<Test>]
     member this.``Cannot add an argument if there is no binding at the given range``() =
@@ -137,7 +137,7 @@ type AddArgumentModule() =
         let range1 = mkRange "test.fs" (mkPos 1 4) (mkPos 1 15)
         let range2 = mkRange "test.fs" (mkPos 1 8) (mkPos 1 22)
 
-        Assert.AreEqual("let f f a b = a+b", DoAddArgument source1 tree1 range1 "f" "0")
+        Assert.AreEqual("let f f a b = a+b", Transform ((1,5), "f", "0") source1 "test.fs")
         Assert.IsFalse(IsValid (Some (1,5), Some "a", Some "0") source1 "test.fs")
         Assert.IsFalse(IsValid (Some (1,9), Some "f", Some "0") source2 "test.fs")
 

@@ -12,7 +12,7 @@ open FSharpRefactor.Engine.Refactoring
 open FSharpRefactor.Engine.ValidityChecking
 open FSharpRefactor.Refactorings
 
-let DefaultBindingRange source (tree : Ast.AstNode) (position : pos) =
+let defaultBindingRange source (tree : Ast.AstNode) (position : pos) =
     let range = mkRange "test.fs" position position
     let rec tryFindDeepestBinding trees =
         let candidateBinding = List.tryPick (TryFindBindingAroundRange range) trees
@@ -61,7 +61,7 @@ let addArgumentToFunctionUsage source (argument : string) (identRange : range) =
       transform = fun (s,_) -> (s,[identRange, sprintf "(%s %s)" ident argument],());
       getErrorMessage = fun _ -> None }
 
-let FindFunctionUsageRanges source (tree : Ast.AstNode) (bindingRange : range) (functionName : string) =
+let findFunctionUsageRanges source (tree : Ast.AstNode) (bindingRange : range) (functionName : string) =
     let bindingContainsNode scopeTree =
         match scopeTree with
             | Declaration(is,_) -> List.exists (fun (_,r) -> rangeContainsRange bindingRange r) is
@@ -99,19 +99,14 @@ let findFunctionName source (tree : Ast.AstNode) (bindingRange : range) =
         | Some name -> name
         | None -> raise (RefactoringFailure("Binding was not a function"))
 
-let CanAddArgument source (tree : Ast.AstNode) (bindingRange : range) (defaultValue : string) =
-    try findFunctionName source tree bindingRange |> ignore; Valid with
-        | :? KeyNotFoundException -> Invalid("No binding found at the given range")
-        | RefactoringFailure(m) -> Invalid(m)
-
 //TODO: Check arguments such as argumentName or defaultValue have a valid form
-let AddTempArgument doCheck (bindingRange : range) defaultValue : Refactoring<unit,Identifier> =
+let addTempArgument doCheck (bindingRange : range) defaultValue : Refactoring<unit,Identifier> =
     let transform (source, ()) =
         let tree = (Ast.Parse source).Value
         let argumentName = FindUnusedName tree
         let usageRefactorings =
             findFunctionName source tree bindingRange
-            |> FindFunctionUsageRanges source tree bindingRange
+            |> findFunctionUsageRanges source tree bindingRange
             |> List.map (addArgumentToFunctionUsage source defaultValue)
         let bindingRefactoring = addArgumentToBinding bindingRange argumentName
         (List.fold interleave bindingRefactoring usageRefactorings).transform (source, ())
@@ -144,7 +139,7 @@ let GetErrorMessage (position:(int*int) option, argumentName:string option, defa
         let bindingRange =
             (Ast.GetRange (Ast.AstNode.Binding (binding.Value.Value))).Value
         let oldSource, changes, (_, identifierRange) =
-            (AddTempArgument true bindingRange defaultValue).transform (source,())
+            (addTempArgument true bindingRange defaultValue).transform (source,())
         let sourceWithIdentifier = ChangeTextOf oldSource changes
         Rename.GetErrorMessage (Some (identifierRange.Start.Line, identifierRange.Start.Column+1), Some name) sourceWithIdentifier filename
             
@@ -166,16 +161,13 @@ let AddArgument doCheck (bindingRange : range) argumentName defaultValue : Refac
     let getErrorMessage (source, ()) =
         GetErrorMessage (Some (bindingRange.Start.Line, bindingRange.Start.Column+1), Some argumentName, Some defaultValue) source "test.fs"
         
-    let addTempArgumentRefactoring = AddTempArgument doCheck bindingRange defaultValue
+    let addTempArgumentRefactoring = addTempArgument doCheck bindingRange defaultValue
     let addArgumentRefactoring = sequence addTempArgumentRefactoring (Rename.Rename doCheck argumentName)
     { addArgumentRefactoring with analysis = analysis; getErrorMessage = getErrorMessage }
-
-let DoAddArgument source (tree : Ast.AstNode) (bindingRange : range) (argumentName : string) (defaultValue : string) =
-    RunRefactoring (AddArgument true bindingRange argumentName defaultValue) () source
 
 let Transform ((line, col):int*int, argumentName:string, defaultValue:string) (source:string) (filename:string) =
     let pos = mkPos line (col-1)
     let tree = (Ast.Parse source).Value
     let bindingRange =
         (Ast.GetRange (Ast.Binding (FindBindingAroundPos pos tree))).Value
-    DoAddArgument source tree bindingRange argumentName defaultValue
+    RunRefactoring (AddArgument true bindingRange argumentName defaultValue) () source
