@@ -13,57 +13,29 @@ open FSharpRefactor.Refactorings.ExtractFunction
 type ExtractFunctionAnalysisModule() =
     [<Test>]
     member this.``Can check arguments separately``() =
-        Assert.IsTrue(IsValid (Some ((1,9),(1,11)),None) "let x = 1+1" "test.fs", "Valid range")
-        Assert.IsFalse(IsValid (Some ((1,3),(1,11)),None) "let x = 1+1" "test.fs", "Invalid range")
+        Assert.IsTrue(IsValid (Some ((1,9),(1,12)),None) "let x = 1+1" "test.fs", "Valid range")
+        Assert.IsFalse(IsValid (Some ((1,3),(1,12)),None) "let x = 1+1" "test.fs", "Invalid range")
 
     [<Test>]
     member this.``Cannot extract a function if there is no expression at expressionRange``() =
         let source = "(2+3)+(3+4)"
-        let tree = (Ast.Parse source).Value
-        let inScopeTree =
-            List.head (FindNodesWithRange (mkRange "test.fs" (mkPos 1 0) (mkPos 1 11)) tree)
-        let expressionRange = mkRange "test.fs" (mkPos 1 4) (mkPos 1 6)
-        let valid = CanExtractFunction tree inScopeTree expressionRange
+        let valid = IsValid (Some ((1,5),(1,7)), None) source "test.fs"
 
-        Assert.AreEqual(Invalid("No expression found at the given range"),
-                        valid,
-                        sprintf "Extract function validity was incorrect: %A" valid)
-
-    [<Test>]
-    member this.``Cannot extract a function if expressionRange is not contained within inScopeTree``() =
-        let source = "(1+2)+(3+4)"
-        let tree = (Ast.Parse source).Value
-        let inScopeTree =
-            List.head (FindNodesWithRange (mkRange "test.fs" (mkPos 1 0) (mkPos 1 5)) tree)
-        let expressionRange = mkRange "test.fs" (mkPos 1 6) (mkPos 1 11)
-        let valid = CanExtractFunction tree inScopeTree expressionRange
-
-        Assert.AreEqual(Invalid("The expression is not contained within the specified scope"),
-                        valid,
-                        sprintf "Extract function validity was incorrect: %A" valid)
+        Assert.IsFalse(valid)
 
     [<Test>]
     member this.``Cannot extract an expression which is an application of an infix expression``() =
         let source = "1+2+3"
-        let tree = (Ast.Parse source).Value
-        let inScopeTree =
-            List.head (FindNodesWithRange (mkRange "test.fs" (mkPos 1 0) (mkPos 1 5)) tree)
-        let expressionRange = mkRange "test.fs" (mkPos 1 0) (mkPos 1 4)
-        let valid = CanExtractFunction tree inScopeTree expressionRange
+        let valid = IsValid (Some ((1,1),(1,5)), None) source "test.fs"
 
-        Assert.AreEqual(Invalid("The expression is a partial application of an infix function"),
-                        valid,
-                        sprintf "Extract function validity was incorrect: %A" valid)
+        Assert.IsFalse(valid)
 
     [<Test>]
     member this.``Cannot extract a function with a taken name``() =
         let source = "let f a = 1 in (f 1)+(1+2)"
-        let tree = (Ast.Parse source).Value
-        let inScopeTree =
-            List.head (FindNodesWithRange (mkRange "test.fs" (mkPos 1 15) (mkPos 1 26)) tree)
-        let expressionRange = mkRange "test.fs" (mkPos 1 21) (mkPos 1 26)
+        let valid = IsValid (Some ((1,22), (1,27)), Some "f") source "test.fs"
 
-        ignore (Assert.Throws<RefactoringFailure>(fun () -> ignore (DoExtractFunction source tree inScopeTree expressionRange "f")))
+        Assert.IsFalse(valid)
 
     [<Test>]
     member this.``Can find a suitable default inScopeTree from expressionRange``() =
@@ -75,9 +47,9 @@ type ExtractFunctionAnalysisModule() =
         let expected2 = "let x = 5*a + b"
 
         Assert.AreEqual(expected1,
-                        CodeTransforms.TextOfRange source1 (Ast.GetRange (Ast.AstNode.Expression (DefaultInScopeTree (Ast.Parse source1).Value expressionRange1).Value)).Value)
+                        CodeTransforms.TextOfRange source1 (Ast.GetRange (Ast.AstNode.Expression (defaultInScopeTree (Ast.Parse source1).Value expressionRange1).Value)).Value)
         Assert.AreEqual(expected2,
-                        CodeTransforms.TextOfRange source2 (Ast.GetRange (Ast.AstNode.Expression (DefaultInScopeTree (Ast.Parse source2).Value expressionRange2).Value)).Value)
+                        CodeTransforms.TextOfRange source2 (Ast.GetRange (Ast.AstNode.Expression (defaultInScopeTree (Ast.Parse source2).Value expressionRange2).Value)).Value)
 
     [<Test>]
     member this.``Can find a default inScopeTree if there are no bindings in the source``() =
@@ -86,33 +58,26 @@ type ExtractFunctionAnalysisModule() =
         let expressionRange = mkRange "test.fs" (mkPos 1 0) (mkPos 1 5)
 
         Assert.AreEqual(source,
-                        CodeTransforms.TextOfRange source (Ast.GetRange (Ast.AstNode.Expression (DefaultInScopeTree tree expressionRange).Value)).Value)
+                        CodeTransforms.TextOfRange source (Ast.GetRange (Ast.AstNode.Expression (defaultInScopeTree tree expressionRange).Value)).Value)
 
 [<TestFixture>]
 type ExtractFunctionTransformModule() =
+    let DoExtractFunction source (tree : Ast.AstNode) (inScopeTree : Ast.AstNode) (expressionRange : range) (functionName : string) =
+        RunRefactoring (ExtractFunction true inScopeTree expressionRange functionName) () source
+
     [<Test>]
     member this.``Can extract an expression into a value, if it needs no arguments``() =
         let source = "1+3+4+4"
         let expected = "let a = (1+3+4+4) in a"
-        let tree = (Ast.Parse source).Value
-        let letTree =
-            List.head (FindNodesWithRange (mkRange "test.fs" (mkPos 1 0) (mkPos 1 7)) tree)
 
-        let expressionRange = mkRange "test.fs" (mkPos 1 0) (mkPos 1 7)
-
-        Assert.AreEqual(expected, DoExtractFunction source tree letTree expressionRange "a")
+        Assert.AreEqual(expected, Transform (((1,1),(1,8)), "a") source "test.fs")
 
     [<Test>]
     member this.``Can disambiguate between identifiers with the same name``() = 
         let source = "let f a = (let a = 1+a in a+2)"
         let expected = "let f a = let g a = (a+2) in (let a = 1+a in (g a))"
-        let tree = (Ast.Parse source).Value
-        let letTree =
-            List.head (FindNodesWithRange (mkRange "test.fs" (mkPos 1 10) (mkPos 1 30)) tree)
 
-        let expressionRange = mkRange "test.fs" (mkPos 1 26) (mkPos 1 29)
-
-        Assert.AreEqual(expected, DoExtractFunction source tree letTree expressionRange "g")
+        Assert.AreEqual(expected, Transform (((1,27),(1,30)), "g") source "test.fs")
     
     [<Test>]
     member this.``Can extract an expression into a function around a LetOrUse expression``() =
@@ -136,18 +101,13 @@ type ExtractFunctionTransformModule() =
 
         Assert.AreEqual(expected, DoExtractFunction source tree letTree expressionRange "double")
         
+        
     [<Test>]
     member this.``Can indent a multiline function definition before inserting it``() =
         let source = "let f a =\n    match a with\n        | Some(x) -> x\n        | None -> 0"
         let expected = "let f a =\n    let g =\n        match a with\n            | Some(x) -> x\n            | None -> 0\n    g"
-        let tree = (Ast.Parse source).Value
-        let matchTree =
-            List.head (FindNodesWithRange (mkRange "test.fs" (mkPos 2 4) (mkPos 4 19)) tree)
-        let expressionRange = mkRange "test.fs" (mkPos 2 4) (mkPos 4 19)
-        let result = DoExtractFunction source tree matchTree expressionRange "g"
 
-        Assert.AreEqual(expected, result,
-                        sprintf "The resulting string was: %s" result)
+        Assert.AreEqual(expected, Transform (((2,5),(4,20)), "g") source "test.fs")
 
     [<Test>]
     member this.``Can turn off extract function checks``() =
@@ -171,10 +131,10 @@ type CreateFunctionModule() =
     member this.``Can add a function to an expression``() =
         let expected = "let f a b =\n    a+b\n"
         let insertRange = mkRange "test.fs" (mkPos 1 0) (mkPos 1 0)
-        Assert.AreEqual(expected, RunRefactoring (CreateFunction "f" ["a";"b"] "a+b" true "" insertRange) () "")
+        Assert.AreEqual(expected, RunRefactoring (createFunction "f" ["a";"b"] "a+b" true "" insertRange) () "")
 
     [<Test>]
     member this.``Can add a function with multiple lines in its body to an expression``() =
         let expected = "let f a b =\n    match a,b with\n        | (a,b) -> 1\n"
         let insertRange = mkRange "test.fs" (mkPos 1 0) (mkPos 1 0)
-        Assert.AreEqual(expected, RunRefactoring (CreateFunction "f" ["a";"b"] "match a,b with\n    | (a,b) -> 1" true "" insertRange) () "")
+        Assert.AreEqual(expected, RunRefactoring (createFunction "f" ["a";"b"] "match a,b with\n    | (a,b) -> 1" true "" insertRange) () "")
