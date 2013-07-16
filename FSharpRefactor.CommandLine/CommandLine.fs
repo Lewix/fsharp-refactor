@@ -10,7 +10,7 @@ open FSharpRefactor.Engine.CodeAnalysis.RangeAnalysis
 open FSharpRefactor.Engine.CodeAnalysis.ScopeAnalysis
 open FSharpRefactor.Engine.Refactoring
 open FSharpRefactor.Refactorings
-open FSharpRefactor.Refactorings.ExtractFunction
+open FSharpRefactor.Refactorings
 
 exception ArgumentException of string
 
@@ -41,17 +41,14 @@ let Rename filename position newName =
             (Rename.GetErrorMessage (Some position, Some newName) source "test.fs").Value
         raise (RefactoringFailure errorMessage)
 
-let ExtractFunction filename (startPosition,endPosition) functionName =
+let ExtractFunction filename range functionName =
     let source = getSource filename
-    let tree = (Ast.Parse source).Value
-    let expressionRange = mkRange "test.fs" startPosition endPosition
-    let inScopeTree = DefaultInScopeTree tree expressionRange
-    if Option.isNone (TryFindExpressionAtRange expressionRange tree) then
-        raise (ArgumentException "No expression found at the given range")
-    elif Option.isNone inScopeTree then
-        raise (ArgumentException "Could not find a suitable expression to use as the function's scope")
+    if ExtractFunction.IsValid (Some range, Some functionName) source "test.fs" then
+        ExtractFunction.Transform (range, functionName) source "test.fs"
     else
-        DoExtractFunction source tree (Ast.AstNode.Expression inScopeTree.Value) expressionRange functionName
+        let errorMessage =
+            (ExtractFunction.GetErrorMessage (Some range, Some functionName) source "test.fs").Value
+        raise (RefactoringFailure errorMessage)
 
 let AddArgument filename position argumentName defaultValue =
     let source = getSource filename
@@ -74,15 +71,6 @@ let printUsage () =
     printfn "  -oFILENAME, --output-file=FILENAME  Write result to FILENAME"
 
 
-
-let parsePos (positionString : string) =
-    let m = Regex.Match(positionString, "([0-9]+):([0-9]+)")
-    if m.Success then
-        let line = Int32.Parse m.Groups.[1].Value
-        let column = Int32.Parse m.Groups.[2].Value
-        mkPos line (column-1)
-    else raise (ArgumentException (sprintf "%s is not a valid position" positionString))
-
 let parsePosition (positionString : string) =
     let m = Regex.Match(positionString, "([0-9]+):([0-9]+)")
     if m.Success then
@@ -102,8 +90,8 @@ let parseRenameArguments (args : string list) =
 let parseExtractFunctionArguments (args : string list) =
     match List.length args with
         | 0 | 1 | 2 -> raise (ArgumentException "Too few arguments")
-        | 3 -> ((parsePos args.[0], parsePos args.[1]), args.[2], None)
-        | 4 -> ((parsePos args.[0], parsePos args.[1]), args.[2], Some args.[3])
+        | 3 -> ((parsePosition args.[0], parsePosition args.[1]), args.[2], None)
+        | 4 -> ((parsePosition args.[0], parsePosition args.[1]), args.[2], Some args.[3])
         | _ -> raise (ArgumentException "Too many arguments")
 
 let parseAddArgumentArguments (args : string list) =
