@@ -115,8 +115,8 @@ type AddArgumentModule() =
         let expected1 = "x = 3+4+5"
         let expected2 = "f a b =\n  let x = 3+4+5"
 
-        Assert.AreEqual(expected1, CodeTransforms.TextOfRange source (defaultBindingRange source tree position1).Value)
-        Assert.AreEqual(expected2, CodeTransforms.TextOfRange source (defaultBindingRange source tree position2).Value)
+        Assert.AreEqual(expected1, CodeTransforms.TextOfRange source (defaultBindingRange source tree position1))
+        Assert.AreEqual(expected2, CodeTransforms.TextOfRange source (defaultBindingRange source tree position2))
 
     [<Test>]
     member this.``Cannot add an argument if there is no binding at the given range``() =

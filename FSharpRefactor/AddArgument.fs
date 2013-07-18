@@ -22,12 +22,11 @@ let defaultBindingRange source (tree : Ast.AstNode) (position : pos) =
             if Option.isNone children then candidateBinding
             else
                 let nestedBinding =
-                    tryFindDeepestBinding (Ast.GetChildren (Ast.AstNode.Binding candidateBinding.Value)).Value
+                    tryFindDeepestBinding children.Value
                 if Option.isNone nestedBinding then candidateBinding else nestedBinding
 
     let deepestBinding = tryFindDeepestBinding [tree]
-    if Option.isNone deepestBinding then None
-    else Ast.GetRange (Ast.AstNode.Binding deepestBinding.Value)
+    (Ast.GetRange (Ast.AstNode.Binding deepestBinding.Value)).Value
 
 let tryFindFunctionName (binding:SynBinding) =
     match binding with
@@ -168,6 +167,5 @@ let AddArgument doCheck (bindingRange : range) argumentName defaultValue : Refac
 let Transform ((line, col):int*int, argumentName:string, defaultValue:string) (source:string) (filename:string) =
     let pos = mkPos line (col-1)
     let tree = (Ast.Parse source).Value
-    let bindingRange =
-        (Ast.GetRange (Ast.Binding (FindBindingAroundPos pos tree))).Value
+    let bindingRange = defaultBindingRange source tree pos
     RunRefactoring (AddArgument true bindingRange argumentName defaultValue) () source
