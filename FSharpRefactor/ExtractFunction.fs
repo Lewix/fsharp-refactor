@@ -103,7 +103,7 @@ let extractTempFunctionTransform source (expressionRange : range) inScopeTree =
         (interleave definitionRefactoring callRefactoring).transform (source, ())
 
 
-let extractTempFunction doCheck inScopeTree (expressionRange : range) : Refactoring<unit,Identifier> =
+let extractTempFunction inScopeTree (expressionRange : range) : Refactoring<unit,Identifier> =
     let transform (source,()) =
         extractTempFunctionTransform source expressionRange inScopeTree
     { analysis = (fun _ -> true); transform = transform; getErrorMessage = fun _ -> None }
@@ -142,25 +142,23 @@ let GetErrorMessage (range:((int*int)*(int*int)) option, functionName:string opt
 let IsValid (range:((int*int)*(int*int)) option, functionName:string option) (source:string) (filename:string) =
     Option.isNone (GetErrorMessage (range, functionName) source filename)
 
-let ExtractFunction doCheck inScopeTree (expressionRange : range) functionName : Refactoring<unit,unit> =
+let ExtractFunction inScopeTree (expressionRange : range) functionName : Refactoring<unit,unit> =
     let analysis (source,()) =
-        if doCheck then
-            IsValid (Some ((expressionRange.StartLine, expressionRange.StartColumn+1), 
-                           (expressionRange.EndLine, expressionRange.EndColumn+1)),
-                     Some functionName)
-                    source "test.fs"
-        else true
+        IsValid (Some ((expressionRange.StartLine, expressionRange.StartColumn+1), 
+                       (expressionRange.EndLine, expressionRange.EndColumn+1)),
+                 Some functionName)
+                source "test.fs"
     let getErrorMessage (source,()) =
         GetErrorMessage (Some ((expressionRange.StartLine, expressionRange.StartColumn+1),
                                (expressionRange.EndLine, expressionRange.EndColumn+1)),
                          Some functionName)
                         source "test.fs"
-    let extractTempRefactoring = extractTempFunction doCheck inScopeTree expressionRange
-    let extractFunctionRefactoring = sequence extractTempRefactoring (Rename.Rename doCheck functionName)
+    let extractTempRefactoring = extractTempFunction inScopeTree expressionRange
+    let extractFunctionRefactoring = sequence extractTempRefactoring (Rename.Rename functionName)
     { extractFunctionRefactoring with analysis = analysis; getErrorMessage = getErrorMessage }
 
 let Transform (((startLine, startColumn), (endLine, endColumn)), functionName) source filename =
     let tree = (Ast.Parse source).Value
     let expressionRange = mkRange "test.fs" (mkPos startLine (startColumn-1)) (mkPos endLine (endColumn-1))
     let inScopeTree = Ast.AstNode.Expression (defaultInScopeTree tree expressionRange).Value
-    RunRefactoring (ExtractFunction true inScopeTree expressionRange functionName) () source
+    RunRefactoring (ExtractFunction inScopeTree expressionRange functionName) () source

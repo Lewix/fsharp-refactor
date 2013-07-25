@@ -109,12 +109,9 @@ let IsValid (position:(int*int) option, newName:string option) (source:string) (
     GetErrorMessage (position, newName) source filename
     |> Option.isNone
 
-let Rename doCheck newName : Refactoring<Identifier,unit> =
+let Rename newName : Refactoring<Identifier,unit> =
     let analysis (source, (_, identifierRange) : Identifier) =
-        if doCheck then
-            IsValid (Some (identifierRange.Start.Line, identifierRange.Start.Column+1), Some newName) source "test.fs"
-        else
-            true
+        IsValid (Some (identifierRange.Start.Line, identifierRange.Start.Column+1), Some newName) source "test.fs"
 
     let transform (source, identifier) =
         let tree = (Ast.Parse source).Value
@@ -136,4 +133,4 @@ let Transform ((line:int, col:int), newName:string) (source:string) (filename:st
     let tree = (Ast.Parse source).Value
     let declarationIdentifier =
         FindIdentifierDeclaration (makeScopeTrees (Ast.Parse source).Value) (FindIdentifier source position)
-    RunRefactoring (Rename true newName) declarationIdentifier source
+    RunRefactoring (Rename newName) declarationIdentifier source

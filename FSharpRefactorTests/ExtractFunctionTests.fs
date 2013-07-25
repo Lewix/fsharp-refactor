@@ -63,7 +63,7 @@ type ExtractFunctionAnalysisModule() =
 [<TestFixture>]
 type ExtractFunctionTransformModule() =
     let DoExtractFunction source (tree : Ast.AstNode) (inScopeTree : Ast.AstNode) (expressionRange : range) (functionName : string) =
-        RunRefactoring (ExtractFunction true inScopeTree expressionRange functionName) () source
+        RunRefactoring (ExtractFunction inScopeTree expressionRange functionName) () source
 
     [<Test>]
     member this.``Can extract an expression into a value, if it needs no arguments``() =
@@ -108,16 +108,6 @@ type ExtractFunctionTransformModule() =
         let expected = "let f a =\n    let g =\n        match a with\n            | Some(x) -> x\n            | None -> 0\n    g"
 
         Assert.AreEqual(expected, Transform (((2,5),(4,20)), "g") source "test.fs")
-
-    [<Test>]
-    member this.``Can turn off extract function checks``() =
-        let source = "let f a = 1 in (f 1)+(1+2)"
-        let tree = (Ast.Parse source).Value
-        let inScopeTree =
-            List.head (FindNodesWithRange (mkRange "test.fs" (mkPos 1 15) (mkPos 1 26)) tree)
-        let expressionRange = mkRange "test.fs" (mkPos 1 21) (mkPos 1 26)
-
-        Assert.AreEqual("let f a = 1 in let f = ((1+2)) in (f 1)+f", RunRefactoring (ExtractFunction false inScopeTree expressionRange "f") () source)
 
 [<TestFixture>]
 type CreateFunctionModule() =

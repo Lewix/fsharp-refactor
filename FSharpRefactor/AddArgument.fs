@@ -99,7 +99,7 @@ let findFunctionName source (tree : Ast.AstNode) (bindingRange : range) =
         | None -> raise (RefactoringFailure("Binding was not a function"))
 
 //TODO: Check arguments such as argumentName or defaultValue have a valid form
-let addTempArgument doCheck (bindingRange : range) defaultValue : Refactoring<unit,Identifier> =
+let addTempArgument (bindingRange : range) defaultValue : Refactoring<unit,Identifier> =
     let transform (source, ()) =
         let tree = (Ast.Parse source).Value
         let argumentName = FindUnusedName tree
@@ -138,7 +138,7 @@ let GetErrorMessage (position:(int*int) option, argumentName:string option, defa
         let bindingRange =
             (Ast.GetRange (Ast.AstNode.Binding (binding.Value.Value))).Value
         let oldSource, changes, (_, identifierRange) =
-            (addTempArgument true bindingRange defaultValue).transform (source,())
+            (addTempArgument bindingRange defaultValue).transform (source,())
         let sourceWithIdentifier = ChangeTextOf oldSource changes
         Rename.GetErrorMessage (Some (identifierRange.Start.Line, identifierRange.Start.Column+1), Some name) sourceWithIdentifier filename
             
@@ -150,22 +150,19 @@ let IsValid (position:(int*int) option, argumentName:string option, defaultValue
     GetErrorMessage (position, argumentName, defaultValue) source filename
     |> Option.isNone
 
-let AddArgument doCheck (bindingRange : range) argumentName defaultValue : Refactoring<unit,unit> =
+let AddArgument (bindingRange : range) argumentName defaultValue : Refactoring<unit,unit> =
     let analysis (source, ()) =
-        if doCheck then
             IsValid (Some (bindingRange.Start.Line, bindingRange.Start.Column+1), Some argumentName, Some defaultValue) source "test.fs"
-        else
-            true
             
     let getErrorMessage (source, ()) =
         GetErrorMessage (Some (bindingRange.Start.Line, bindingRange.Start.Column+1), Some argumentName, Some defaultValue) source "test.fs"
         
-    let addTempArgumentRefactoring = addTempArgument doCheck bindingRange defaultValue
-    let addArgumentRefactoring = sequence addTempArgumentRefactoring (Rename.Rename doCheck argumentName)
+    let addTempArgumentRefactoring = addTempArgument bindingRange defaultValue
+    let addArgumentRefactoring = sequence addTempArgumentRefactoring (Rename.Rename argumentName)
     { addArgumentRefactoring with analysis = analysis; getErrorMessage = getErrorMessage }
 
 let Transform ((line, col):int*int, argumentName:string, defaultValue:string) (source:string) (filename:string) =
     let pos = mkPos line (col-1)
     let tree = (Ast.Parse source).Value
     let bindingRange = defaultBindingRange source tree pos
-    RunRefactoring (AddArgument true bindingRange argumentName defaultValue) () source
+    RunRefactoring (AddArgument bindingRange argumentName defaultValue) () source
