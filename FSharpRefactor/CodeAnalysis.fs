@@ -273,12 +273,21 @@ module RangeAnalysis =
     let CountLines body =
         1+(String.length (String.collect (fun c -> if c = '\n' then "\n" else "") body))
 
-    let rec FindNodesWithRange range (tree : Ast.AstNode) =
-        let allNodes = ListNodes tree
+    let FindNodesWithRange range (tree : Ast.AstNode) =
+        let nodeContainsRange node =
+            rangeContainsRange ((Ast.GetRange node).Value) range
         let hasRange node =
             Option.isSome (Ast.GetRange node) && (Ast.GetRange node).Value = range
-        List.filter hasRange allNodes
 
+        let rec findNodesWithRangeInChild tree foundNodes =
+            let foundNodes =
+                if hasRange tree then tree::foundNodes else foundNodes 
+            let childContainingRange =
+                List.tryFind nodeContainsRange ((Ast.GetChildren tree).Value)
+            if Option.isNone childContainingRange then foundNodes
+            else findNodesWithRangeInChild (childContainingRange.Value) foundNodes 
+
+        findNodesWithRangeInChild tree []
 
     let TryFindExpressionAtRange range (tree : Ast.AstNode)  =
         let isExpression node =
