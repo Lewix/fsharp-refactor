@@ -75,7 +75,7 @@ let extractTempFunctionTransform source (expressionRange : range) inScopeTree =
         let bodyExpression = TryFindExpressionAtRange expressionRange inScopeTree
 
         let getFreeIdentifierDeclarations expression =
-            GetFreeIdentifierUsages (makeScopeTrees expression) DefaultDeclared
+            GetFreeIdentifierUsages (makeScopeTrees expression)
             |> List.map (TryFindIdentifierDeclaration (makeScopeTrees inScopeTree))
             |> List.collect Option.toList
             // Can't compare ranges or positions, so use a tuple of ints...

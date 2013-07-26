@@ -116,13 +116,13 @@ type ScopeAnalysisModule() =
         let source1 = "let a = b in f(c + a + b)"
         let source2 = "let a = b in let b = 1"
         let source3 = "let a b = b in f(c + (a 1) + d)"
-        let expected1 = Set(["b"; "c"; "f"])
+        let expected1 = Set(["b"; "c"; "f"; "op_Addition"])
         let expected2 = Set(["b"])
-        let expected3 = Set(["c"; "d"; "f"])
+        let expected3 = Set(["c"; "d"; "f"; "op_Addition"])
         let assertFun (source, expected) =
             let tree = getTrees source
             let actual =
-                ScopeAnalysis.GetFreeIdentifierUsages tree (Set ["op_Addition"])
+                ScopeAnalysis.GetFreeIdentifierUsages tree
                 |> List.map fst
                 |> Set.ofList
             Assert.AreEqual(expected, actual, sprintf "%A" actual)

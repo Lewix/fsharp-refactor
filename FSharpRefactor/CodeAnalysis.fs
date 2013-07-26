@@ -33,14 +33,6 @@ module ScopeAnalysis =
                 Some(i.idText, i.idRange)
             | _ -> None
 
-    let DefaultDeclared = Set ["op_Addition"]
-
-    let rec ListNodes tree =
-        match tree with
-            | TopLevelDeclaration(is, ts)
-            | Declaration(is, ts) as d -> d::(List.collect ListNodes ts)
-            | Usage(_,_) as u -> [u]
-
     let rec ListIdentifiers trees =
         match trees with
             | [] -> []
@@ -48,7 +40,7 @@ module ScopeAnalysis =
             | TopLevelDeclaration(is,ts)::rest
             | Declaration(is,ts)::rest -> List.append is (ListIdentifiers (List.append ts rest))
 
-    let GetFreeIdentifierUsages (trees : ScopeTree list) (declared : Set<string>) =
+    let GetFreeIdentifierUsages (trees : ScopeTree list) =
         let rec freeIdentifiersInSingleTree foundFree declared tree =
             match tree with
                 | Usage(n,r) ->
@@ -59,7 +51,7 @@ module ScopeAnalysis =
                     let updatedDeclared = Set.union declared (Set(List.map fst is))
                     List.collect (freeIdentifiersInSingleTree foundFree updatedDeclared) ts
                     
-        List.collect (freeIdentifiersInSingleTree [] declared) trees
+        List.collect (freeIdentifiersInSingleTree [] Set.empty<string>) trees
 
     let IsDeclared (name : string) (identifiers : Identifier list) =
         List.exists (fun (n,_) -> n = name) identifiers
