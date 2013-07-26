@@ -157,7 +157,7 @@ type ScopeTreeModule() =
     member this.``Can create a scope tree for a nested module``() =
         let scopeTrees = ScopeTreeModule.getScopeTrees "module nestedModule =\n  let x = 1\n  let y = x"
         match scopeTrees with
-            | [ScopeAnalysis.Declaration(["x",_],[ScopeAnalysis.Declaration(["y",_],[]);ScopeAnalysis.Usage("x",_)])]
+            | [ScopeAnalysis.TopLevelDeclaration(["x",_],[ScopeAnalysis.TopLevelDeclaration(["y",_],[]);ScopeAnalysis.Usage("x",_)])]
                 -> ()
             | _ -> Assert.Fail("The scope tree for 'module nestedModule =\n  let x = 1\n let y = x' was incorrect:\n" +
                                (sprintf "%A" scopeTrees))
@@ -219,8 +219,8 @@ type ScopeTreeModule() =
     member this.``Creates a scope tree for a more elaborate sequence of let statements``() =
         let scopeTrees = ScopeTreeModule.getScopeTrees "let a =\n  let b = 1\n  let c = 2 + b + b\n  let d = 1\n  b+c\nlet b = 3+a"
         match scopeTrees with
-            | [ScopeAnalysis.Declaration(["a",_],
-                                     [ScopeAnalysis.Declaration(["b",_],[]);
+            | [ScopeAnalysis.TopLevelDeclaration(["a",_],
+                                     [ScopeAnalysis.TopLevelDeclaration(["b",_],[]);
                                       ScopeAnalysis.Usage("op_Addition",_);
                                       ScopeAnalysis.Usage("a",_)]);
                ScopeAnalysis.Declaration(["b",_],
@@ -275,7 +275,7 @@ type ScopeTreeModule() =
     member this.``Can create a scope tree for two mutually recursive identifiers``() =
         let scopeTrees = ScopeTreeModule.getScopeTrees "let rec f = g\nand g = f"
         match scopeTrees with
-            | [ScopeAnalysis.Declaration([("f",_);("g",_)],
+            | [ScopeAnalysis.TopLevelDeclaration([("f",_);("g",_)],
                                          [ScopeAnalysis.Usage("g",_);
                                           ScopeAnalysis.Usage("f",_)])] -> ()
             | _ -> Assert.Fail("The scope tree for\n 'let rec f = g\nand g = f'\n was incorrect:\n" +
@@ -285,7 +285,7 @@ type ScopeTreeModule() =
     member this.``Can create a scope tree for two mutually recursive identifiers in a LetOrUse``() =
         let scopeTrees = ScopeTreeModule.getScopeTrees "let a =\n  let rec f = g\n  and g = f\n  f"
         match scopeTrees with
-            | [ScopeAnalysis.Declaration([("a",_)],[]);
+            | [ScopeAnalysis.TopLevelDeclaration([("a",_)],[]);
                ScopeAnalysis.Declaration([("f",_);("g",_)],
                                          [ScopeAnalysis.Usage("g",_);
                                           ScopeAnalysis.Usage("f",_);
@@ -297,7 +297,7 @@ type ScopeTreeModule() =
     member this.``Can create a scope tree for a single recursive identifier``() =
         let scopeTrees = ScopeTreeModule.getScopeTrees "let rec f = f"
         match scopeTrees with
-            | [ScopeAnalysis.Declaration([("f",_)],[ScopeAnalysis.Usage("f",_)])] -> ()
+            | [ScopeAnalysis.TopLevelDeclaration([("f",_)],[ScopeAnalysis.Usage("f",_)])] -> ()
             | _ -> Assert.Fail("The scope tree for 'let rec f = f' was incorrect:\n" +
                                (sprintf "%A" scopeTrees))
 
@@ -305,7 +305,7 @@ type ScopeTreeModule() =
     member this.``Can create a scope tree for a single recursive LetOrUse``() =
         let scopeTrees = ScopeTreeModule.getScopeTrees "let a =\n  let rec f = f\n  f"
         match scopeTrees with
-            | [ScopeAnalysis.Declaration([("a",_)],[]);
+            | [ScopeAnalysis.TopLevelDeclaration([("a",_)],[]);
                ScopeAnalysis.Declaration([("f",_)],[ScopeAnalysis.Usage("f",_);
                                                     ScopeAnalysis.Usage("f",_)])] -> ()
             | _ -> Assert.Fail("The scope tree for 'let a =\n  let rec f = f\n  f' was incorrect:\n" +

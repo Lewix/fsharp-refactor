@@ -10,6 +10,7 @@ module ScopeAnalysis =
     type Identifier = string * range
 
     type ScopeTree =
+        | TopLevelDeclaration of Identifier list * ScopeTree list
         | Declaration of Identifier list * ScopeTree list
         | Usage of Identifier
 
@@ -36,13 +37,15 @@ module ScopeAnalysis =
 
     let rec ListNodes tree =
         match tree with
+            | TopLevelDeclaration(is, ts)
             | Declaration(is, ts) as d -> d::(List.collect ListNodes ts)
-            | usage -> [usage]
+            | Usage(_,_) as u -> [u]
 
     let rec ListIdentifiers trees =
         match trees with
             | [] -> []
             | Usage(name, range)::rest -> (name,range)::(ListIdentifiers rest)
+            | TopLevelDeclaration(is,ts)::rest
             | Declaration(is,ts)::rest -> List.append is (ListIdentifiers (List.append ts rest))
 
     let GetFreeIdentifierUsages (trees : ScopeTree list) (declared : Set<string>) =
@@ -51,6 +54,7 @@ module ScopeAnalysis =
                 | Usage(n,r) ->
                     if Set.contains n declared then foundFree
                     else (n,r)::foundFree
+                | TopLevelDeclaration(is, ts)
                 | Declaration(is, ts) ->
                     let updatedDeclared = Set.union declared (Set(List.map fst is))
                     List.collect (freeIdentifiersInSingleTree foundFree updatedDeclared) ts
@@ -67,6 +71,7 @@ module ScopeAnalysis =
         let rec tryFindIdentifierAndDeclaration previousDeclaration tree =
             match tree with
                 | Usage(n,r) -> if n = name && r = range then previousDeclaration else None
+                | TopLevelDeclaration(is, ts)
                 | Declaration(is, ts) ->
                     if List.exists isDeclaration is then
                         List.tryFind isDeclaration is
@@ -84,16 +89,18 @@ module ScopeAnalysis =
     let TryFindIdentifierWithName (trees : ScopeTree list) (name : string) =
         let rec tryFindIdentifierWithName tree =
             match tree with
+                | TopLevelDeclaration(is, ts)
                 | Declaration(is, ts) ->
                     if IsDeclared name is then Some (List.find (fun (n,r) -> n = name) is)
                     else List.tryPick tryFindIdentifierWithName ts
-                | _ -> None
+                | Usage(_, _) -> None
         List.tryPick tryFindIdentifierWithName trees
 
     let GetDeclarations (trees : ScopeTree list) =
         let rec declarationsInSingleTree tree =
             match tree with
                 | Usage(n,_) -> Set []
+                | TopLevelDeclaration(is, ts)
                 | Declaration(is, ts) ->
                     let declarationsInChildren =
                         Set.unionMany (Seq.map declarationsInSingleTree ts)
@@ -103,6 +110,7 @@ module ScopeAnalysis =
 
     let isDeclaration (tree : ScopeTree) =
         match tree with
+            | TopLevelDeclaration(_,_)
             | Declaration(_,_) -> true
             | _ -> false
 
@@ -117,32 +125,36 @@ module ScopeAnalysis =
             | Usage(text,range) ->
                 printfn "transforming usage into decl"
                 Declaration([text,range],children)
+            | TopLevelDeclaration(is, cs) -> TopLevelDeclaration(is, List.append cs children)
             | Declaration(is, cs) -> Declaration(is, List.append cs children)
 
     let mergeBindings (bindingTrees : ScopeTree list list) =
         let rec mergeDeclarations declarations =
             match declarations with
                 | [] -> Declaration([],[])
-                | [Declaration(_,_) as d] -> d
+                | [TopLevelDeclaration(_,_) | Declaration(_,_) as d] -> d
+                | TopLevelDeclaration(is1, ts1)::(TopLevelDeclaration(is2, ts2) | Declaration(is2, ts2))::ts
+                | (TopLevelDeclaration(is1, ts1) | Declaration(is1, ts1))::TopLevelDeclaration(is2, ts2)::ts ->
+                    mergeDeclarations (TopLevelDeclaration(List.append is1 is2, List.append ts1 ts2)::ts)
                 | Declaration(is1, ts1)::Declaration(is2, ts2)::ts ->
                     mergeDeclarations (Declaration(List.append is1 is2, List.append ts1 ts2)::ts)
                 | Usage(_,_)::ts -> mergeDeclarations ts
-                | (Declaration(_,_) as d)::Usage(_,_)::ts ->
+                | (TopLevelDeclaration(_,_) | Declaration(_,_) as d)::Usage(_,_)::ts ->
                     mergeDeclarations (d::ts)
 
         let mainDeclarations = List.map List.head bindingTrees
         let rest = List.concat (List.map List.tail bindingTrees)
 
-        mergeDeclarations mainDeclarations
-        |> fun declaration -> addChildren declaration rest
+        let declaration = mergeDeclarations mainDeclarations
+        addChildren declaration rest
         
-    let rec makeScopeTrees (tree : Ast.AstNode) =
-        let rec makeNestedScopeTrees declarations =
+    let rec makeScopeTreesAtLevel isTopLevel (tree : Ast.AstNode) =
+        let rec makeNestedScopeTrees isTopLevel declarations =
             match declarations with
                 | [] -> []
                 | d::ds ->
-                    let headScopeTrees = makeScopeTrees d
-                    let tailScopeTrees = makeNestedScopeTrees ds
+                    let headScopeTrees = makeScopeTreesAtLevel isTopLevel d
+                    let tailScopeTrees = makeNestedScopeTrees isTopLevel ds
                     let headDeclarations = List.filter isDeclaration headScopeTrees
                     let headUsages = List.filter isUsage headScopeTrees
 
@@ -185,9 +197,9 @@ module ScopeAnalysis =
 
         match tree with
             | Ast.ModuleOrNamespace(SynModuleOrNamespace.SynModuleOrNamespace(_,_,ds,_,_,_,_)) ->
-                makeNestedScopeTrees (List.map Ast.AstNode.ModuleDeclaration ds)
+                makeNestedScopeTrees isTopLevel (List.map Ast.AstNode.ModuleDeclaration ds)
             | Ast.TypeDefinitionRepresentation(SynTypeDefnRepr.ObjectModel(_,ms,_)) ->
-                makeNestedScopeTrees (List.map Ast.MemberDefinition ms)
+                makeNestedScopeTrees isTopLevel (List.map Ast.MemberDefinition ms)
             | Ast.MemberDefinition(SynMemberDefn.ImplicitCtor(_,_,ps,selfId,_)) ->
                 let idsDeclaredInPatterns = declarationsFromSimplePatterns ps
                 let idsInScopeInCtor =
@@ -195,36 +207,36 @@ module ScopeAnalysis =
                     else (selfId.Value.idText, selfId.Value.idRange)::idsDeclaredInPatterns
                 [Declaration(idsInScopeInCtor, [])]
             | Ast.AstNode.ModuleDeclaration(SynModuleDecl.Let(false,bs,_)) ->
-                makeNestedScopeTrees (List.map Ast.AstNode.Binding bs)
+                makeNestedScopeTrees true (List.map Ast.AstNode.Binding bs)
             | Ast.AstNode.ModuleDeclaration(SynModuleDecl.Let(true,bs,_)) ->
                 let scopeTreesFromBindings =
-                    List.map makeScopeTrees (List.map Ast.AstNode.Binding bs)
+                    List.map (makeScopeTreesAtLevel true) (List.map Ast.AstNode.Binding bs)
                 [mergeBindings scopeTreesFromBindings]
             | Ast.AstNode.ModuleDeclaration(SynModuleDecl.NestedModule(_,ds,_,_)) ->
-                makeNestedScopeTrees (List.map Ast.AstNode.ModuleDeclaration ds)
+                makeNestedScopeTrees true (List.map Ast.AstNode.ModuleDeclaration ds)
             | Ast.AstNode.Expression(SynExpr.LetOrUse(false,_,bs,e,_)) ->
-                let bindingScopeTrees = makeNestedScopeTrees (List.map Ast.AstNode.Binding bs)
-                let expressionScopeTrees = makeScopeTrees (Ast.AstNode.Expression e)
+                let bindingScopeTrees = makeNestedScopeTrees false (List.map Ast.AstNode.Binding bs)
+                let expressionScopeTrees = makeScopeTreesAtLevel false (Ast.AstNode.Expression e)
                 (addChildren (List.head bindingScopeTrees) expressionScopeTrees)::(List.tail bindingScopeTrees)
             | Ast.AstNode.Expression(SynExpr.LetOrUse(true,_,bs,e,_)) ->
                 let scopeTreesFromBindings =
-                    List.map makeScopeTrees (List.map Ast.AstNode.Binding bs)
+                    List.map (makeScopeTreesAtLevel false) (List.map Ast.AstNode.Binding bs)
                 let bindingScopeTree = mergeBindings scopeTreesFromBindings
-                let expressionScopeTrees = makeScopeTrees (Ast.AstNode.Expression e)
+                let expressionScopeTrees = makeScopeTreesAtLevel false (Ast.AstNode.Expression e)
                 [addChildren bindingScopeTree expressionScopeTrees]
             | Ast.AstNode.Expression(SynExpr.Lambda(_,_,ps,e,_)) ->
                 let simplePatterns = flattenSimplePatterns ps
                 let idsDeclaredInPatterns = declarationsFromSimplePatterns simplePatterns
                 [Declaration(idsDeclaredInPatterns,
-                             makeScopeTrees (Ast.AstNode.Expression e))]
+                             makeScopeTreesAtLevel false (Ast.AstNode.Expression e))]
             | Ast.AstNode.MatchClause(Clause(p,we,e,_,_)) ->
                 [Declaration(declarationsFromMatchPattern p,
-                             makeScopeTrees (Ast.AstNode.Expression e))]
+                             makeScopeTreesAtLevel false (Ast.AstNode.Expression e))]
             | Ast.AstNode.Binding(SynBinding.Binding(_,_,_,_,_,_,_,pattern,_,expression,_,_)) ->
                 let idsDeclaredInBinding = declarationsFromFunctionPatterns [pattern]
-                let scopeTreesFromBinding = makeScopeTrees (Ast.AstNode.Expression expression)
-                match pattern with
-                    | SynPat.LongIdent(functionIdent,_,_,arguments,_,_) ->
+                let scopeTreesFromBinding = makeScopeTreesAtLevel false (Ast.AstNode.Expression expression)
+                match isTopLevel, pattern with
+                    | _, SynPat.LongIdent(functionIdent,_,_,arguments,_,_) ->
                         let selfIdentifier = tryGetSelfIdentifier functionIdent
                         let idsFromArguments =
                             declarationsFromFunctionPatterns arguments
@@ -235,11 +247,17 @@ module ScopeAnalysis =
                             if idsInScopeInExpression = [] then scopeTreesFromBinding
                             else [Declaration(idsInScopeInExpression, scopeTreesFromBinding)]
                         if idsDeclaredInBinding = [] then argumentsScopeTrees
-                        else Declaration(idsDeclaredInBinding, [])::argumentsScopeTrees
-                    | _ -> Declaration(idsDeclaredInBinding, [])::scopeTreesFromBinding
+                        else
+                            if isTopLevel then TopLevelDeclaration(idsDeclaredInBinding, [])::argumentsScopeTrees
+                            else Declaration(idsDeclaredInBinding, [])::argumentsScopeTrees
+                    | true, _ -> TopLevelDeclaration(idsDeclaredInBinding, [])::scopeTreesFromBinding
+                    | false, _ -> Declaration(idsDeclaredInBinding, [])::scopeTreesFromBinding
             | UsedIdent(text,range) -> [Usage(text,range)]
-            | Ast.Children(cs) -> List.concat (Seq.map makeScopeTrees cs)
+            | Ast.Children(cs) -> List.concat (Seq.map (makeScopeTreesAtLevel isTopLevel) cs)
             | _ -> []
+
+    let makeScopeTrees (tree : Ast.AstNode) =
+        makeScopeTreesAtLevel false tree
 
     let FindUnusedName (tree : Ast.AstNode) =
         let scopeTrees = makeScopeTrees tree

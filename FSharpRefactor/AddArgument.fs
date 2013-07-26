@@ -63,17 +63,19 @@ let addArgumentToFunctionUsage source (argument : string) (identRange : range) =
 let findFunctionUsageRanges source (tree : Ast.AstNode) (bindingRange : range) (functionName : string) =
     let bindingContainsNode scopeTree =
         match scopeTree with
+            | TopLevelDeclaration(is,_)
             | Declaration(is,_) -> List.exists (fun (_,r) -> rangeContainsRange bindingRange r) is
             | Usage(_,r) -> rangeContainsRange bindingRange r
 
     let nodeDeclaresIdentifier scopeTree =
         match scopeTree with
+            | TopLevelDeclaration(is,_)
             | Declaration(is,_) -> List.exists (fun (n,_) -> functionName = n) is
             | _ -> false
 
     let rec findDeclarationOfFunction scopeTrees =
         match scopeTrees with
-            | (Declaration(is,ts1) as d)::ts2 ->
+            | (TopLevelDeclaration(is,ts1) | Declaration(is,ts1) as d)::ts2 ->
                 if nodeDeclaresIdentifier d && bindingContainsNode d then ts1
                 else findDeclarationOfFunction (ts1 @ ts2)
             | _::ts -> findDeclarationOfFunction ts
@@ -81,6 +83,7 @@ let findFunctionUsageRanges source (tree : Ast.AstNode) (bindingRange : range) (
 
     let rec findUsagesInScopeTrees scopeTrees =
         match scopeTrees with
+            | (TopLevelDeclaration(is,ts1) as d)::ts2
             | (Declaration(is,ts1) as d)::ts2 ->
                 if nodeDeclaresIdentifier d then findUsagesInScopeTrees ts2
                 else (findUsagesInScopeTrees ts1) @ (findUsagesInScopeTrees ts2)

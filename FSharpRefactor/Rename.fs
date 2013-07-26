@@ -11,6 +11,7 @@ let rec findDeclarationInScopeTrees trees (name, declarationRange) =
     match trees with
         | [] -> None
         | Usage(_,_)::ds -> findDeclarationInScopeTrees ds (name, declarationRange)
+        | TopLevelDeclaration(is, ts)::ds
         | Declaration(is, ts)::ds ->
             let isDeclaration = (fun (n,r) -> n = name && rangeContainsRange r declarationRange)
             if List.exists isDeclaration is then Some(Declaration(is, ts))
@@ -25,6 +26,7 @@ let rec rangesToReplace (name, declarationRange) tree =
         
     match tree with
         | Usage(n, r) -> if n = name then [r] else []
+        | TopLevelDeclaration(is, ts)
         | Declaration(is, ts) ->
             if isNestedDeclaration is then []
             else
@@ -38,6 +40,7 @@ let GetErrorMessage (position:(int*int) option, newName:string option) (source:s
     let rec isFree targetName tree =
         match tree with
             | Usage(n,_) -> n = targetName
+            | TopLevelDeclaration(is, ts)
             | Declaration(is, ts) ->
                 if IsDeclared targetName is then false
                 else List.fold (||) false (List.map (isFree targetName) ts)
