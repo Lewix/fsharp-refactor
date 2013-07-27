@@ -85,6 +85,7 @@ let GetErrorMessage (position:(int*int) option, newName:string option) (source:s
         let oldName, _ = identifierDeclaration.Force().Value
         let newNameIsNotBound =
             match declarationScope.Force().Value with
+                | TopLevelDeclaration(is,ts)
                 | Declaration(is,ts) ->
                     newName = oldName || not (IsDeclared newName is)
                 | _ -> true
