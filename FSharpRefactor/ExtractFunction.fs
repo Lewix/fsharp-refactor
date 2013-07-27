@@ -21,11 +21,18 @@ let formatArguments functionName arguments =
     |> List.fold (+) functionName
 
 let defaultInScopeTree (tree : Ast.AstNode) (expressionRange : range) =
+    let chooseOutermost node1 node2 =
+        if rangeContainsRange (Ast.GetRange node1).Value (Ast.GetRange node2).Value
+        then node1 else node2
     let outermostBinding = TryFindBindingAroundRange expressionRange tree
-    let outermostExpression = TryFindExpressionAroundRange expressionRange tree
+    let expressionsAroundRange = FindExpressionsAroundRange expressionRange tree
+    let outermostExpression =
+        if List.isEmpty expressionsAroundRange then None
+        else Some (List.reduce chooseOutermost expressionsAroundRange)
     if Option.isSome outermostBinding then
         match outermostBinding.Value with
-            | SynBinding.Binding(_,_,_,_,_,_,_,_,_,expression,_,_) -> Some(expression)
+            | SynBinding.Binding(_,_,_,_,_,_,_,_,_,expression,_,_) ->
+                Some(Ast.AstNode.Expression expression)
     else outermostExpression
 
 let createFunction functionName arguments body isMultiLine indentString (declarationRange : range) : Refactoring<unit,Identifier> =
@@ -130,7 +137,7 @@ let GetErrorMessage (range:((int*int)*(int*int)) option, functionName:string opt
         let range = mkRange "test.fs" (mkPos startLine (startCol-1)) (mkPos endLine (endCol-1))
         let inScopeTree = defaultInScopeTree tree range
         let oldSource, changes, (_, identifierRange) =
-            extractTempFunctionTransform source range (Ast.AstNode.Expression inScopeTree.Value)
+            extractTempFunctionTransform source range inScopeTree.Value
         let sourceWithIdentifier = ChangeTextOf oldSource changes
         Rename.GetErrorMessage (Some (identifierRange.Start.Line, identifierRange.Start.Column+1), Some name)
                                sourceWithIdentifier "test.fs"
@@ -160,5 +167,5 @@ let ExtractFunction inScopeTree (expressionRange : range) functionName : Refacto
 let Transform (((startLine, startColumn), (endLine, endColumn)), functionName) source filename =
     let tree = (Ast.Parse source).Value
     let expressionRange = mkRange "test.fs" (mkPos startLine (startColumn-1)) (mkPos endLine (endColumn-1))
-    let inScopeTree = Ast.AstNode.Expression (defaultInScopeTree tree expressionRange).Value
+    let inScopeTree = (defaultInScopeTree tree expressionRange).Value
     RunRefactoring (ExtractFunction inScopeTree expressionRange functionName) () source

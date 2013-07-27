@@ -47,9 +47,9 @@ type ExtractFunctionAnalysisModule() =
         let expected2 = "let x = 5*a + b"
 
         Assert.AreEqual(expected1,
-                        CodeTransforms.TextOfRange source1 (Ast.GetRange (Ast.AstNode.Expression (defaultInScopeTree (Ast.Parse source1).Value expressionRange1).Value)).Value)
+                        CodeTransforms.TextOfRange source1 (Ast.GetRange (defaultInScopeTree (Ast.Parse source1).Value expressionRange1).Value).Value)
         Assert.AreEqual(expected2,
-                        CodeTransforms.TextOfRange source2 (Ast.GetRange (Ast.AstNode.Expression (defaultInScopeTree (Ast.Parse source2).Value expressionRange2).Value)).Value)
+                        CodeTransforms.TextOfRange source2 (Ast.GetRange (defaultInScopeTree (Ast.Parse source2).Value expressionRange2).Value).Value)
 
     [<Test>]
     member this.``Can find a default inScopeTree if there are no bindings in the source``() =
@@ -58,7 +58,7 @@ type ExtractFunctionAnalysisModule() =
         let expressionRange = mkRange "test.fs" (mkPos 1 0) (mkPos 1 5)
 
         Assert.AreEqual(source,
-                        CodeTransforms.TextOfRange source (Ast.GetRange (Ast.AstNode.Expression (defaultInScopeTree tree expressionRange).Value)).Value)
+                        CodeTransforms.TextOfRange source (Ast.GetRange (defaultInScopeTree tree expressionRange).Value).Value)
 
 [<TestFixture>]
 type ExtractFunctionTransformModule() =

@@ -264,36 +264,44 @@ module ScopeAnalysis =
         generateWhileUsed ()
 
 
-module RangeAnalysis =
-    let rec ListNodes (tree : Ast.AstNode) =
-        match tree with
-            | Ast.Children cs -> tree::(List.concat (Seq.map ListNodes cs))
-            | _ -> [tree]
-            
+module RangeAnalysis =           
     let CountLines body =
         1+(String.length (String.collect (fun c -> if c = '\n' then "\n" else "") body))
 
-    let FindNodesWithRange range (tree : Ast.AstNode) =
+    let filterNodesOnRange acceptNode range (tree : Ast.AstNode) =
         let nodeContainsRange node =
             rangeContainsRange ((Ast.GetRange node).Value) range
+        let rec findNodesWithRangeInChildren trees foundNodes =
+            match trees with
+                | [] -> foundNodes
+                | tree::ts ->
+                    let foundNodes =
+                        if acceptNode tree then tree::foundNodes else foundNodes
+                    let childrenContainingRange =
+                        if Option.isNone (Ast.GetChildren tree) then []
+                        else List.filter nodeContainsRange ((Ast.GetChildren tree).Value)
+                    findNodesWithRangeInChildren (List.append childrenContainingRange ts) foundNodes
+
+        findNodesWithRangeInChildren [tree] []
+
+    let FindNodesWithRange range (tree : Ast.AstNode) =
         let hasRange node =
             Option.isSome (Ast.GetRange node) && (Ast.GetRange node).Value = range
 
-        let rec findNodesWithRangeInChild tree foundNodes =
-            let foundNodes =
-                if hasRange tree then tree::foundNodes else foundNodes 
-            let childContainingRange =
-                List.tryFind nodeContainsRange ((Ast.GetChildren tree).Value)
-            if Option.isNone childContainingRange then foundNodes
-            else findNodesWithRangeInChild (childContainingRange.Value) foundNodes 
+        filterNodesOnRange hasRange range tree
+        
+    let rec FindNodesAroundRange range (tree : Ast.AstNode) =
+        let treeContainsRange tree =
+            Option.isSome (Ast.GetRange tree) && rangeContainsRange (Ast.GetRange tree).Value range
 
-        findNodesWithRangeInChild tree []
+        filterNodesOnRange treeContainsRange range tree
 
     let TryFindExpressionAtRange range (tree : Ast.AstNode)  =
         let isExpression node =
             match node with
                 | Ast.AstNode.Expression _ -> true
                 | _ -> false
+        let nodes = FindNodesWithRange range tree
         List.tryFind isExpression (FindNodesWithRange range tree)
 
     let chooseBinding node  =
@@ -303,12 +311,6 @@ module RangeAnalysis =
                 
     let FindBindingAtRange range (tree : Ast.AstNode) =
         List.pick chooseBinding (FindNodesWithRange range tree)
-
-    let rec FindNodesAroundRange range (tree : Ast.AstNode) =
-        let treeContainsRange tree =
-            Option.isSome (Ast.GetRange tree) && rangeContainsRange (Ast.GetRange tree).Value range
-        ListNodes tree
-        |> List.filter treeContainsRange
 
     let TryFindBindingAroundRange range (tree : Ast.AstNode) =
         FindNodesAroundRange range tree
@@ -322,13 +324,13 @@ module RangeAnalysis =
         TryFindBindingAroundPos pos tree
         |> Option.get
 
-    let TryFindExpressionAroundRange range (tree : Ast.AstNode) =
-        let chooseExpression node =
+    let FindExpressionsAroundRange range (tree : Ast.AstNode) =
+        let isExpression node =
             match node with
-                | Ast.AstNode.Expression e -> Some e
-                | _ -> None
+                | Ast.AstNode.Expression _ -> true
+                | _ -> false
         FindNodesAroundRange range tree
-        |> List.tryPick chooseExpression
+        |> List.filter isExpression
 
     let TryFindIdentifier source (position : pos) =
         let containsPos (name,range) =
