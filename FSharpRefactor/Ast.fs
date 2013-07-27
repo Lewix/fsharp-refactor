@@ -103,6 +103,7 @@ module Ast =
                     | SynExpr.DotGet(e,_,_,_)
                     | SynExpr.Assert(e,_)
                     | SynExpr.Do(e,_)
+                    | SynExpr.Lazy(e,_)
                     | SynExpr.CompExpr(_,_,e,_) -> Some([AstNode.Expression e])
                     | SynExpr.ArrayOrList(_,es,_)
                     | SynExpr.Tuple(es,_,_) -> Some(List.map AstNode.Expression es)
