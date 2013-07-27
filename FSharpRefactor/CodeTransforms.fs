@@ -9,21 +9,17 @@ open FSharpRefactor.Engine.CodeAnalysis.ScopeAnalysis
 module CodeTransforms =
     exception InvalidRange
     exception InvalidNode
-
-
-    let takeAroundPos source (line, column) =
-        let notLineSep = fun c -> c <> '\n'
-        let makeString charSeq = Seq.fold (+) "" (Seq.map string charSeq)
-        // Lines are indexed from 1, columns from 0
-        let rec takeAroundPosSeq before after (line, column) =
-            match (line, column) with
-                | 1,c -> (Seq.append before (Seq.take column after), Seq.skip column after)
-                | n,_ ->
-                    takeAroundPosSeq (Seq.concat [before; (Seq.takeWhile notLineSep after); seq['\n']])
-                                  (Seq.skip 1 (Seq.skipWhile notLineSep after))
-                                  (line-1, column)
-        let before,after = takeAroundPosSeq "" source (line, column)
-        makeString before, makeString after
+        
+    let takeAroundPos (source:string) (line, column) =
+        let lines = source.Split([|'\n'|])
+        let beforeLines = lines.[..(line-2)]
+        let afterLines = lines.[line..]
+        let beforeColumns = lines.[line-1].[..column-1]
+        let afterColumns = lines.[line-1].[column..]
+        let beforeSep = if Seq.isEmpty beforeLines then "" else "\n"
+        let afterSep = if Seq.isEmpty afterLines then "" else "\n"
+        
+        (String.concat "\n" beforeLines) + beforeSep + beforeColumns, afterColumns + afterSep + (String.concat "\n" afterLines)
 
     let Indent (body : string) indentString =
         let indentLine body line =
