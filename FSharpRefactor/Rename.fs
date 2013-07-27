@@ -45,12 +45,13 @@ let GetErrorMessage (position:(int*int) option, newName:string option) (source:s
                 if IsDeclared targetName is then false
                 else List.fold (||) false (List.map (isFree targetName) ts)
 
-    let rec getTopLevelDeclarations targetName tree =
+    let rec getShallowestDeclarations targetName tree =
         match tree with
+            | TopLevelDeclaration(is, ts)
             | Declaration(is, ts) as declaration->
                 if IsDeclared targetName is
                 then [declaration]
-                else List.collect (getTopLevelDeclarations targetName) ts
+                else List.collect (getShallowestDeclarations targetName) ts
             | _ -> []
 
     let pos = PosFromPositionOption position
@@ -93,7 +94,7 @@ let GetErrorMessage (position:(int*int) option, newName:string option) (source:s
             not (isFree newName (declarationScope.Value.Value))
 
         let oldNameIsNotFree =
-            getTopLevelDeclarations newName (declarationScope.Value.Value)
+            getShallowestDeclarations newName (declarationScope.Value.Value)
             |> List.map (isFree oldName)
             |> List.fold (||) false
             |> not
