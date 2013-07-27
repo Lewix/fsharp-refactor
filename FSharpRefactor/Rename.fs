@@ -11,10 +11,10 @@ let rec findDeclarationInScopeTrees trees (name, declarationRange) =
     match trees with
         | [] -> None
         | Usage(_,_)::ds -> findDeclarationInScopeTrees ds (name, declarationRange)
-        | TopLevelDeclaration(is, ts)::ds
-        | Declaration(is, ts)::ds ->
+        | (TopLevelDeclaration(is, ts) as d)::ds
+        | (Declaration(is, ts) as d)::ds ->
             let isDeclaration = (fun (n,r) -> n = name && rangeContainsRange r declarationRange)
-            if List.exists isDeclaration is then Some(Declaration(is, ts))
+            if List.exists isDeclaration is then Some d
             else findDeclarationInScopeTrees (List.append ts ds) (name, declarationRange)
 
 let rec rangesToReplace (name, declarationRange) tree =
