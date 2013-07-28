@@ -269,6 +269,50 @@ module ScopeAnalysis =
 
         generateWhileUsed ()
 
+    let rec FindDeclarationScope trees (name, declarationRange) =
+        match trees with
+            | [] -> None
+            | Usage(_,_)::ds -> FindDeclarationScope ds (name, declarationRange)
+            | (TopLevelDeclaration(is, ts) as d)::ds
+            | (Declaration(is, ts) as d)::ds ->
+                let isDeclaration = (fun (n,r) -> n = name && rangeContainsRange r declarationRange)
+                if List.exists isDeclaration is then Some d
+                else FindDeclarationScope (List.append ts ds) (name, declarationRange)
+                            
+    let FindDeclarationReferences (name, declarationRange) (tree:ScopeTree) =
+        let rangeOfIdent (name : string) (identifiers : Identifier list) =
+            let identifier = List.tryFind (fun (n,_) -> n = name) identifiers
+            if Option.isNone identifier then None else Some(snd identifier.Value)
+        let isNestedDeclaration idents =
+            List.exists (fun (n,r) -> n = name && not (rangeContainsRange r declarationRange)) idents
+        
+        let rec findReferencesInTree tree =
+            match tree with
+                | Usage(n, r) when n = name -> [r]
+                | TopLevelDeclaration(is, ts)
+                | Declaration(is, ts) when not (isNestedDeclaration is) ->
+                    let remainingRanges = List.concat (Seq.map findReferencesInTree ts)
+                    let declarationRange = rangeOfIdent name is
+                    if Option.isSome declarationRange then declarationRange.Value::remainingRanges
+                    else remainingRanges
+                | _ -> []
+        findReferencesInTree tree
+        
+    let DeclaredNames tree =
+        match tree with
+            | TopLevelDeclaration(is,ts)
+            | Declaration(is,ts) -> is
+            | _ -> []
+
+    let rec GetShallowestDeclarations targetName tree =
+        match tree with
+            | TopLevelDeclaration(is, ts)
+            | Declaration(is, ts) as declaration->
+                if IsDeclared targetName is
+                then [declaration]
+                else List.collect (GetShallowestDeclarations targetName) ts
+            | _ -> []
+
 
 module RangeAnalysis =           
     let CountLines body =
