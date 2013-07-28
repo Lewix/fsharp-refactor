@@ -29,25 +29,25 @@ type AddArgumentModule() =
     [<Test>]
     member this.``Can add an argument to a binding``() =
         let source = "let f a b = a+b"
-        let tree = (Ast.Parse source).Value
+        let tree = (Ast.Parse source "test.fs").Value
         let bindingRange = mkRange "test.fs" (mkPos 1 4) (mkPos 1 15)
         let expected = "let f c a b = a+b"
 
-        Assert.AreEqual(expected, RunRefactoring (addArgumentToBinding bindingRange "c") () source)
+        Assert.AreEqual(expected, RunRefactoring (addArgumentToBinding bindingRange "c" "test.fs") () source)
 
     [<Test>]
     member this.``Can add an argument to a value binding``() =
         let source = "let x = 1+2"
-        let tree = (Ast.Parse source).Value
+        let tree = (Ast.Parse source "test.fs").Value
         let bindingRange = mkRange "test.fs" (mkPos 1 4) (mkPos 1 11)
         let expected = "let x arg = 1+2"
 
-        Assert.AreEqual(expected, RunRefactoring (addArgumentToBinding bindingRange "arg") () source)
+        Assert.AreEqual(expected, RunRefactoring (addArgumentToBinding bindingRange "arg" "test.fs") () source)
 
     [<Test>]
     member this.``Can add an argument to a function call``() =
         let source = "f a \"b\" 3"
-        let tree = (Ast.Parse source).Value
+        let tree = (Ast.Parse source "test.fs").Value
         let usageRange = mkRange "test.fs" (mkPos 1 0) (mkPos 1 1)
         let expected ="(f \"arg\") a \"b\" 3"
 
@@ -56,7 +56,7 @@ type AddArgumentModule() =
     [<Test>]
     member this.``Can find all the App nodes calling a certain function``() =
         let source = "(let f a b c = 1 in (f 1 2 3) + ((f 2) 2) + (1 + (2 + (f 3 3 4)))) + (f 1)"
-        let tree = (Ast.Parse source).Value
+        let tree = (Ast.Parse source "test.fs").Value
         let bindingRange = mkRange "test.fs" (mkPos 1 5) (mkPos 1 16)
         let functionUsageRanges = findFunctionUsageRanges source tree bindingRange "f"
 
@@ -65,7 +65,7 @@ type AddArgumentModule() =
     [<Test>]
     member this.``Can find App nodes calling a function without duplicates``() =
         let source = "let f a b = 1 in f f f"
-        let tree = (Ast.Parse source).Value
+        let tree = (Ast.Parse source "test.fs").Value
         let bindingRange = mkRange "test.fs" (mkPos 1 4) (mkPos 1 12)
         let functionUsageRanges = findFunctionUsageRanges source tree bindingRange "f"
 
@@ -74,7 +74,7 @@ type AddArgumentModule() =
     [<Test>]
     member this.``Can stop finding App nodes when an identifier is redefined``() =
         let source = "let f = 2\n\nlet f = 1 in (fun f -> f)"
-        let tree = (Ast.Parse source).Value
+        let tree = (Ast.Parse source "test.fs").Value
         let bindingRange = mkRange "test.fs" (mkPos 3 4) (mkPos 3 8)
         let functionUsageRanges = findFunctionUsageRanges source tree bindingRange "f"
 
@@ -83,7 +83,7 @@ type AddArgumentModule() =
     [<Test>]
     member this.``Can add an argument to a function``() =
         let source = "(let f a b c = 1 in (f 1 2 3) + ((f 2) 2) + (1 + (2 + (f 3 3 4)))) + (f 1)"
-        let tree = (Ast.Parse source).Value
+        let tree = (Ast.Parse source "test.fs").Value
         let bindingRange = mkRange "test.fs" (mkPos 1 5) (mkPos 1 16)
         let expected = "(let f arg a b c = 1 in ((f 0) 1 2 3) + (((f 0) 2) 2) + (1 + (2 + ((f 0) 3 3 4)))) + (f 1)"
 
@@ -92,7 +92,7 @@ type AddArgumentModule() =
     [<Test>]
     member this.``Can add an argument to a function, even if it is not being applied``() =
         let source = "let f a = 1 in let g a = f in g 1 1"
-        let tree = (Ast.Parse source).Value
+        let tree = (Ast.Parse source "test.fs").Value
         let bindingRange = mkRange "test.fs" (mkPos 1 4) (mkPos 1 11)
         let expected = "let f arg a = 1 in let g a = (f \"value\") in g 1 1"
 
@@ -101,7 +101,7 @@ type AddArgumentModule() =
     [<Test>]
     member this.``Can find the name of a function given its binding's range``() =
         let source = "let f a b = a+b"
-        let tree = (Ast.Parse source).Value
+        let tree = (Ast.Parse source "test.fs").Value
         let bindingRange = mkRange "test.fs" (mkPos 1 4) (mkPos 1 15)
 
         Assert.AreEqual("f", findFunctionName source tree bindingRange)
@@ -109,19 +109,19 @@ type AddArgumentModule() =
     [<Test>]
     member this.``Can find a sensible default binding range for a given position``() =
         let source = "let f a b =\n  let x = 3+4+5"
-        let tree = (Ast.Parse source).Value
+        let tree = (Ast.Parse source "test.fs").Value
         let position1 = mkPos 2 11
         let position2 = mkPos 2 1
         let expected1 = "x = 3+4+5"
         let expected2 = "f a b =\n  let x = 3+4+5"
 
-        Assert.AreEqual(expected1, CodeTransforms.TextOfRange source (defaultBindingRange source tree position1))
-        Assert.AreEqual(expected2, CodeTransforms.TextOfRange source (defaultBindingRange source tree position2))
+        Assert.AreEqual(expected1, CodeTransforms.TextOfRange source (defaultBindingRange source tree position1 "test.fs"))
+        Assert.AreEqual(expected2, CodeTransforms.TextOfRange source (defaultBindingRange source tree position2 "test.fs"))
 
     [<Test>]
     member this.``Cannot add an argument if there is no binding at the given range``() =
         let source = "let f a b = a+b"
-        let tree = (Ast.Parse source).Value
+        let tree = (Ast.Parse source "test.fs").Value
         let range = mkRange "test.fs" (mkPos 1 3) (mkPos 1 5)
         let valid = IsValid (Some (1,3), None, Some "0") source "test.fs"
 
@@ -131,8 +131,8 @@ type AddArgumentModule() =
     member this.``Cannot add an argument if there is already on with the same name``() =
         let source1 = "let f a b = a+b"
         let source2 = "let rec f a b = f(a+b)"
-        let tree1 = (Ast.Parse source1).Value
-        let tree2 = (Ast.Parse source2).Value
+        let tree1 = (Ast.Parse source1 "test.fs").Value
+        let tree2 = (Ast.Parse source2 "test.fs").Value
         
         let range1 = mkRange "test.fs" (mkPos 1 4) (mkPos 1 15)
         let range2 = mkRange "test.fs" (mkPos 1 8) (mkPos 1 22)

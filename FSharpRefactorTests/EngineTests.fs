@@ -16,7 +16,7 @@ type AstModule() =
     [<Test>]
     member this.``Can instantiate a AstNode from the result of parsing source code``() =
         let source = "let a = 1"
-        let rootNode = Ast.Parse source
+        let rootNode = Ast.Parse source "test.fs"
         let expectNamespace node =
             match node with
                 | Some(Ast.AstNode.File(_)) -> true
@@ -49,7 +49,7 @@ type CodeTransformsModule() =
     [<Test>]
     member this.``Can change the text corresponding to an ast node``() =
         let source = "let a = 1\n\n"
-        let tree = (Ast.Parse source).Value
+        let tree = (Ast.Parse source "test.fs").Value
         let a = Ast.GetChildren(Ast.GetChildren(Ast.GetChildren(Ast.GetChildren(tree).Value.Head).Value.Head).Value.Head).Value.Head
         let expected = "let b = 1\n\n"
 
@@ -58,7 +58,7 @@ type CodeTransformsModule() =
     [<Test>]
     member this.``Can change the text for two ast nodes``() =
         let source = "\nlet a = 1\nlet b = 2"
-        let tree = (Ast.Parse source).Value
+        let tree = (Ast.Parse source "test.fs").Value
         let a = Ast.GetChildren(Ast.GetChildren(Ast.GetChildren(Ast.GetChildren(tree).Value.Head).Value.Head).Value.Head).Value.Head
         let b = Ast.GetChildren(Ast.GetChildren(Ast.GetChildren(Ast.GetChildren(tree).Value.Head).Value.[1]).Value.Head).Value.Head
         let expected = "\nlet b = 1\nlet a2 = 2"
@@ -102,12 +102,12 @@ type CodeTransformsModule() =
 
 [<TestFixture>]
 type ScopeAnalysisModule() =
-    let getTrees source = ScopeAnalysis.makeScopeTrees (Ast.Parse source).Value
+    let getTrees source = ScopeAnalysis.makeScopeTrees (Ast.Parse source "test.fs").Value
 
     [<Test>]
     member this.``Can find an unused name``() =
         let source = "let f a b c = 1\nlet g = 3"
-        let tree = (Ast.Parse source).Value
+        let tree = (Ast.Parse source "test.fs").Value
         
         Assert.IsFalse(Set.contains (ScopeAnalysis.FindUnusedName tree) (Set ["f";"a";"b";"c";"g"]))
 
@@ -151,7 +151,7 @@ type ScopeAnalysisModule() =
 [<TestFixture>]
 type ScopeTreeModule() =
     static member getScopeTrees source =
-        ScopeAnalysis.makeScopeTrees (Ast.Parse source).Value
+        ScopeAnalysis.makeScopeTrees (Ast.Parse source "test.fs").Value
         
     [<Test>]
     member this.``Can create a scope tree for a nested module``() =
@@ -346,20 +346,20 @@ type RangeAnalysisModule() =
         let aDeclarationRange = mkRange "test.fs" (mkPos 1 12) (mkPos 1 13)
         let fDeclarationRange = mkRange "test.fs" (mkPos 1 4) (mkPos 1 11)
 
-        Assert.AreEqual(Some("a",aDeclarationRange), RangeAnalysis.TryFindIdentifier source aDeclarationRange.Start)
-        Assert.AreEqual(Some("functio",fDeclarationRange), RangeAnalysis.TryFindIdentifier source fDeclarationRange.Start)
+        Assert.AreEqual(Some("a",aDeclarationRange), RangeAnalysis.TryFindIdentifier source filename aDeclarationRange.Start)
+        Assert.AreEqual(Some("functio",fDeclarationRange), RangeAnalysis.TryFindIdentifier source filename fDeclarationRange.Start)
 
     [<Test>]
     member this.``Can find identifier position when identifiers are just next to each other``() =
         let source = "a+b"
         let range = mkRange "test.fs" (mkPos 1 2) (mkPos 1 3)
 
-        Assert.AreEqual(Some("b", range), RangeAnalysis.TryFindIdentifier source range.Start)
+        Assert.AreEqual(Some("b", range), RangeAnalysis.TryFindIdentifier source "test.fs" range.Start)
     
     [<Test>]
     member this.``Can find the AstNode.Expression corresponding to a range``() =
         let source = "let a = 1+(2+3)+4"
-        let tree = (Ast.Parse source).Value
+        let tree = (Ast.Parse source "test.fs").Value
         let expressionRange = mkRange "test.fs" (mkPos 1 10) (mkPos 1 15)
         let expression = RangeAnalysis.TryFindExpressionAtRange expressionRange tree
 
@@ -370,7 +370,7 @@ type RangeAnalysisModule() =
     [<Test>]
     member this.``Can find the binding from the binding's range``() =
         let source = "let f a b = a+b"
-        let tree = (Ast.Parse source).Value
+        let tree = (Ast.Parse source "test.fs").Value
         let bindingRange = mkRange "test.fs" (mkPos 1 4) (mkPos 1 15)
         let binding = RangeAnalysis.FindBindingAtRange bindingRange tree
 

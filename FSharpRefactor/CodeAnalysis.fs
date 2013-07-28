@@ -40,6 +40,9 @@ module ScopeAnalysis =
             | TopLevelDeclaration(is,ts)::rest
             | Declaration(is,ts)::rest -> List.append is (ListIdentifiers (List.append ts rest))
 
+    let IsDeclared (name : string) (identifiers : Identifier list) =
+        List.exists (fun (n,_) -> n = name) identifiers
+
     let GetFreeIdentifierUsages (trees : ScopeTree list) =
         let rec freeIdentifiersInSingleTree foundFree declared tree =
             match tree with
@@ -53,8 +56,11 @@ module ScopeAnalysis =
                     
         List.collect (freeIdentifiersInSingleTree [] Set.empty<string>) trees
 
-    let IsDeclared (name : string) (identifiers : Identifier list) =
-        List.exists (fun (n,_) -> n = name) identifiers
+    let rec IsFree targetName tree =
+        let hasTargetName (n,_) = n = targetName
+            
+        GetFreeIdentifierUsages [tree]
+        |> List.exists hasTargetName
 
     let TryFindIdentifierDeclaration (trees : ScopeTree list) ((name, range) : Identifier) =
         let isDeclaration (n,r) = n = name && r = range
@@ -316,8 +322,8 @@ module RangeAnalysis =
         FindNodesAroundRange range tree
         |> List.tryPick chooseBinding
         
-    let TryFindBindingAroundPos pos (tree : Ast.AstNode) =
-        let range = mkRange "test.fs" pos pos
+    let TryFindBindingAroundPos pos filename (tree : Ast.AstNode) =
+        let range = mkRange filename pos pos
         TryFindBindingAroundRange range tree
 
     let FindExpressionsAroundRange range (tree : Ast.AstNode) =
@@ -328,23 +334,23 @@ module RangeAnalysis =
         FindNodesAroundRange range tree
         |> List.filter isExpression
 
-    let TryFindIdentifier source (position : pos) =
+    let TryFindIdentifier source filename (position : pos) =
         let containsPos (name,range) =
             // Identifiers' ranges extend past the end of the text
             // so avoid range.End for cases like b in a+b
             rangeContainsPos range position && range.End <> position
 
-        (Ast.Parse source).Value
+        (Ast.Parse source filename).Value
         |> ScopeAnalysis.makeScopeTrees
         |> ScopeAnalysis.ListIdentifiers
         |> List.tryFind containsPos
 
-    let FindIdentifier source (position : pos) =
-        TryFindIdentifier source position
+    let FindIdentifier source filename (position : pos) =
+        TryFindIdentifier source filename position
         |> Option.get
 
-    let FindIdentifierName source (line, col) =
-        let name, _ = FindIdentifier source (mkPos line (col-1))
+    let FindIdentifierName source filename (line, col) =
+        let name, _ = FindIdentifier source filename (mkPos line (col-1))
         name
         
     let RangeToTuple (range : range) =

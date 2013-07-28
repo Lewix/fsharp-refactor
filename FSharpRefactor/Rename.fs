@@ -37,14 +37,6 @@ let rec rangesToReplace (name, declarationRange) tree =
 
 //TODO: these probably need to be put in an .fsi file
 let GetErrorMessage (position:(int*int) option, newName:string option) (source:string) (filename:string) =
-    let rec isFree targetName tree =
-        match tree with
-            | Usage(n,_) -> n = targetName
-            | TopLevelDeclaration(is, ts)
-            | Declaration(is, ts) ->
-                if IsDeclared targetName is then false
-                else List.fold (||) false (List.map (isFree targetName) ts)
-
     let rec getShallowestDeclarations targetName tree =
         match tree with
             | TopLevelDeclaration(is, ts)
@@ -56,9 +48,9 @@ let GetErrorMessage (position:(int*int) option, newName:string option) (source:s
 
     let pos = PosFromPositionOption position
     let scopeTrees =
-        lazy (makeScopeTrees (Ast.Parse source).Value)
+        lazy (makeScopeTrees (Ast.Parse source filename).Value)
     let identifier =
-        lazy (Option.bind (TryFindIdentifier source) pos)
+        lazy (Option.bind (TryFindIdentifier source filename) pos)
     let identifierDeclaration =
         lazy
             let tryFindDeclaration =
@@ -91,11 +83,11 @@ let GetErrorMessage (position:(int*int) option, newName:string option) (source:s
                     newName = oldName || not (IsDeclared newName is)
                 | _ -> true
         let newNameIsNotFree =
-            not (isFree newName (declarationScope.Value.Value))
+            not (IsFree newName (declarationScope.Value.Value))
 
         let oldNameIsNotFree =
             getShallowestDeclarations newName (declarationScope.Value.Value)
-            |> List.map (isFree oldName)
+            |> List.map (IsFree oldName)
             |> List.fold (||) false
             |> not
 
@@ -114,12 +106,12 @@ let IsValid (position:(int*int) option, newName:string option) (source:string) (
     GetErrorMessage (position, newName) source filename
     |> Option.isNone
 
-let Rename newName : Refactoring<Identifier,unit> =
+let Rename newName filename : Refactoring<Identifier,unit> =
     let analysis (source, (_, identifierRange) : Identifier) =
-        IsValid (Some (identifierRange.Start.Line, identifierRange.Start.Column+1), Some newName) source "test.fs"
+        IsValid (Some (identifierRange.Start.Line, identifierRange.Start.Column+1), Some newName) source filename
 
     let transform (source, identifier) =
-        let tree = (Ast.Parse source).Value
+        let tree = (Ast.Parse source filename).Value
         let declarationScope =
             findDeclarationInScopeTrees (makeScopeTrees tree) identifier
             |> Option.get
@@ -130,12 +122,12 @@ let Rename newName : Refactoring<Identifier,unit> =
 
     let getErrorMessage (source, (_, range : range)) =
         let pos = range.Start
-        GetErrorMessage (Some (pos.Line, pos.Column+1), Some newName) source "test.fs"
+        GetErrorMessage (Some (pos.Line, pos.Column+1), Some newName) source filename
     { analysis = analysis; transform = transform; getErrorMessage = getErrorMessage }
 
 let Transform ((line:int, col:int), newName:string) (source:string) (filename:string) =
     let position = mkPos line (col-1)
-    let tree = (Ast.Parse source).Value
+    let tree = (Ast.Parse source filename).Value
     let declarationIdentifier =
-        FindIdentifierDeclaration (makeScopeTrees (Ast.Parse source).Value) (FindIdentifier source position)
-    RunRefactoring (Rename newName) declarationIdentifier source
+        FindIdentifierDeclaration (makeScopeTrees (Ast.Parse source filename).Value) (FindIdentifier source filename position)
+    RunRefactoring (Rename newName filename) declarationIdentifier source
