@@ -310,11 +310,11 @@ module ScopeAnalysis =
 
     let rec GetShallowestDeclarations targetName tree =
         match tree with
-            | TopLevelDeclaration(is, ts)
-            | Declaration(is, ts) as declaration->
-                if IsDeclared targetName is
-                then [declaration]
-                else List.collect (GetShallowestDeclarations targetName) ts
+            | TopLevelDeclaration(is, ts) when IsDeclared targetName is -> [is, ts, true]
+            | Declaration(is, ts) when IsDeclared targetName is -> [is, ts, false]
+            | TopLevelDeclaration(is, ts) 
+            | Declaration(is, ts) as declaration ->
+                List.collect (GetShallowestDeclarations targetName) ts
             | _ -> []
 
 

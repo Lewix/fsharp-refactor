@@ -6,27 +6,18 @@ open FSharpRefactor.Engine.CodeAnalysis.ScopeAnalysis
 open FSharpRefactor.Engine.CodeAnalysis.RangeAnalysis
 open FSharpRefactor.Engine.Refactoring
 open FSharpRefactor.Engine.ValidityChecking
+open FSharpRefactor.Engine
 
 //TODO: these probably need to be put in an .fsi file
 let GetErrorMessage (position:(int*int) option, newName:string option) (source:string) (filename:string) =
     let pos = PosFromPositionOption position
-    let scopeTrees =
-        lazy (makeScopeTrees (Ast.Parse source filename).Value)
     let identifier =
-        lazy (Option.bind (TryFindIdentifier source filename) pos)
-    let identifierDeclaration =
-        lazy
-            let tryFindDeclaration =
-                TryFindIdentifierDeclaration (scopeTrees.Force())
-            Option.bind tryFindDeclaration (identifier.Force())
-    let declarationScope =
-        lazy
-            let tryFindDeclarationScope =
-                TryFindDeclarationScope (scopeTrees.Force())
-            Option.bind tryFindDeclarationScope (identifierDeclaration.Force())
+        lazy Option.bind (TryFindIdentifier source filename) pos
+    let identifierScope =
+        lazy Option.bind (fun (identifier:Identifier) -> Some (new IdentifierScope(identifier, source))) (identifier.Force())
 
     let checkPosition (line, col) =
-        match Option.isSome (identifier.Force()), Option.isSome (identifierDeclaration.Force()) with
+        match Option.isSome (identifier.Force()), Option.isSome (identifierScope.Force()) with
             | false,_ -> Some("No identifier found at the given range")
             | _,false ->
                 let identifierName, _ = identifier.Value.Value
@@ -38,18 +29,18 @@ let GetErrorMessage (position:(int*int) option, newName:string option) (source:s
         None
 
     let checkPositionAndName (position, newName) =
-        let oldName, _ = identifierDeclaration.Force().Value
+        let oldName = identifierScope.Force().Value.IdentifierName
         let newNameIsBound =
-            DeclaredNames (declarationScope.Force().Value)
+            identifierScope.Value.Value.NamesDeclaredInBinding
             |> IsDeclared newName
             |> (&&) (oldName <> newName)
 
         let newNameIsFree =
-            IsFree newName (declarationScope.Value.Value)
+            identifierScope.Value.Value.IsFree newName
 
         let oldNameIsFree =
-            GetShallowestDeclarations newName (declarationScope.Value.Value)
-            |> List.map (IsFree oldName)
+            identifierScope.Value.Value.FindNestedDeclarations newName
+            |> List.map (fun scope -> scope.IsFree oldName)
             |> List.fold (||) false
 
         match newNameIsBound, newNameIsFree, oldNameIsFree with
@@ -68,26 +59,24 @@ let IsValid (position:(int*int) option, newName:string option) (source:string) (
     |> Option.isNone
 
 let Rename newName filename : Refactoring<Identifier,unit> =
-    let analysis (source, (_, identifierRange) : Identifier) =
-        IsValid (Some (identifierRange.Start.Line, identifierRange.Start.Column+1), Some newName) source filename
+    let analysis (source, identifier:Identifier) =
+        let identifierScope = new IdentifierScope(identifier, source)
+        IsValid (Some (identifierScope.DeclarationRange.StartLine, identifierScope.DeclarationRange.StartColumn+1), Some newName) source filename
 
-    let transform (source, identifier) =
-        let tree = (Ast.Parse source filename).Value
-        let declarationScope =
-            FindDeclarationScope (makeScopeTrees tree) identifier
+    let transform (source, identifier:Identifier) =
+        let identifierScope = new IdentifierScope(identifier, source)
         let changes =
-            FindDeclarationReferences identifier declarationScope
+            identifierScope.FindReferences ()
             |> List.map (fun r -> (r,newName))
         source, changes, ()
 
-    let getErrorMessage (source, (_, range : range)) =
-        let pos = range.Start
-        GetErrorMessage (Some (pos.Line, pos.Column+1), Some newName) source filename
+    let getErrorMessage (source, identifier:Identifier) =
+        let identifierScope = new IdentifierScope(identifier, source)
+        GetErrorMessage (Some (identifierScope.DeclarationRange.StartLine, identifierScope.DeclarationRange.StartColumn+1), Some newName) source filename
     { analysis = analysis; transform = transform; getErrorMessage = getErrorMessage }
 
 let Transform ((line:int, col:int), newName:string) (source:string) (filename:string) =
     let position = mkPos line (col-1)
     let tree = (Ast.Parse source filename).Value
-    let declarationIdentifier =
-        FindIdentifierDeclaration (makeScopeTrees (Ast.Parse source filename).Value) (FindIdentifier source filename position)
-    RunRefactoring (Rename newName filename) declarationIdentifier source
+    let identifierScope = new IdentifierScope(FindIdentifier source filename position, source)
+    RunRefactoring (Rename newName filename) identifierScope.IdentifierDeclaration source
