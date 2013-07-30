@@ -30,19 +30,19 @@ type AddArgumentModule() =
     member this.``Can add an argument to a binding``() =
         let source = "let f a b = a+b"
         let tree = (Ast.Parse source "test.fs").Value
-        let bindingRange = mkRange "test.fs" (mkPos 1 4) (mkPos 1 15)
+        let functionIdentifier = "f", mkRange "test.fs" (mkPos 1 4) (mkPos 1 5)
         let expected = "let f c a b = a+b"
 
-        Assert.AreEqual(expected, RunRefactoring (addArgumentToBinding bindingRange "c" "test.fs") () source)
+        Assert.AreEqual(expected, RunRefactoring (addArgumentToFunctionDeclaration functionIdentifier "c" "test.fs") () source)
 
     [<Test>]
     member this.``Can add an argument to a value binding``() =
         let source = "let x = 1+2"
         let tree = (Ast.Parse source "test.fs").Value
-        let bindingRange = mkRange "test.fs" (mkPos 1 4) (mkPos 1 11)
+        let bindingRange = "x", mkRange "test.fs" (mkPos 1 4) (mkPos 1 5)
         let expected = "let x arg = 1+2"
 
-        Assert.AreEqual(expected, RunRefactoring (addArgumentToBinding bindingRange "arg" "test.fs") () source)
+        Assert.AreEqual(expected, RunRefactoring (addArgumentToFunctionDeclaration bindingRange "arg" "test.fs") () source)
 
     [<Test>]
     member this.``Can add an argument to a function call``() =
@@ -57,17 +57,17 @@ type AddArgumentModule() =
     member this.``Can find all the App nodes calling a certain function``() =
         let source = "(let f a b c = 1 in (f 1 2 3) + ((f 2) 2) + (1 + (2 + (f 3 3 4)))) + (f 1)"
         let tree = (Ast.Parse source "test.fs").Value
-        let bindingRange = mkRange "test.fs" (mkPos 1 5) (mkPos 1 16)
-        let functionUsageRanges = findFunctionUsageRanges source tree bindingRange "f"
+        let bindingRange = "f", mkRange "test.fs" (mkPos 1 5) (mkPos 1 6)
+        let functionUsageRanges = findFunctionUsageRanges source tree bindingRange
 
-        Assert.AreEqual([mkRange "test.fs" (mkPos 1 21) (mkPos 1 22); mkRange "test.fs" (mkPos 1 34) (mkPos 1 35); mkRange "test.fs" (mkPos 1 55) (mkPos 1 56)], functionUsageRanges)
+        Assert.AreEqual([mkRange "test.fs" (mkPos 1 21) (mkPos 1 22); mkRange "test.fs" (mkPos 1 34) (mkPos 1 35); mkRange "test.fs" (mkPos 1 55) (mkPos 1 56)], functionUsageRanges, sprintf "%A" functionUsageRanges)
 
     [<Test>]
     member this.``Can find App nodes calling a function without duplicates``() =
         let source = "let f a b = 1 in f f f"
         let tree = (Ast.Parse source "test.fs").Value
-        let bindingRange = mkRange "test.fs" (mkPos 1 4) (mkPos 1 12)
-        let functionUsageRanges = findFunctionUsageRanges source tree bindingRange "f"
+        let bindingRange = "f", mkRange "test.fs" (mkPos 1 4) (mkPos 1 5)
+        let functionUsageRanges = findFunctionUsageRanges source tree bindingRange
 
         Assert.AreEqual([mkRange "test.fs" (mkPos 1 17) (mkPos 1 18); mkRange "test.fs" (mkPos 1 19) (mkPos 1 20); mkRange "test.fs" (mkPos 1 21) (mkPos 1 22)], functionUsageRanges)
 
@@ -75,8 +75,8 @@ type AddArgumentModule() =
     member this.``Can stop finding App nodes when an identifier is redefined``() =
         let source = "let f = 2\n\nlet f = 1 in (fun f -> f)"
         let tree = (Ast.Parse source "test.fs").Value
-        let bindingRange = mkRange "test.fs" (mkPos 3 4) (mkPos 3 8)
-        let functionUsageRanges = findFunctionUsageRanges source tree bindingRange "f"
+        let bindingRange = "f", mkRange "test.fs" (mkPos 3 4) (mkPos 3 5)
+        let functionUsageRanges = findFunctionUsageRanges source tree bindingRange
 
         Assert.AreEqual([], functionUsageRanges)
 
@@ -115,8 +115,8 @@ type AddArgumentModule() =
         let expected1 = "x = 3+4+5"
         let expected2 = "f a b =\n  let x = 3+4+5"
 
-        Assert.AreEqual(expected1, CodeTransforms.TextOfRange source (defaultBindingRange source tree position1 "test.fs"))
-        Assert.AreEqual(expected2, CodeTransforms.TextOfRange source (defaultBindingRange source tree position2 "test.fs"))
+        Assert.AreEqual(expected1, CodeTransforms.TextOfRange source (Ast.GetRange (Ast.AstNode.Binding (TryFindDefaultBinding source tree position1 "test.fs").Value)).Value)
+        Assert.AreEqual(expected2, CodeTransforms.TextOfRange source (Ast.GetRange (Ast.AstNode.Binding (TryFindDefaultBinding source tree position2 "test.fs").Value)).Value)
 
     [<Test>]
     member this.``Cannot add an argument if there is no binding at the given range``() =

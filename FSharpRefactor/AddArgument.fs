@@ -12,7 +12,7 @@ open FSharpRefactor.Engine.Refactoring
 open FSharpRefactor.Engine.ValidityChecking
 open FSharpRefactor.Refactorings
 
-let defaultBindingRange source (tree : Ast.AstNode) (position : pos) filename =
+let TryFindDefaultBinding source (tree : Ast.AstNode) (position : pos) filename =
     let range = mkRange filename position position
     let rec tryFindDeepestBinding trees =
         let candidateBinding = List.tryPick (TryFindBindingAroundRange range) trees
@@ -25,8 +25,17 @@ let defaultBindingRange source (tree : Ast.AstNode) (position : pos) filename =
                     tryFindDeepestBinding children.Value
                 if Option.isNone nestedBinding then candidateBinding else nestedBinding
 
-    let deepestBinding = tryFindDeepestBinding [tree]
-    (Ast.GetRange (Ast.AstNode.Binding deepestBinding.Value)).Value
+    tryFindDeepestBinding [tree]
+
+let TryFindFunctionIdentifier binding =
+    match binding with
+        | SynBinding.Binding(_,_,_,_,_,_,_,
+                             SynPat.LongIdent(LongIdentWithDots([functionIdentifier],_),_,_,_,_,_),_,_,_,_) ->
+                                Some (functionIdentifier.idText, functionIdentifier.idRange)
+        | SynBinding.Binding(_,_,_,_,_,_,_,
+                             SynPat.Named(_,valueName,_,_,_),_,_,_,_) ->
+                                Some (valueName.idText, valueName.idRange)
+        | _ -> None
 
 let tryFindFunctionName (binding:SynBinding) =
     match binding with
@@ -35,18 +44,12 @@ let tryFindFunctionName (binding:SynBinding) =
                 | DeclaredIdent(name,range) -> Some name
                 | _ -> None
     
-let addArgumentToBinding (bindingRange : range) argumentName filename : Refactoring<unit,Identifier> =
+let addArgumentToFunctionDeclaration (functionName, functionRange:range) argumentName filename : Refactoring<unit,Identifier> =
     let transform (source, ()) =
         let tree = (Ast.Parse source filename).Value
-        let identEndRange =
-            match FindBindingAtRange bindingRange tree with
-                | SynBinding.Binding(_,_,_,_,_,_,_,
-                                     SynPat.LongIdent(functionName,_,_,_,_,_),_,_,_,_) -> functionName.Range.EndRange
-                | SynBinding.Binding(_,_,_,_,_,_,_,
-                                     SynPat.Named(_,valueName,_,_,_),_,_,_,_) -> valueName.idRange.EndRange
-                | b -> raise (RefactoringFailure("Binding did not have the right form:" + (sprintf "%A" b)))
+        let identEndRange = functionRange.EndRange
         let argumentIdentifier =
-            createIdentifier (identEndRange.End.Line, (identEndRange.End.Column+1)) argumentName bindingRange.FileName
+            createIdentifier (identEndRange.End.Line, (identEndRange.End.Column+1)) argumentName functionRange.FileName
         source, [identEndRange, " " + argumentName], argumentIdentifier
     
     { analysis = (fun (_,_) -> true);
@@ -60,40 +63,10 @@ let addArgumentToFunctionUsage source (argument : string) (identRange : range) =
       transform = fun (s,_) -> (s,[identRange, sprintf "(%s %s)" ident argument],());
       getErrorMessage = fun _ -> None }
 
-let findFunctionUsageRanges source (tree : Ast.AstNode) (bindingRange : range) (functionName : string) =
-    let bindingContainsNode scopeTree =
-        match scopeTree with
-            | TopLevelDeclaration(is,_)
-            | Declaration(is,_) -> List.exists (fun (_,r) -> rangeContainsRange bindingRange r) is
-            | Usage(_,r) -> rangeContainsRange bindingRange r
-
-    let nodeDeclaresIdentifier scopeTree =
-        match scopeTree with
-            | TopLevelDeclaration(is,_)
-            | Declaration(is,_) -> List.exists (fun (n,_) -> functionName = n) is
-            | _ -> false
-
-    let rec findDeclarationOfFunction scopeTrees =
-        match scopeTrees with
-            | (TopLevelDeclaration(is,ts1) | Declaration(is,ts1) as d)::ts2 ->
-                if nodeDeclaresIdentifier d && bindingContainsNode d then ts1
-                else findDeclarationOfFunction (ts1 @ ts2)
-            | _::ts -> findDeclarationOfFunction ts
-            | _ -> failwith (sprintf "%A, %A" bindingRange (makeScopeTrees tree))
-
-    let rec findUsagesInScopeTrees scopeTrees =
-        match scopeTrees with
-            | (TopLevelDeclaration(is,ts1) as d)::ts2
-            | (Declaration(is,ts1) as d)::ts2 ->
-                if nodeDeclaresIdentifier d then findUsagesInScopeTrees ts2
-                else (findUsagesInScopeTrees ts1) @ (findUsagesInScopeTrees ts2)
-            | Usage(n,r)::ts2 ->
-                if functionName = n then r::(findUsagesInScopeTrees ts2) else findUsagesInScopeTrees ts2
-            | [] -> []
-
-    makeScopeTrees tree
-    |> findDeclarationOfFunction
-    |> findUsagesInScopeTrees
+let findFunctionUsageRanges source (tree : Ast.AstNode) (functionName, functionRange) =
+    FindDeclarationScope (makeScopeTrees tree) (functionName, functionRange)
+    |> FindDeclarationReferences (functionName, functionRange)
+    |> List.filter ((<>) functionRange)
 
 let findFunctionName source (tree : Ast.AstNode) (bindingRange : range) =
     let binding = FindBindingAtRange bindingRange tree
@@ -102,15 +75,14 @@ let findFunctionName source (tree : Ast.AstNode) (bindingRange : range) =
         | None -> raise (RefactoringFailure("Binding was not a function"))
 
 //TODO: Check arguments such as argumentName or defaultValue have a valid form
-let addTempArgument (bindingRange : range) defaultValue filename : Refactoring<unit,Identifier> =
+let addTempArgument (functionIdentifier:Identifier) defaultValue filename : Refactoring<unit,Identifier> =
     let transform (source, ()) =
         let tree = (Ast.Parse source filename).Value
         let argumentName = FindUnusedName tree
         let usageRefactorings =
-            findFunctionName source tree bindingRange
-            |> findFunctionUsageRanges source tree bindingRange
+            findFunctionUsageRanges source tree functionIdentifier
             |> List.map (addArgumentToFunctionUsage source defaultValue)
-        let bindingRefactoring = addArgumentToBinding bindingRange argumentName filename
+        let bindingRefactoring = addArgumentToFunctionDeclaration functionIdentifier argumentName filename
         (List.fold interleave bindingRefactoring usageRefactorings).transform (source, ())
 
     { analysis = fun _ -> true;
@@ -122,13 +94,14 @@ let GetErrorMessage (position:(int*int) option, argumentName:string option, defa
     let binding =
         lazy
             let tree = (Ast.Parse source filename).Value
-            TryFindBindingAroundPos pos.Value filename tree
+            TryFindDefaultBinding source tree pos.Value filename
 
     let checkPosition (line, col) =
         let bindingAtRange =
             Option.isSome (binding.Force())
         let bindingIsFunction =
-            bindingAtRange && (Option.isSome (tryFindFunctionName (binding.Value.Value)))
+            Option.bind TryFindFunctionIdentifier binding.Value
+            |> Option.isSome
         //TODO: disallow mutable bindings
 
         match bindingAtRange, bindingIsFunction with
@@ -138,10 +111,10 @@ let GetErrorMessage (position:(int*int) option, argumentName:string option, defa
             | _,_ -> None
 
     let checkPositionNameAndValue (position, name, defaultValue) =
-        let bindingRange =
-            (Ast.GetRange (Ast.AstNode.Binding (binding.Value.Value))).Value
+        let functionIdentifier =
+            (TryFindFunctionIdentifier (binding.Force().Value)).Value
         let oldSource, changes, (_, identifierRange) =
-            (addTempArgument bindingRange defaultValue filename).transform (source,())
+            (addTempArgument functionIdentifier defaultValue filename).transform (source,())
         let sourceWithIdentifier = ChangeTextOf oldSource changes
         Rename.GetErrorMessage (Some (identifierRange.Start.Line, identifierRange.Start.Column+1), Some name) sourceWithIdentifier filename
             
@@ -153,19 +126,21 @@ let IsValid (position:(int*int) option, argumentName:string option, defaultValue
     GetErrorMessage (position, argumentName, defaultValue) source filename
     |> Option.isNone
 
-let AddArgument (bindingRange : range) argumentName defaultValue filename : Refactoring<unit,unit> =
+let AddArgument (functionIdentifier:Identifier) argumentName defaultValue filename : Refactoring<unit,unit> =
+    let _, functionRange = functionIdentifier
     let analysis (source, ()) =
-            IsValid (Some (bindingRange.Start.Line, bindingRange.Start.Column+1), Some argumentName, Some defaultValue) source filename
+            IsValid (Some (functionRange.Start.Line, functionRange.Start.Column+1), Some argumentName, Some defaultValue) source filename
             
     let getErrorMessage (source, ()) =
-        GetErrorMessage (Some (bindingRange.Start.Line, bindingRange.Start.Column+1), Some argumentName, Some defaultValue) source filename
+        GetErrorMessage (Some (functionRange.Start.Line, functionRange.Start.Column+1), Some argumentName, Some defaultValue) source filename
         
-    let addTempArgumentRefactoring = addTempArgument bindingRange defaultValue filename
+    let addTempArgumentRefactoring = addTempArgument functionIdentifier defaultValue filename
     let addArgumentRefactoring = sequence addTempArgumentRefactoring (Rename.Rename argumentName filename)
     { addArgumentRefactoring with analysis = analysis; getErrorMessage = getErrorMessage }
 
 let Transform ((line, col):int*int, argumentName:string, defaultValue:string) (source:string) (filename:string) =
     let pos = mkPos line (col-1)
     let tree = (Ast.Parse source filename).Value
-    let bindingRange = defaultBindingRange source tree pos filename
-    RunRefactoring (AddArgument bindingRange argumentName defaultValue filename) () source
+    let binding = TryFindDefaultBinding source tree pos filename
+    let functionIdentifier = TryFindFunctionIdentifier binding.Value
+    RunRefactoring (AddArgument functionIdentifier.Value argumentName defaultValue filename) () source

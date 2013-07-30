@@ -22,7 +22,7 @@ let GetErrorMessage (position:(int*int) option, newName:string option) (source:s
     let declarationScope =
         lazy
             let tryFindDeclarationScope =
-                FindDeclarationScope (scopeTrees.Force())
+                TryFindDeclarationScope (scopeTrees.Force())
             Option.bind tryFindDeclarationScope (identifierDeclaration.Force())
 
     let checkPosition (line, col) =
@@ -75,7 +75,6 @@ let Rename newName filename : Refactoring<Identifier,unit> =
         let tree = (Ast.Parse source filename).Value
         let declarationScope =
             FindDeclarationScope (makeScopeTrees tree) identifier
-            |> Option.get
         let changes =
             FindDeclarationReferences identifier declarationScope
             |> List.map (fun r -> (r,newName))
