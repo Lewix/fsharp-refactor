@@ -42,6 +42,7 @@
   <ItemGroup>
     <Compile Include="Ast.fs" />
     <Compile Include="CodeAnalysis.fs" />
+    <Compile Include="IdentifierScope.fs" />
     <Compile Include="CodeTransforms.fs" />
     <Compile Include="ValidityChecking.fs" />
     <Compile Include="Refactoring.fs" />
