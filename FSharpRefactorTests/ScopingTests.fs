@@ -20,6 +20,15 @@ type IdentifierScopeModule() =
         Assert.IsFalse(identifierScope.IsFree "d")
         Assert.IsFalse(identifierScope.IsFree "a")
         Assert.IsFalse(identifierScope.IsFree "unusedVariableName")
+    
+    [<Test>]
+    member this.``Can find the declaration of an identifier from IdentifierScope``() =
+        let source = "let f a b c = a"
+        let usageIdentifier = ("a", mkRange "test.fs" (mkPos 1 14) (mkPos 1 15))
+        let expected = "a", mkRange "test.fs" (mkPos 1 6) (mkPos 1 7)
+        let identifierScope = new IdentifierScope(usageIdentifier, source)
+
+        Assert.AreEqual(expected, identifierScope.IdentifierDeclaration)
 
 [<TestFixture>]
 type ScopeAnalysisModule() =

@@ -11,5 +11,10 @@ type IdentifierScope(identifier:Identifier, source) =
     let identifierDeclaration = FindIdentifierDeclaration scopeTrees identifier
     let identifierScope = FindDeclarationScope scopeTrees identifierDeclaration
     
+    member self.IdentifierDeclaration with get() = identifierDeclaration
+    member self.FindReferences () =
+        FindDeclarationReferences identifierDeclaration identifierScope
     member self.IsFree identifierName =
         IsFree identifierName identifierScope
+    member self.FindNestedDeclarations identifierName =
+        GetShallowestDeclarations identifierName identifierScope
