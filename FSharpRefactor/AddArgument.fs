@@ -10,6 +10,7 @@ open FSharpRefactor.Engine.CodeAnalysis.ScopeAnalysis
 open FSharpRefactor.Engine.CodeTransforms.CodeTransforms
 open FSharpRefactor.Engine.Refactoring
 open FSharpRefactor.Engine.ValidityChecking
+open FSharpRefactor.Engine
 open FSharpRefactor.Refactorings
 
 let TryFindDefaultBinding source (tree : Ast.AstNode) (position : pos) filename =
@@ -63,9 +64,8 @@ let addArgumentToFunctionUsage source (argument : string) (identRange : range) =
       transform = fun (s,_) -> (s,[identRange, sprintf "(%s %s)" ident argument],());
       getErrorMessage = fun _ -> None }
 
-let findFunctionUsageRanges source (tree : Ast.AstNode) (functionName, functionRange) =
-    FindDeclarationScope (makeScopeTrees tree) (functionName, functionRange)
-    |> FindDeclarationReferences (functionName, functionRange)
+let findFunctionUsageRanges (source:string) (tree : Ast.AstNode) (functionName, functionRange) =
+    IdentifierScope((functionName, functionRange), source).FindReferences()
     |> List.filter ((<>) functionRange)
 
 let findFunctionName source (tree : Ast.AstNode) (bindingRange : range) =
