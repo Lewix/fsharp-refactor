@@ -59,18 +59,18 @@ let IsValid (position:(int*int) option, newName:string option) (source:string) (
     |> Option.isNone
 
 let Rename newName filename : Refactoring<Identifier,unit> =
-    let analysis (source, identifier:Identifier) =
+    let analysis (source:string, identifier:Identifier) =
         let identifierScope = new IdentifierScope(identifier, source)
         IsValid (Some (identifierScope.DeclarationRange.StartLine, identifierScope.DeclarationRange.StartColumn+1), Some newName) source filename
 
-    let transform (source, identifier:Identifier) =
+    let transform (source:string, identifier:Identifier) =
         let identifierScope = new IdentifierScope(identifier, source)
         let changes =
             identifierScope.FindReferences ()
             |> List.map (fun r -> (r,newName))
         source, changes, ()
 
-    let getErrorMessage (source, identifier:Identifier) =
+    let getErrorMessage (source:string, identifier:Identifier) =
         let identifierScope = new IdentifierScope(identifier, source)
         GetErrorMessage (Some (identifierScope.DeclarationRange.StartLine, identifierScope.DeclarationRange.StartColumn+1), Some newName) source filename
     { analysis = analysis; transform = transform; getErrorMessage = getErrorMessage }
