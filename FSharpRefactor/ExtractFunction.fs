@@ -9,6 +9,8 @@ open FSharpRefactor.Engine.CodeAnalysis.ScopeAnalysis
 open FSharpRefactor.Engine.CodeAnalysis.RangeAnalysis
 open FSharpRefactor.Engine.Refactoring
 open FSharpRefactor.Engine.ValidityChecking
+open FSharpRefactor.Engine.Scoping
+open FSharpRefactor.Engine
 open FSharpRefactor.Refactorings
 
 let rec stripBrackets (body : string) =
@@ -77,21 +79,21 @@ let extractTempFunctionTransform source (expressionRange : range) inScopeTree fi
         let unindentedBody = 
             (String.replicate (expressionRange.StartColumn) " ") + (TextOfRange source expressionRange)
             |> RemoveLeading ' '
-        let bodyExpression = TryFindExpressionAtRange expressionRange inScopeTree
+        let bodyExpressionScope = ExpressionScope(FindExpressionAtRange expressionRange inScopeTree)
+        let debug = makeScopeTrees inScopeTree
+        let inScopeScope = ExpressionScope(inScopeTree)
 
-        let getFreeIdentifierDeclarations expression =
-            GetFreeIdentifierUsages (makeScopeTrees expression)
-            |> List.map (TryFindIdentifierDeclaration (makeScopeTrees inScopeTree))
+        let getFreeIdentifierDeclarations (expressionScope:ExpressionScope) =
+            expressionScope.FindFreeIdentifiers ()
+            |> List.map (TryGetIdentifierScope source)
             |> List.collect Option.toList
-            // Can't compare ranges or positions, so use a tuple of ints...
-            |> List.map (fun (n,r) -> (n, (r.StartLine, r.StartColumn))) 
-            |> Set.ofList
 
         let arguments =
-            getFreeIdentifierDeclarations inScopeTree
-            |> Set.difference (getFreeIdentifierDeclarations bodyExpression.Value)
-            |> Set.toList
-            |> List.map fst
+            let freeIdentifiersInScope = getFreeIdentifierDeclarations inScopeScope
+            getFreeIdentifierDeclarations bodyExpressionScope
+            |> List.filter (fun id -> not (List.exists ((=) id) freeIdentifiersInScope))
+            |> List.map (fun id -> id.IdentifierName)
+            |> Set.ofList |> Set.toList
 
         let inScopeRange = (Ast.GetRange inScopeTree).Value
         let definitionRefactoring =
