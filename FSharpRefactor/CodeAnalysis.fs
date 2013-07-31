@@ -350,13 +350,16 @@ module RangeAnalysis =
 
         filterNodesOnRange treeContainsRange range tree
 
-    let TryFindExpressionAtRange range (tree : Ast.AstNode)  =
+    let TryFindExpressionAtRange range (tree : Ast.AstNode) =
         let isExpression node =
             match node with
                 | Ast.AstNode.Expression _ -> true
                 | _ -> false
-        let nodes = FindNodesWithRange range tree
         List.tryFind isExpression (FindNodesWithRange range tree)
+        
+    let FindExpressionAtRange range (tree : Ast.AstNode) =
+        TryFindExpressionAtRange range tree
+        |> Option.get
 
     let chooseBinding node  =
         match node with
