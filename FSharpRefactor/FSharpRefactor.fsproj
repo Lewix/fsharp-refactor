@@ -41,6 +41,7 @@
   <Import Project="$(MSBuildExtensionsPath32)\..\Microsoft F#\v4.0\Microsoft.FSharp.Targets" />
   <ItemGroup>
     <Compile Include="Ast.fs" />
+    <Compile Include="Project.fs" />
     <Compile Include="CodeAnalysis.fs" />
     <Compile Include="IdentifierScope.fs" />
     <Compile Include="CodeTransforms.fs" />
