@@ -9,19 +9,19 @@ open FSharpRefactor.Engine.ValidityChecking
 open FSharpRefactor.Engine
 
 //TODO: these probably need to be put in an .fsi file
-let GetErrorMessage (position:(int*int) option, newName:string option) (source:string) (filename:string) =
+let GetErrorMessage (position:(int*int) option, newName:string option) (project:Project) =
     let pos = PosFromPositionOption position
     let identifier =
-        lazy Option.bind (TryFindIdentifier source filename) pos
+        lazy Option.bind (TryFindIdentifier project.CurrentFileContents project.CurrentFile) pos
     let identifierScope =
-        lazy Option.bind (fun (identifier:Identifier) -> Some (new IdentifierScope(identifier, source))) (identifier.Force())
+        lazy Option.bind (fun (identifier:Identifier) -> Some (new IdentifierScope(identifier, project))) (identifier.Force())
 
     let checkPosition (line, col) =
         match Option.isSome (identifier.Force()), Option.isSome (identifierScope.Force()) with
             | false,_ -> Some("No identifier found at the given range")
             | _,false ->
                 let identifierName, _ = identifier.Value.Value
-                Some(sprintf "The identifier %A was not declared in the given source" identifierName)
+                Some(sprintf "The identifier %A was not declared in the given project" identifierName)
             | _ -> None
 
     let checkName newName =
@@ -54,29 +54,29 @@ let GetErrorMessage (position:(int*int) option, newName:string option) (source:s
     |> Andalso (IsSuccessful checkPositionAndName (PairOptions (position, newName)))
     |> fun (l:Lazy<_>) -> l.Force()
 
-let IsValid (position:(int*int) option, newName:string option) (source:string) (filename:string) =
-    GetErrorMessage (position, newName) source filename
+let IsValid (position:(int*int) option, newName:string option) project =
+    GetErrorMessage (position, newName) project
     |> Option.isNone
 
-let Rename newName filename : Refactoring<Identifier,unit> =
-    let analysis (source:string, identifier:Identifier) =
-        let identifierScope = new IdentifierScope(identifier, source)
-        IsValid (Some (identifierScope.DeclarationRange.StartLine, identifierScope.DeclarationRange.StartColumn+1), Some newName) source filename
+let Rename newName : Refactoring<Identifier,unit> =
+    let analysis (project:Project, identifier:Identifier) =
+        let identifierScope = new IdentifierScope(identifier, project)
+        IsValid (Some (identifierScope.DeclarationRange.StartLine, identifierScope.DeclarationRange.StartColumn+1), Some newName) project
 
-    let transform (source:string, identifier:Identifier) =
-        let identifierScope = new IdentifierScope(identifier, source)
+    let transform (project:Project, identifier:Identifier) =
+        let identifierScope = new IdentifierScope(identifier, project)
         let changes =
             identifierScope.FindReferences ()
             |> List.map (fun r -> (r,newName))
-        source, changes, ()
+        project, changes, ()
 
-    let getErrorMessage (source:string, identifier:Identifier) =
-        let identifierScope = new IdentifierScope(identifier, source)
-        GetErrorMessage (Some (identifierScope.DeclarationRange.StartLine, identifierScope.DeclarationRange.StartColumn+1), Some newName) source filename
+    let getErrorMessage (project:Project, identifier:Identifier) =
+        let identifierScope = new IdentifierScope(identifier, project)
+        GetErrorMessage (Some (identifierScope.DeclarationRange.StartLine, identifierScope.DeclarationRange.StartColumn+1), Some newName) project
     { analysis = analysis; transform = transform; getErrorMessage = getErrorMessage }
 
-let Transform ((line:int, col:int), newName:string) (source:string) (filename:string) =
+let Transform ((line:int, col:int), newName:string) (project:Project) =
     let position = mkPos line (col-1)
-    let tree = (Ast.Parse source filename).Value
-    let identifierScope = new IdentifierScope(FindIdentifier source filename position, source)
-    RunRefactoring (Rename newName filename) identifierScope.IdentifierDeclaration source
+    let tree = (Ast.Parse project.CurrentFileContents project.CurrentFile).Value
+    let identifierScope = new IdentifierScope(FindIdentifier project.CurrentFileContents project.CurrentFile position, project)
+    RunRefactoring (Rename newName) identifierScope.IdentifierDeclaration project

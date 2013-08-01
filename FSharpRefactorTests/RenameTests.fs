@@ -4,6 +4,7 @@ open NUnit.Framework
 
 open Microsoft.FSharp.Compiler.Range
 
+open FSharpRefactor.Engine
 open FSharpRefactor.Engine.Ast
 open FSharpRefactor.Engine.CodeAnalysis
 open FSharpRefactor.Engine.Refactoring
@@ -13,13 +14,13 @@ open FSharpRefactor.Refactorings.Rename
 type RenameAnalysisModule() =
     [<Test>]
     member this.``Can check arguments individually``() =
-        Assert.IsTrue(IsValid (Some(1,5), None) "let f a = 1" "test.fs", "Valid position")
-        Assert.IsFalse(IsValid (Some(1,1), None) "let f a = 1" "test.fs", "Invalid position")
-        Assert.IsTrue(IsValid (Some(1,7), Some "c") "let f a b = 1" "test.fs", "Valid position and name")
-        Assert.IsFalse(IsValid (Some(1,7), Some "b") "let f a b = 1" "test.fs", "Invalid position and name")
-        Assert.IsFalse(IsValid (Some(1,1), Some "a") "let f a b = 1" "test.fs", "Invalid position and name")
-        Assert.IsTrue(IsValid (Some(1,7), Some "a") "let f a b = 1" "test.fs", "Pointless rename")
-        Assert.IsTrue(IsValid (None, Some "b") "let f a b = 1" "test.fs", "Valid name")
+        Assert.IsTrue(IsValid (Some(1,5), None) (new Project("let f a = 1", "test.fs")), "Valid position")
+        Assert.IsFalse(IsValid (Some(1,1), None) (new Project("let f a = 1", "test.fs")), "Invalid position")
+        Assert.IsTrue(IsValid (Some(1,7), Some "c") (new Project("let f a b = 1", "test.fs")), "Valid position and name")
+        Assert.IsFalse(IsValid (Some(1,7), Some "b") (new Project("let f a b = 1", "test.fs")), "Invalid position and name")
+        Assert.IsFalse(IsValid (Some(1,1), Some "a") (new Project("let f a b = 1", "test.fs")), "Invalid position and name")
+        Assert.IsTrue(IsValid (Some(1,7), Some "a") (new Project("let f a b = 1", "test.fs")), "Pointless rename")
+        Assert.IsTrue(IsValid (None, Some "b") (new Project("let f a b = 1", "test.fs")), "Valid name")
 
         //TODO: invalid name
 
@@ -28,9 +29,9 @@ type RenameAnalysisModule() =
         let goodSource = "let a = 1 in a"
         let badSource = "let a = 1 in b"
 
-        Assert.AreEqual(true,IsValid (Some (1,5), Some "b") goodSource "test.fs",
+        Assert.AreEqual(true,IsValid (Some (1,5), Some "b") (new Project(goodSource, "test.fs")),
                         "Should be able to rename a to b")
-        Assert.AreEqual(Some("b is free in the scope of a"),GetErrorMessage (Some (1,5), Some "b") badSource "test.fs",
+        Assert.AreEqual(Some("b is free in the scope of a"),GetErrorMessage (Some (1,5), Some "b") (new Project(badSource, "test.fs")),
                         "Shouldn't be able to rename a to b")
 
     [<Test>]
@@ -38,10 +39,10 @@ type RenameAnalysisModule() =
         let goodSource = "let a = 1 in let b = 2 in b"
         let badSource = "let a = 1 in let b = 2 in a"
  
-        Assert.AreEqual(true,IsValid (Some (1,5), Some "b") goodSource "test.fs",
+        Assert.AreEqual(true,IsValid (Some (1,5), Some "b") (new Project(goodSource, "test.fs")),
                         "Should be able to rename a to b")
         Assert.AreEqual(Some("a is free in the scope of a b defined in its scope"),
-                        GetErrorMessage (Some (1,5), Some "b") badSource "test.fs",
+                        GetErrorMessage (Some (1,5), Some "b") (new Project(badSource, "test.fs")),
                         "Shouldn't be able to rename a to b")
 
     [<Test>]
@@ -49,18 +50,18 @@ type RenameAnalysisModule() =
         let source = "let f a b c = 1"
 
         Assert.AreEqual(Some("b is already declared in that pattern"),
-                        GetErrorMessage (Some (1,7), Some "b") source "test.fs")
+                        GetErrorMessage (Some (1,7), Some "b") (new Project(source, "test.fs")))
 
 [<TestFixture>]
 type RenameTransformModule() =
     let DoRename source (tree: Ast.AstNode) declarationIdentifier (newName : string) =
-        RunRefactoring (Rename newName "test.fs") declarationIdentifier source
+        RunRefactoring (Rename newName) declarationIdentifier source
 
     [<Test>]
     member this.``Can get changes``() =
         let source = "let f x = x+x"
         let expected = "let f y = y+y"
-        Assert.AreEqual(expected, Transform ((1,7), "y") source "test.fs")
+        Assert.AreEqual(expected, (Transform ((1,7), "y") (new Project(source, "test.fs"))))
         
     [<Test>]
     member this.``Can carry out renaming transformation``() =
@@ -68,7 +69,7 @@ type RenameTransformModule() =
         let expected = "let c = 1 in let b = 2 in c + b + (let a = 3 in a)"
         let declarationRange = mkRange "test.fs" (mkPos 1 4) (mkPos 1 5)
 
-        Assert.AreEqual(expected, DoRename source (Ast.Parse source "test.fs").Value ("a", declarationRange) "c")
+        Assert.AreEqual(expected, DoRename (new Project(source, "test.fs")) (Ast.Parse source "test.fs").Value ("a", declarationRange) "c")
  
     [<Test>]
     member this.``Can carry out another renaming transformation``() =
@@ -76,7 +77,7 @@ type RenameTransformModule() =
         let expected = "let c = a in let b = 3*c + c"
         let declarationRange = mkRange "test.fs" (mkPos 1 4) (mkPos 1 5)
 
-        Assert.AreEqual(expected, DoRename source (Ast.Parse source "test.fs").Value ("a", declarationRange) "c")
+        Assert.AreEqual(expected, DoRename (new Project(source, "test.fs")) (Ast.Parse source "test.fs").Value ("a", declarationRange) "c")
 
     [<Test>]
     member this.``Can carry out rename on a match expression``() =
@@ -84,7 +85,7 @@ type RenameTransformModule() =
         let expected = "match a with (c,b) -> c"
         let declarationRange = mkRange "test.fs" (mkPos 1 14) (mkPos 1 15)
 
-        Assert.AreEqual(expected, DoRename source (Ast.Parse source "test.fs").Value ("a", declarationRange) "c")
+        Assert.AreEqual(expected, DoRename (new Project(source, "test.fs")) (Ast.Parse source "test.fs").Value ("a", declarationRange) "c")
         
     [<Test>]
     member this.``Can rename a function and its arguments``() =
@@ -92,13 +93,13 @@ type RenameTransformModule() =
         let expected = "let g a b = a+b in g 1 2"
         let declarationRange = mkRange "test.fs" (mkPos 1 4) (mkPos 1 5)
 
-        Assert.AreEqual(expected, DoRename source (Ast.Parse source "test.fs").Value ("f", declarationRange) "g")
+        Assert.AreEqual(expected, DoRename (new Project(source, "test.fs")) (Ast.Parse source "test.fs").Value ("f", declarationRange) "g")
 
         let source = "let f a b = a+b in f 1 2"
         let expected = "let f c b = c+b in f 1 2"
         let declarationRange = mkRange "test.fs" (mkPos 1 6) (mkPos 1 7)
          
-        Assert.AreEqual(expected, DoRename source (Ast.Parse source "test.fs").Value ("a", declarationRange) "c")
+        Assert.AreEqual(expected, DoRename (new Project(source, "test.fs")) (Ast.Parse source "test.fs").Value ("a", declarationRange) "c")
 
     [<Test>]
     member this.``Can rename a nested identifier``() =
@@ -106,4 +107,4 @@ type RenameTransformModule() =
         let expected = "let a = 1 in let c = 1 in c"
         let declarationRange = mkRange "test.fs" (mkPos 1 17) (mkPos 1 18)
 
-        Assert.AreEqual(expected, DoRename source (Ast.Parse source "test.fs").Value ("b", declarationRange) "c")
+        Assert.AreEqual(expected, DoRename (new Project(source, "test.fs")) (Ast.Parse source "test.fs").Value ("b", declarationRange) "c")

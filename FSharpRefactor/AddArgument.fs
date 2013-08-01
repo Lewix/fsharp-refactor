@@ -13,8 +13,8 @@ open FSharpRefactor.Engine.ValidityChecking
 open FSharpRefactor.Engine
 open FSharpRefactor.Refactorings
 
-let TryFindDefaultBinding source (tree : Ast.AstNode) (position : pos) filename =
-    let range = mkRange filename position position
+let TryFindDefaultBinding (project:Project) (tree : Ast.AstNode) (position : pos) =
+    let range = mkRange project.CurrentFile position position
     let rec tryFindDeepestBinding trees =
         let candidateBinding = List.tryPick (TryFindBindingAroundRange range) trees
         if Option.isNone candidateBinding then None
@@ -45,56 +45,50 @@ let tryFindFunctionName (binding:SynBinding) =
                 | DeclaredIdent(name,range) -> Some name
                 | _ -> None
     
-let addArgumentToFunctionDeclaration (functionName, functionRange:range) argumentName filename : Refactoring<unit,Identifier> =
-    let transform (source, ()) =
-        let tree = (Ast.Parse source filename).Value
+let addArgumentToFunctionDeclaration (functionName, functionRange:range) argumentName : Refactoring<unit,Identifier> =
+    let transform (project:Project, ()) =
+        let tree = (Ast.Parse project.CurrentFileContents project.CurrentFile).Value
         let identEndRange = functionRange.EndRange
         let argumentIdentifier =
             createIdentifier (identEndRange.End.Line, (identEndRange.End.Column+1)) argumentName functionRange.FileName
-        source, [identEndRange, " " + argumentName], argumentIdentifier
+        project, [identEndRange, " " + argumentName], argumentIdentifier
     
     { analysis = (fun (_,_) -> true);
       transform = transform;
       getErrorMessage = fun _ -> None }
 
 //TODO: Only add brackets around usage if needed
-let addArgumentToFunctionUsage source (argument : string) (identRange : range) =
-    let ident = TextOfRange source identRange
+let addArgumentToFunctionUsage (project:Project) (argument : string) (identRange : range) =
+    let ident = TextOfRange project.CurrentFileContents identRange
     { analysis = (fun (_,_) -> true);
       transform = fun (s,_) -> (s,[identRange, sprintf "(%s %s)" ident argument],());
       getErrorMessage = fun _ -> None }
 
-let findFunctionUsageRanges (source:string) (tree : Ast.AstNode) (functionName, functionRange) =
-    IdentifierScope((functionName, functionRange), source).FindReferences()
+let findFunctionUsageRanges (project:Project) (tree : Ast.AstNode) (functionName, functionRange) =
+    IdentifierScope((functionName, functionRange), project).FindReferences()
     |> List.filter ((<>) functionRange)
 
-let findFunctionName source (tree : Ast.AstNode) (bindingRange : range) =
-    let binding = FindBindingAtRange bindingRange tree
-    match tryFindFunctionName binding with
-        | Some name -> name
-        | None -> raise (RefactoringFailure("Binding was not a function"))
-
 //TODO: Check arguments such as argumentName or defaultValue have a valid form
-let addTempArgument (functionIdentifier:Identifier) defaultValue filename : Refactoring<unit,Identifier> =
-    let transform (source, ()) =
-        let tree = (Ast.Parse source filename).Value
+let addTempArgument (functionIdentifier:Identifier) defaultValue : Refactoring<unit,Identifier> =
+    let transform (project:Project, ()) =
+        let tree = (Ast.Parse project.CurrentFileContents project.CurrentFile).Value
         let argumentName = FindUnusedName tree
         let usageRefactorings =
-            findFunctionUsageRanges source tree functionIdentifier
-            |> List.map (addArgumentToFunctionUsage source defaultValue)
-        let bindingRefactoring = addArgumentToFunctionDeclaration functionIdentifier argumentName filename
-        (List.fold interleave bindingRefactoring usageRefactorings).transform (source, ())
+            findFunctionUsageRanges project tree functionIdentifier
+            |> List.map (addArgumentToFunctionUsage project defaultValue)
+        let bindingRefactoring = addArgumentToFunctionDeclaration functionIdentifier argumentName
+        (List.fold interleave bindingRefactoring usageRefactorings).transform (project, ())
 
     { analysis = fun _ -> true;
       transform = transform;
       getErrorMessage = fun _ -> None }
 
-let GetErrorMessage (position:(int*int) option, argumentName:string option, defaultValue:string option) (source:string) (filename:string) =
+let GetErrorMessage (position:(int*int) option, argumentName:string option, defaultValue:string option) (project:Project) =
     let pos = PosFromPositionOption position
     let binding =
         lazy
-            let tree = (Ast.Parse source filename).Value
-            TryFindDefaultBinding source tree pos.Value filename
+            let tree = (Ast.Parse project.CurrentFileContents project.CurrentFile).Value
+            TryFindDefaultBinding project tree pos.Value
 
     let checkPosition (line, col) =
         let bindingAtRange =
@@ -113,34 +107,35 @@ let GetErrorMessage (position:(int*int) option, argumentName:string option, defa
     let checkPositionNameAndValue (position, name, defaultValue) =
         let functionIdentifier =
             (TryFindFunctionIdentifier (binding.Force().Value)).Value
-        let oldSource, changes, (_, identifierRange) =
-            (addTempArgument functionIdentifier defaultValue filename).transform (source,())
-        let sourceWithIdentifier = ChangeTextOf oldSource changes
-        Rename.GetErrorMessage (Some (identifierRange.Start.Line, identifierRange.Start.Column+1), Some name) sourceWithIdentifier filename
+        let oldProject, changes, (_, identifierRange) =
+            (addTempArgument functionIdentifier defaultValue).transform (project,())
+        let sourceWithIdentifier = ChangeTextOf oldProject.CurrentFileContents changes
+        let projectWithIdentifier = project.UpdateCurrentFileContents sourceWithIdentifier
+        Rename.GetErrorMessage (Some (identifierRange.Start.Line, identifierRange.Start.Column+1), Some name) projectWithIdentifier
             
     IsSuccessful checkPosition position
     |> Andalso (IsSuccessful checkPositionNameAndValue (TripleOptions (position, argumentName, defaultValue)))
     |> fun (l:Lazy<_>) -> l.Force()
 
-let IsValid (position:(int*int) option, argumentName:string option, defaultValue:string option) (source:string) (filename:string) =
-    GetErrorMessage (position, argumentName, defaultValue) source filename
+let IsValid (position:(int*int) option, argumentName:string option, defaultValue:string option) project =
+    GetErrorMessage (position, argumentName, defaultValue) project
     |> Option.isNone
 
-let AddArgument (functionIdentifier:Identifier) argumentName defaultValue filename : Refactoring<unit,unit> =
+let AddArgument (functionIdentifier:Identifier) argumentName defaultValue : Refactoring<unit,unit> =
     let _, functionRange = functionIdentifier
-    let analysis (source, ()) =
-            IsValid (Some (functionRange.Start.Line, functionRange.Start.Column+1), Some argumentName, Some defaultValue) source filename
+    let analysis (project, ()) =
+            IsValid (Some (functionRange.Start.Line, functionRange.Start.Column+1), Some argumentName, Some defaultValue) project
             
-    let getErrorMessage (source, ()) =
-        GetErrorMessage (Some (functionRange.Start.Line, functionRange.Start.Column+1), Some argumentName, Some defaultValue) source filename
+    let getErrorMessage (project, ()) =
+        GetErrorMessage (Some (functionRange.Start.Line, functionRange.Start.Column+1), Some argumentName, Some defaultValue) project
         
-    let addTempArgumentRefactoring = addTempArgument functionIdentifier defaultValue filename
-    let addArgumentRefactoring = sequence addTempArgumentRefactoring (Rename.Rename argumentName filename)
+    let addTempArgumentRefactoring = addTempArgument functionIdentifier defaultValue
+    let addArgumentRefactoring = sequence addTempArgumentRefactoring (Rename.Rename argumentName)
     { addArgumentRefactoring with analysis = analysis; getErrorMessage = getErrorMessage }
 
-let Transform ((line, col):int*int, argumentName:string, defaultValue:string) (source:string) (filename:string) =
+let Transform ((line, col):int*int, argumentName:string, defaultValue:string) (project:Project) =
     let pos = mkPos line (col-1)
-    let tree = (Ast.Parse source filename).Value
-    let binding = TryFindDefaultBinding source tree pos filename
+    let tree = (Ast.Parse project.CurrentFileContents project.CurrentFile).Value
+    let binding = TryFindDefaultBinding project tree pos
     let functionIdentifier = TryFindFunctionIdentifier binding.Value
-    RunRefactoring (AddArgument functionIdentifier.Value argumentName defaultValue filename) () source
+    RunRefactoring (AddArgument functionIdentifier.Value argumentName defaultValue) () project

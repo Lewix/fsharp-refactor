@@ -5,6 +5,7 @@ open System.IO
 open System.Text.RegularExpressions
 open Mono.Options
 open Microsoft.FSharp.Compiler.Range
+open FSharpRefactor.Engine
 open FSharpRefactor.Engine.Ast
 open FSharpRefactor.Engine.CodeAnalysis.RangeAnalysis
 open FSharpRefactor.Engine.CodeAnalysis.ScopeAnalysis
@@ -27,36 +28,38 @@ let readFromFile filename =
     else
         raise (ArgumentException "The file does not exist")
 
-let getSource filename =
-    match filename with
-        | Some f -> readFromFile f
-        | None -> readFromStdin ()
+let getProject filename =
+    let source =
+        match filename with
+            | Some f -> readFromFile f
+            | None -> readFromStdin ()
+    new Project(source, "test.fs")
 
 let Rename filename position newName =
-    let source = getSource filename
-    if Rename.IsValid (Some position, Some newName) source "test.fs" then
-        Rename.Transform (position, newName) source "test.fs"
+    let project = getProject filename
+    if Rename.IsValid (Some position, Some newName) project then
+        Rename.Transform (position, newName) project
     else
         let errorMessage =
-            (Rename.GetErrorMessage (Some position, Some newName) source "test.fs").Value
+            (Rename.GetErrorMessage (Some position, Some newName) project).Value
         raise (RefactoringFailure errorMessage)
 
 let ExtractFunction filename range functionName =
-    let source = getSource filename
-    if ExtractFunction.IsValid (Some range, Some functionName) source "test.fs" then
-        ExtractFunction.Transform (range, functionName) source "test.fs"
+    let project = getProject filename
+    if ExtractFunction.IsValid (Some range, Some functionName) project then
+        ExtractFunction.Transform (range, functionName) project
     else
         let errorMessage =
-            (ExtractFunction.GetErrorMessage (Some range, Some functionName) source "test.fs").Value
+            (ExtractFunction.GetErrorMessage (Some range, Some functionName) project).Value
         raise (RefactoringFailure errorMessage)
 
 let AddArgument filename position argumentName defaultValue =
-    let source = getSource filename
-    if AddArgument.IsValid (Some position, Some argumentName, Some defaultValue) source "test.fs" then
-        AddArgument.Transform (position, argumentName, defaultValue) source "test.fs"
+    let project = getProject filename
+    if AddArgument.IsValid (Some position, Some argumentName, Some defaultValue) project then
+        AddArgument.Transform (position, argumentName, defaultValue) project
     else
         let errorMessage =
-            (AddArgument.GetErrorMessage (Some position, Some argumentName, Some defaultValue) source "test.fs").Value
+            (AddArgument.GetErrorMessage (Some position, Some argumentName, Some defaultValue) project).Value
         raise (RefactoringFailure errorMessage)
 
 let printUsage () =

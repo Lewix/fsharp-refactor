@@ -3,6 +3,7 @@ namespace FSharpRefactor.Tests.ExtractFunctionTests
 open NUnit.Framework
 open Microsoft.FSharp.Compiler.Range
 open Microsoft.FSharp.Compiler.Ast
+open FSharpRefactor.Engine
 open FSharpRefactor.Engine.Ast
 open FSharpRefactor.Engine.CodeAnalysis.RangeAnalysis
 open FSharpRefactor.Engine.CodeTransforms
@@ -13,27 +14,27 @@ open FSharpRefactor.Refactorings.ExtractFunction
 type ExtractFunctionAnalysisModule() =
     [<Test>]
     member this.``Can check arguments separately``() =
-        Assert.IsTrue(IsValid (Some ((1,9),(1,12)),None) "let x = 1+1" "test.fs", "Valid range")
-        Assert.IsFalse(IsValid (Some ((1,3),(1,12)),None) "let x = 1+1" "test.fs", "Invalid range")
+        Assert.IsTrue(IsValid (Some ((1,9),(1,12)),None) (new Project("let x = 1+1", "test.fs")), "Valid range")
+        Assert.IsFalse(IsValid (Some ((1,3),(1,12)),None) (new Project("let x = 1+1", "test.fs")), "Invalid range")
 
     [<Test>]
     member this.``Cannot extract a function if there is no expression at expressionRange``() =
         let source = "(2+3)+(3+4)"
-        let valid = IsValid (Some ((1,5),(1,7)), None) source "test.fs"
+        let valid = IsValid (Some ((1,5),(1,7)), None) (new Project(source, "test.fs"))
 
         Assert.IsFalse(valid)
 
     [<Test>]
     member this.``Cannot extract an expression which is an application of an infix expression``() =
         let source = "1+2+3"
-        let valid = IsValid (Some ((1,1),(1,5)), None) source "test.fs"
+        let valid = IsValid (Some ((1,1),(1,5)), None) (new Project(source, "test.fs"))
 
         Assert.IsFalse(valid)
 
     [<Test>]
     member this.``Cannot extract a function with a taken name``() =
         let source = "let f a = 1 in (f 1)+(1+2)"
-        let valid = IsValid (Some ((1,22), (1,27)), Some "f") source "test.fs"
+        let valid = IsValid (Some ((1,22), (1,27)), Some "f") (new Project(source, "test.fs"))
 
         Assert.IsFalse(valid)
 
@@ -63,21 +64,21 @@ type ExtractFunctionAnalysisModule() =
 [<TestFixture>]
 type ExtractFunctionTransformModule() =
     let DoExtractFunction source (tree : Ast.AstNode) (inScopeTree : Ast.AstNode) (expressionRange : range) (functionName : string) =
-        RunRefactoring (ExtractFunction inScopeTree expressionRange functionName "test.fs") () source
+        RunRefactoring (ExtractFunction inScopeTree expressionRange functionName) () source
 
     [<Test>]
     member this.``Can extract an expression into a value, if it needs no arguments``() =
         let source = "1+3+4+4"
         let expected = "let a = (1+3+4+4) in a"
 
-        Assert.AreEqual(expected, Transform (((1,1),(1,8)), "a") source "test.fs")
+        Assert.AreEqual(expected, Transform (((1,1),(1,8)), "a") (new Project(source, "test.fs")))
 
     [<Test>]
     member this.``Can disambiguate between identifiers with the same name``() = 
         let source = "let f a = (let a = 1+a in a+2)"
         let expected = "let f a = let g a = (a+2) in (let a = 1+a in (g a))"
 
-        Assert.AreEqual(expected, Transform (((1,27),(1,30)), "g") source "test.fs")
+        Assert.AreEqual(expected, Transform (((1,27),(1,30)), "g") (new Project(source, "test.fs")))
     
     [<Test>]
     member this.``Can extract an expression into a function around a LetOrUse expression``() =
@@ -88,7 +89,7 @@ type ExtractFunctionTransformModule() =
             List.head (FindNodesWithRange (mkRange "test.fs" (mkPos 1 13) (mkPos 1 32)) tree)
         let expressionRange = mkRange "test.fs" (mkPos 1 25) (mkPos 1 30)
 
-        Assert.AreEqual(expected, DoExtractFunction source tree letTree expressionRange "f")
+        Assert.AreEqual(expected, DoExtractFunction (new Project(source, "test.fs")) tree letTree expressionRange "f")
         
     [<Test>]
     member this.``Can extract an expression into a function aroud a Let expression``() =
@@ -99,7 +100,7 @@ type ExtractFunctionTransformModule() =
             List.head (FindNodesWithRange (mkRange "test.fs" (mkPos 1 0) (mkPos 1 13)) tree)
         let expressionRange = mkRange "test.fs" (mkPos 1 10) (mkPos 1 13)
 
-        Assert.AreEqual(expected, DoExtractFunction source tree letTree expressionRange "double")
+        Assert.AreEqual(expected, DoExtractFunction (new Project(source, "test.fs")) tree letTree expressionRange "double")
         
         
     [<Test>]
@@ -107,7 +108,7 @@ type ExtractFunctionTransformModule() =
         let source = "let f a =\n    match a with\n        | Some(x) -> x\n        | None -> 0"
         let expected = "let f a =\n    let g =\n        match a with\n            | Some(x) -> x\n            | None -> 0\n    g"
 
-        Assert.AreEqual(expected, Transform (((2,5),(4,20)), "g") source "test.fs")
+        Assert.AreEqual(expected, Transform (((2,5),(4,20)), "g") (new Project(source, "test.fs")))
 
 [<TestFixture>]
 type CreateFunctionModule() =
@@ -115,16 +116,16 @@ type CreateFunctionModule() =
     member this.``Can get changes``() =
         let source = "let f a = 1+1"
         let expected = "let f a = let g = (1+1) in g"
-        Assert.AreEqual(expected, Transform (((1,11),(1,14)), "g") source "test.fs")
+        Assert.AreEqual(expected, Transform (((1,11),(1,14)), "g") (new Project(source, "test.fs")))
         
     [<Test>]
     member this.``Can add a function to an expression``() =
         let expected = "let f a b =\n    a+b\n"
         let insertRange = mkRange "test.fs" (mkPos 1 0) (mkPos 1 0)
-        Assert.AreEqual(expected, RunRefactoring (createFunction "f" ["a";"b"] "a+b" true "" insertRange) () "")
+        Assert.AreEqual(expected, RunRefactoring (createFunction "f" ["a";"b"] "a+b" true "" insertRange) () (new Project("", "test.fs")))
 
     [<Test>]
     member this.``Can add a function with multiple lines in its body to an expression``() =
         let expected = "let f a b =\n    match a,b with\n        | (a,b) -> 1\n"
         let insertRange = mkRange "test.fs" (mkPos 1 0) (mkPos 1 0)
-        Assert.AreEqual(expected, RunRefactoring (createFunction "f" ["a";"b"] "match a,b with\n    | (a,b) -> 1" true "" insertRange) () "")
+        Assert.AreEqual(expected, RunRefactoring (createFunction "f" ["a";"b"] "match a,b with\n    | (a,b) -> 1" true "" insertRange) () (new Project("", "test.fs")))

@@ -51,41 +51,41 @@ let createFunction functionName arguments body isMultiLine indentString (declara
         else
             sprintf "let %s = %s in " parameters body
 
-    let transform (source,()) =
+    let transform (project,()) =
         let startColumn, startLine =
             declarationRange.StartLine, declarationRange.StartColumn+(String.length indentString)+4
         let endLine =
             startLine + (String.length functionName)
         let identifierRange =
             mkRange declarationRange.FileName (mkPos startColumn startLine) (mkPos startColumn endLine)
-        source, [declarationRange, Indent declarationSource indentString], (functionName, identifierRange)
+        project, [declarationRange, Indent declarationSource indentString], (functionName, identifierRange)
     { analysis = (fun _ -> true); transform = transform; getErrorMessage = fun _ -> None }
  
 let callFunction functionName arguments callRange : Refactoring<unit,unit> =
     //TODO: don't always put brackets around function body
-    let transform (source, ()) =
+    let transform (project, ()) =
         let functionCall =
             formatArguments functionName arguments
         if List.isEmpty arguments then
-            source, [callRange, functionCall], ()
+            project, [callRange, functionCall], ()
         else
-            source, [callRange, sprintf "(%s)" functionCall], ()
+            project, [callRange, sprintf "(%s)" functionCall], ()
             
     { analysis = (fun _ -> true); transform = transform; getErrorMessage = fun _ -> None }
 
-let extractTempFunctionTransform source (expressionRange : range) inScopeTree filename =
-        let tree = (Ast.Parse source filename).Value
+let extractTempFunctionTransform (project:Project) (expressionRange : range) inScopeTree  =
+        let tree = (Ast.Parse project.CurrentFileContents project.CurrentFile).Value
         let functionName = FindUnusedName tree
         let unindentedBody = 
-            (String.replicate (expressionRange.StartColumn) " ") + (TextOfRange source expressionRange)
+            (String.replicate (expressionRange.StartColumn) " ") + (TextOfRange project.CurrentFileContents expressionRange)
             |> RemoveLeading ' '
-        let bodyExpressionScope = ExpressionScope(FindExpressionAtRange expressionRange inScopeTree)
+        let bodyExpressionScope = ExpressionScope(FindExpressionAtRange expressionRange inScopeTree, project)
         let debug = makeScopeTrees inScopeTree
-        let inScopeScope = ExpressionScope(inScopeTree)
+        let inScopeScope = ExpressionScope(inScopeTree, project)
 
         let getFreeIdentifierDeclarations (expressionScope:ExpressionScope) =
             expressionScope.FindFreeIdentifiers ()
-            |> List.map (TryGetIdentifierScope source)
+            |> List.map (TryGetIdentifierScope project)
             |> List.collect Option.toList
 
         let arguments =
@@ -101,26 +101,26 @@ let extractTempFunctionTransform source (expressionRange : range) inScopeTree fi
                 createFunction functionName arguments unindentedBody false "" inScopeRange.StartRange
             else
                 let inScopeTreeStart = inScopeRange.StartRange
-                let startOfLine = mkRange filename (mkPos inScopeTreeStart.StartLine 0) inScopeTreeStart.End
+                let startOfLine = mkRange project.CurrentFile (mkPos inScopeTreeStart.StartLine 0) inScopeTreeStart.End
                 let indentString = String.replicate inScopeTreeStart.StartColumn " "
                 createFunction functionName arguments unindentedBody true indentString startOfLine
         let callRefactoring =
             callFunction functionName arguments expressionRange
 
-        (interleave definitionRefactoring callRefactoring).transform (source, ())
+        (interleave definitionRefactoring callRefactoring).transform (project, ())
 
 
-let extractTempFunction inScopeTree (expressionRange : range) filename : Refactoring<unit,Identifier> =
-    let transform (source,()) =
-        extractTempFunctionTransform source expressionRange inScopeTree filename
+let extractTempFunction inScopeTree (expressionRange : range) : Refactoring<unit,Identifier> =
+    let transform (project,()) =
+        extractTempFunctionTransform project expressionRange inScopeTree
     { analysis = (fun _ -> true); transform = transform; getErrorMessage = fun _ -> None }
 
 
-let GetErrorMessage (range:((int*int)*(int*int)) option, functionName:string option) (source:string) (filename:string) =
-    let tree = (Ast.Parse source filename).Value
+let GetErrorMessage (range:((int*int)*(int*int)) option, functionName:string option) (project:Project) =
+    let tree = (Ast.Parse project.CurrentFileContents project.CurrentFile).Value
 
     let checkRange ((startLine, startCol), (endLine, endCol)) =
-        let range = mkRange filename (mkPos startLine (startCol-1)) (mkPos endLine (endCol-1))
+        let range = mkRange project.CurrentFile (mkPos startLine (startCol-1)) (mkPos endLine (endCol-1))
         let expressionAtRange = Option.isSome (TryFindExpressionAtRange range tree)
         let expressionIsNotInfix =
             match TryFindExpressionAtRange range tree with
@@ -134,38 +134,38 @@ let GetErrorMessage (range:((int*int)*(int*int)) option, functionName:string opt
 
 
     let checkRangeAndName (((startLine, startCol), (endLine, endCol)), name) =
-        let range = mkRange filename (mkPos startLine (startCol-1)) (mkPos endLine (endCol-1))
+        let range = mkRange project.CurrentFile (mkPos startLine (startCol-1)) (mkPos endLine (endCol-1))
         let inScopeTree = defaultInScopeTree tree range
-        let oldSource, changes, (_, identifierRange) =
-            extractTempFunctionTransform source range inScopeTree.Value filename
-        let sourceWithIdentifier = ChangeTextOf oldSource changes
-        Rename.GetErrorMessage (Some (identifierRange.Start.Line, identifierRange.Start.Column+1), Some name)
-                               sourceWithIdentifier filename
+        let oldProject, changes, (_, identifierRange) =
+            extractTempFunctionTransform project range inScopeTree.Value
+        let sourceWithIdentifier = ChangeTextOf oldProject.CurrentFileContents changes
+        let projectWithIdentifier = project.UpdateCurrentFileContents sourceWithIdentifier
+        Rename.GetErrorMessage (Some (identifierRange.Start.Line, identifierRange.Start.Column+1), Some name) projectWithIdentifier
 
     IsSuccessful checkRange range
     |> Andalso (IsSuccessful checkRangeAndName (PairOptions (range, functionName)))
     |> fun (l:Lazy<_>) -> l.Force()
 
-let IsValid (range:((int*int)*(int*int)) option, functionName:string option) (source:string) (filename:string) =
-    Option.isNone (GetErrorMessage (range, functionName) source filename)
+let IsValid (range:((int*int)*(int*int)) option, functionName:string option) (project:Project) =
+    Option.isNone (GetErrorMessage (range, functionName) project)
 
-let ExtractFunction inScopeTree (expressionRange : range) functionName filename : Refactoring<unit,unit> =
-    let analysis (source,()) =
+let ExtractFunction inScopeTree (expressionRange : range) functionName : Refactoring<unit,unit> =
+    let analysis (project:Project,()) =
         IsValid (Some ((expressionRange.StartLine, expressionRange.StartColumn+1), 
                        (expressionRange.EndLine, expressionRange.EndColumn+1)),
                  Some functionName)
-                source filename
-    let getErrorMessage (source,()) =
+                project
+    let getErrorMessage (project:Project,()) =
         GetErrorMessage (Some ((expressionRange.StartLine, expressionRange.StartColumn+1),
                                (expressionRange.EndLine, expressionRange.EndColumn+1)),
                          Some functionName)
-                        source filename
-    let extractTempRefactoring = extractTempFunction inScopeTree expressionRange filename
-    let extractFunctionRefactoring = sequence extractTempRefactoring (Rename.Rename functionName filename)
+                        project
+    let extractTempRefactoring = extractTempFunction inScopeTree expressionRange
+    let extractFunctionRefactoring = sequence extractTempRefactoring (Rename.Rename functionName)
     { extractFunctionRefactoring with analysis = analysis; getErrorMessage = getErrorMessage }
 
-let Transform (((startLine, startColumn), (endLine, endColumn)), functionName) source filename =
-    let tree = (Ast.Parse source filename).Value
-    let expressionRange = mkRange filename (mkPos startLine (startColumn-1)) (mkPos endLine (endColumn-1))
+let Transform (((startLine, startColumn), (endLine, endColumn)), functionName) (project:Project) =
+    let tree = (Ast.Parse project.CurrentFileContents project.CurrentFile).Value
+    let expressionRange = mkRange project.CurrentFile (mkPos startLine (startColumn-1)) (mkPos endLine (endColumn-1))
     let inScopeTree = (defaultInScopeTree tree expressionRange).Value
-    RunRefactoring (ExtractFunction inScopeTree expressionRange functionName filename) () source
+    RunRefactoring (ExtractFunction inScopeTree expressionRange functionName) () project
