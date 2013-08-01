@@ -45,6 +45,7 @@
     <Compile Include="ExtractFunctionTests.fs" />
     <Compile Include="RenameTests.fs" />
     <Compile Include="ScopingTests.fs" />
+    <Compile Include="ProjectTests.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\FSharpRefactor\FSharpRefactor.fsproj">
