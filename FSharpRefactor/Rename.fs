@@ -6,6 +6,7 @@ open FSharpRefactor.Engine.CodeAnalysis.ScopeAnalysis
 open FSharpRefactor.Engine.CodeAnalysis.RangeAnalysis
 open FSharpRefactor.Engine.Refactoring
 open FSharpRefactor.Engine.ValidityChecking
+open FSharpRefactor.Engine.Scoping
 open FSharpRefactor.Engine
 
 //TODO: these probably need to be put in an .fsi file
@@ -14,7 +15,7 @@ let GetErrorMessage (position:(int*int) option, newName:string option) (project:
     let identifier =
         lazy Option.bind (TryFindIdentifier project.CurrentFileContents project.CurrentFile) pos
     let identifierScope =
-        lazy Option.bind (fun (identifier:Identifier) -> Some (new IdentifierScope(identifier, project))) (identifier.Force())
+        lazy Option.bind (fun (identifier:Identifier) -> (TryGetIdentifierScope project identifier)) (identifier.Force())
 
     let checkPosition (line, col) =
         match Option.isSome (identifier.Force()), Option.isSome (identifierScope.Force()) with
@@ -60,23 +61,23 @@ let IsValid (position:(int*int) option, newName:string option) project =
 
 let Rename newName : Refactoring<Identifier,unit> =
     let analysis (project:Project, identifier:Identifier) =
-        let identifierScope = new IdentifierScope(identifier, project)
+        let identifierScope = GetIdentifierScope project identifier
         IsValid (Some (identifierScope.DeclarationRange.StartLine, identifierScope.DeclarationRange.StartColumn+1), Some newName) project
 
     let transform (project:Project, identifier:Identifier) =
-        let identifierScope = new IdentifierScope(identifier, project)
+        let identifierScope = GetIdentifierScope project identifier
         let changes =
             identifierScope.FindReferences ()
             |> List.map (fun r -> (r,newName))
         project, changes, ()
 
     let getErrorMessage (project:Project, identifier:Identifier) =
-        let identifierScope = new IdentifierScope(identifier, project)
+        let identifierScope = GetIdentifierScope project identifier
         GetErrorMessage (Some (identifierScope.DeclarationRange.StartLine, identifierScope.DeclarationRange.StartColumn+1), Some newName) project
     { analysis = analysis; transform = transform; getErrorMessage = getErrorMessage }
 
 let Transform ((line:int, col:int), newName:string) (project:Project) =
     let position = mkPos line (col-1)
     let tree = (Ast.Parse project.CurrentFileContents project.CurrentFile).Value
-    let identifierScope = new IdentifierScope(FindIdentifier project.CurrentFileContents project.CurrentFile position, project)
+    let identifierScope = GetIdentifierScope project (FindIdentifier project.CurrentFileContents project.CurrentFile position)
     RunRefactoring (Rename newName) identifierScope.IdentifierDeclaration project

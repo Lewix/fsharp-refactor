@@ -6,6 +6,7 @@ open Microsoft.FSharp.Compiler.Range
 
 open FSharpRefactor.Engine.CodeAnalysis
 open FSharpRefactor.Engine.Ast
+open FSharpRefactor.Engine.Scoping
 open FSharpRefactor.Engine
 
 [<TestFixture>]
@@ -13,7 +14,7 @@ type IdentifierScopeModule() =
     [<Test>]
     member this.``Can check whether an identifier is free in another's scope``() =
         let source = "let a b = b in f ((a 1) + (fun d -> d + c))"
-        let identifierScope = new IdentifierScope(("a", mkRange "test.fs" (mkPos 1 4) (mkPos 1 5)), (new Project(source, "test.fs")))
+        let identifierScope = GetIdentifierScope (new Project(source, "test.fs")) ("a", mkRange "test.fs" (mkPos 1 4) (mkPos 1 5))
         
         Assert.IsTrue(identifierScope.IsFree "f")
         Assert.IsTrue(identifierScope.IsFree "c")
@@ -26,7 +27,7 @@ type IdentifierScopeModule() =
         let source = "let f a b c = a"
         let usageIdentifier = ("a", mkRange "test.fs" (mkPos 1 14) (mkPos 1 15))
         let expected = "a", mkRange "test.fs" (mkPos 1 6) (mkPos 1 7)
-        let identifierScope = new IdentifierScope(usageIdentifier, (new Project(source, "test.fs")))
+        let identifierScope = GetIdentifierScope (new Project(source, "test.fs")) usageIdentifier
 
         Assert.AreEqual(expected, identifierScope.IdentifierDeclaration)
 

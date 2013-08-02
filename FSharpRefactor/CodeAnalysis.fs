@@ -249,20 +249,6 @@ module ScopeAnalysis =
             else name
 
         generateWhileUsed ()
-
-    let rec TryFindDeclarationScope trees (name, declarationRange) =
-        match trees with
-            | [] -> None
-            | Usage(_,_)::ds -> TryFindDeclarationScope ds (name, declarationRange)
-            | (TopLevelDeclaration(is, ts) as d)::ds
-            | (Declaration(is, ts) as d)::ds ->
-                let isDeclaration = (fun (n,r) -> n = name && rangeContainsRange r declarationRange)
-                if List.exists isDeclaration is then Some d
-                else TryFindDeclarationScope (List.append ts ds) (name, declarationRange)
-    
-    let FindDeclarationScope trees declarationIdentifier =
-        TryFindDeclarationScope trees declarationIdentifier
-        |> Option.get
                             
     let FindDeclarationReferences (name, declarationRange) (tree:ScopeTree) =
         let rangeOfIdent (name : string) (identifiers : Identifier list) =

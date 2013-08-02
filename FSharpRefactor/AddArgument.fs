@@ -10,6 +10,7 @@ open FSharpRefactor.Engine.CodeAnalysis.ScopeAnalysis
 open FSharpRefactor.Engine.CodeTransforms.CodeTransforms
 open FSharpRefactor.Engine.Refactoring
 open FSharpRefactor.Engine.ValidityChecking
+open FSharpRefactor.Engine.Scoping
 open FSharpRefactor.Engine
 open FSharpRefactor.Refactorings
 
@@ -65,7 +66,7 @@ let addArgumentToFunctionUsage (project:Project) (argument : string) (identRange
       getErrorMessage = fun _ -> None }
 
 let findFunctionUsageRanges (project:Project) (tree : Ast.AstNode) (functionName, functionRange) =
-    IdentifierScope((functionName, functionRange), project).FindReferences()
+    (GetIdentifierScope project (functionName, functionRange)).FindReferences()
     |> List.filter ((<>) functionRange)
 
 //TODO: Check arguments such as argumentName or defaultValue have a valid form

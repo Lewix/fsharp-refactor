@@ -45,13 +45,6 @@ type ExpressionScope (scopeTrees:ScopeTree list, project:Project) =
 and IdentifierScope (identifier:Identifier, identifierScope:ScopeTree, project:Project) =
     inherit ExpressionScope([identifierScope], project)
 
-    new(identifier:Identifier, project:Project) =
-        let _, range = identifier
-        let scopeTrees = makeScopeTrees (Ast.Parse project.CurrentFileContents range.FileName).Value
-        let identifierDeclaration = FindIdentifierDeclaration scopeTrees identifier
-        let identifierScope = FindDeclarationScope scopeTrees identifierDeclaration
-        IdentifierScope(identifierDeclaration, identifierScope, project)
-
     new(identifiers, trees, isTopLevel, project:Project) =
         let identifierScope =
             if isTopLevel then TopLevelDeclaration(identifiers, trees)
@@ -81,11 +74,29 @@ and IdentifierScope (identifier:Identifier, identifierScope:ScopeTree, project:P
         FindDeclarationReferences identifier identifierScope
 
 module Scoping =
-    let TryGetIdentifierScope (source:Project) (identifier:Identifier) =
+    let rec TryFindDeclarationScope trees (name, declarationRange) =
+        match trees with
+            | [] -> None
+            | Usage(_,_)::ds -> TryFindDeclarationScope ds (name, declarationRange)
+            | (TopLevelDeclaration(is, ts) as d)::ds
+            | (Declaration(is, ts) as d)::ds ->
+                let isDeclaration = (fun (n,r) -> n = name && rangeContainsRange r declarationRange)
+                if List.exists isDeclaration is then Some d
+                else TryFindDeclarationScope (List.append ts ds) (name, declarationRange)
+    
+    let FindDeclarationScope trees declarationIdentifier =
+        TryFindDeclarationScope trees declarationIdentifier
+        |> Option.get
+
+    let TryGetIdentifierScope (project:Project) (identifier:Identifier) =
         let _, range = identifier
-        let scopeTrees = makeScopeTrees (Ast.Parse source.CurrentFileContents range.FileName).Value
+        let scopeTrees = makeScopeTrees (Ast.Parse project.CurrentFileContents range.FileName).Value
         let identifierDeclaration = TryFindIdentifierDeclaration scopeTrees identifier
         let identifierScope =
             Option.bind (TryFindDeclarationScope scopeTrees) identifierDeclaration
-        if Option.isSome identifierScope then Some (new IdentifierScope(identifierDeclaration.Value, identifierScope.Value, source))
+        if Option.isSome identifierScope then Some (new IdentifierScope(identifierDeclaration.Value, identifierScope.Value, project))
         else None
+        
+    let GetIdentifierScope (project:Project) (identifier:Identifier) =
+        TryGetIdentifierScope project identifier
+        |> Option.get
