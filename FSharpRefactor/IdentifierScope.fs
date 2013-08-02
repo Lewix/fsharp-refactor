@@ -9,13 +9,34 @@ open FSharpRefactor.Engine.CodeAnalysis.ScopeAnalysis
 type ExpressionScope (scopeTrees:ScopeTree list, project:Project) =
     new(expression:Ast.AstNode, project:Project) =
         ExpressionScope(makeScopeTrees expression, project)
-    
+
     member self.IsFree identifierName =
-        List.foldBack (IsFree identifierName >> (||)) scopeTrees false
+        let hasTargetName (n,_) = n = identifierName            
+        self.FindFreeIdentifiers ()
+        |> List.exists hasTargetName
     member self.FindFreeIdentifiers () =
-        GetFreeIdentifierUsages scopeTrees
+        let rec freeIdentifiersInSingleTree foundFree declared tree =
+            match tree with
+                | Usage(n,r) ->
+                    if Set.contains n declared then foundFree
+                    else (n,r)::foundFree
+                | TopLevelDeclaration(is, ts)
+                | Declaration(is, ts) ->
+                    let updatedDeclared = Set.union declared (Set(List.map fst is))
+                    List.collect (freeIdentifiersInSingleTree foundFree updatedDeclared) ts
+                    
+        List.collect (freeIdentifiersInSingleTree [] Set.empty<string>) scopeTrees
     member self.FindNestedDeclarations identifierName =
-        List.collect (GetShallowestDeclarations identifierName) scopeTrees
+        let rec getShallowestDeclarations targetName tree =
+            match tree with
+                | TopLevelDeclaration(is, ts) when IsDeclared targetName is -> [is, ts, true]
+                | Declaration(is, ts) when IsDeclared targetName is -> [is, ts, false]
+                | TopLevelDeclaration(is, ts) 
+                | Declaration(is, ts) as declaration ->
+                    List.collect (getShallowestDeclarations targetName) ts
+                | _ -> []
+
+        List.collect (getShallowestDeclarations identifierName) scopeTrees
         |> List.map (fun (identifiers, trees, isTopLevel) -> new IdentifierScope(identifiers, trees, isTopLevel, project))
     
     override self.ToString () =
@@ -42,14 +63,20 @@ and IdentifierScope (identifier:Identifier, identifierScope:ScopeTree, project:P
             | :? IdentifierScope ->
                 (other :?> IdentifierScope).IdentifierDeclaration = self.IdentifierDeclaration
             | _ -> false
-            
+
     override self.GetHashCode () =
         self.IdentifierDeclaration.GetHashCode ()
         
     member self.IdentifierDeclaration with get() = identifier
     member self.DeclarationRange with get() = snd identifier
     member self.IdentifierName with get() = fst identifier
-    member self.NamesDeclaredInBinding with get() = DeclaredNames identifierScope
+    member self.NamesDeclaredInBinding
+        with get() =
+            match identifierScope with
+                | TopLevelDeclaration(is,ts)
+                | Declaration(is,ts) -> is
+                | _ -> []
+
     member self.FindReferences () =
         FindDeclarationReferences identifier identifierScope
 

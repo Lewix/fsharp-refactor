@@ -43,25 +43,6 @@ module ScopeAnalysis =
     let IsDeclared (name : string) (identifiers : Identifier list) =
         List.exists (fun (n,_) -> n = name) identifiers
 
-    let GetFreeIdentifierUsages (trees : ScopeTree list) =
-        let rec freeIdentifiersInSingleTree foundFree declared tree =
-            match tree with
-                | Usage(n,r) ->
-                    if Set.contains n declared then foundFree
-                    else (n,r)::foundFree
-                | TopLevelDeclaration(is, ts)
-                | Declaration(is, ts) ->
-                    let updatedDeclared = Set.union declared (Set(List.map fst is))
-                    List.collect (freeIdentifiersInSingleTree foundFree updatedDeclared) ts
-                    
-        List.collect (freeIdentifiersInSingleTree [] Set.empty<string>) trees
-
-    let rec IsFree targetName tree =
-        let hasTargetName (n,_) = n = targetName
-            
-        GetFreeIdentifierUsages [tree]
-        |> List.exists hasTargetName
-
     let TryFindIdentifierDeclaration (trees : ScopeTree list) ((name, range) : Identifier) =
         let isDeclaration (n,r) = n = name && r = range
         let isSameName (n,r) = n = name
@@ -301,21 +282,6 @@ module ScopeAnalysis =
                     else remainingRanges
                 | _ -> []
         findReferencesInTree tree
-        
-    let DeclaredNames tree =
-        match tree with
-            | TopLevelDeclaration(is,ts)
-            | Declaration(is,ts) -> is
-            | _ -> []
-
-    let rec GetShallowestDeclarations targetName tree =
-        match tree with
-            | TopLevelDeclaration(is, ts) when IsDeclared targetName is -> [is, ts, true]
-            | Declaration(is, ts) when IsDeclared targetName is -> [is, ts, false]
-            | TopLevelDeclaration(is, ts) 
-            | Declaration(is, ts) as declaration ->
-                List.collect (GetShallowestDeclarations targetName) ts
-            | _ -> []
 
 
 module RangeAnalysis =           

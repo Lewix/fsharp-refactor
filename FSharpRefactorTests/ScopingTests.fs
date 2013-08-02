@@ -50,9 +50,9 @@ type ScopeAnalysisModule() =
         let expected2 = Set(["b"])
         let expected3 = Set(["c"; "d"; "f"; "op_Addition"])
         let assertFun (source, expected) =
-            let tree = getTrees source
+            let scope = new ExpressionScope((Ast.Parse source "test.fs").Value, new Project("test.fs", source))
             let actual =
-                ScopeAnalysis.GetFreeIdentifierUsages tree
+                scope.FindFreeIdentifiers ()
                 |> List.map fst
                 |> Set.ofList
             Assert.AreEqual(expected, actual, sprintf "%A" actual)
