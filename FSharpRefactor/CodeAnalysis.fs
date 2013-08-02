@@ -43,28 +43,6 @@ module ScopeAnalysis =
     let IsDeclared (name : string) (identifiers : Identifier list) =
         List.exists (fun (n,_) -> n = name) identifiers
 
-    let TryFindIdentifierDeclaration (trees : ScopeTree list) ((name, range) : Identifier) =
-        let isDeclaration (n,r) = n = name && r = range
-        let isSameName (n,r) = n = name
-            
-        let rec tryFindIdentifierAndDeclaration previousDeclaration tree =
-            match tree with
-                | Usage(n,r) -> if n = name && r = range then previousDeclaration else None
-                | TopLevelDeclaration(is, ts)
-                | Declaration(is, ts) ->
-                    if List.exists isDeclaration is then
-                        List.tryFind isDeclaration is
-                    elif List.exists isSameName is then
-                        List.tryPick (tryFindIdentifierAndDeclaration (List.tryFind isSameName is)) ts
-                    else
-                        List.tryPick (tryFindIdentifierAndDeclaration previousDeclaration) ts
-
-        List.tryPick (tryFindIdentifierAndDeclaration None) trees
-        
-    let FindIdentifierDeclaration (trees : ScopeTree list) ((name, range) : Identifier) =
-        TryFindIdentifierDeclaration trees (name, range)
-        |> Option.get
-
     let TryFindIdentifierWithName (trees : ScopeTree list) (name : string) =
         let rec tryFindIdentifierWithName tree =
             match tree with
@@ -74,18 +52,6 @@ module ScopeAnalysis =
                     else List.tryPick tryFindIdentifierWithName ts
                 | Usage(_, _) -> None
         List.tryPick tryFindIdentifierWithName trees
-
-    let GetDeclarations (trees : ScopeTree list) =
-        let rec declarationsInSingleTree tree =
-            match tree with
-                | Usage(n,_) -> Set []
-                | TopLevelDeclaration(is, ts)
-                | Declaration(is, ts) ->
-                    let declarationsInChildren =
-                        Set.unionMany (Seq.map declarationsInSingleTree ts)
-                    Set.union declarationsInChildren (Set(List.map fst is))
-
-        Set.unionMany (Seq.map declarationsInSingleTree trees)
 
     let isDeclaration (tree : ScopeTree) =
         match tree with
@@ -238,9 +204,21 @@ module ScopeAnalysis =
     let makeScopeTrees (tree : Ast.AstNode) =
         makeScopeTreesAtLevel false tree
 
+    let getDeclarations (trees : ScopeTree list) =
+        let rec declarationsInSingleTree tree =
+            match tree with
+                | Usage(n,_) -> Set []
+                | TopLevelDeclaration(is, ts)
+                | Declaration(is, ts) ->
+                    let declarationsInChildren =
+                        Set.unionMany (Seq.map declarationsInSingleTree ts)
+                    Set.union declarationsInChildren (Set(List.map fst is))
+
+        Set.unionMany (Seq.map declarationsInSingleTree trees)
+
     let FindUnusedName (tree : Ast.AstNode) =
         let scopeTrees = makeScopeTrees tree
-        let usedNames = GetDeclarations scopeTrees
+        let usedNames = getDeclarations scopeTrees
         let randomNumberGenerator = new System.Random()
 
         let rec generateWhileUsed () =
@@ -249,7 +227,7 @@ module ScopeAnalysis =
             else name
 
         generateWhileUsed ()
-                            
+
     let FindDeclarationReferences (name, declarationRange) (tree:ScopeTree) =
         let rangeOfIdent (name : string) (identifiers : Identifier list) =
             let identifier = List.tryFind (fun (n,_) -> n = name) identifiers

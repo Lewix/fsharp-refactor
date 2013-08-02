@@ -74,26 +74,40 @@ and IdentifierScope (identifier:Identifier, identifierScope:ScopeTree, project:P
         FindDeclarationReferences identifier identifierScope
 
 module Scoping =
-    let rec TryFindDeclarationScope trees (name, declarationRange) =
+    let tryFindIdentifierDeclaration (trees : ScopeTree list) ((name, range) : Identifier) =
+        let isDeclaration (n,r) = n = name && r = range
+        let isSameName (n,r) = n = name
+            
+        let rec tryFindIdentifierAndDeclaration previousDeclaration tree =
+            match tree with
+                | Usage(n,r) -> if n = name && r = range then previousDeclaration else None
+                | TopLevelDeclaration(is, ts)
+                | Declaration(is, ts) ->
+                    if List.exists isDeclaration is then
+                        List.tryFind isDeclaration is
+                    elif List.exists isSameName is then
+                        List.tryPick (tryFindIdentifierAndDeclaration (List.tryFind isSameName is)) ts
+                    else
+                        List.tryPick (tryFindIdentifierAndDeclaration previousDeclaration) ts
+
+        List.tryPick (tryFindIdentifierAndDeclaration None) trees
+
+    let rec tryFindDeclarationScope trees (name, declarationRange) =
         match trees with
             | [] -> None
-            | Usage(_,_)::ds -> TryFindDeclarationScope ds (name, declarationRange)
+            | Usage(_,_)::ds -> tryFindDeclarationScope ds (name, declarationRange)
             | (TopLevelDeclaration(is, ts) as d)::ds
             | (Declaration(is, ts) as d)::ds ->
                 let isDeclaration = (fun (n,r) -> n = name && rangeContainsRange r declarationRange)
                 if List.exists isDeclaration is then Some d
-                else TryFindDeclarationScope (List.append ts ds) (name, declarationRange)
-    
-    let FindDeclarationScope trees declarationIdentifier =
-        TryFindDeclarationScope trees declarationIdentifier
-        |> Option.get
+                else tryFindDeclarationScope (List.append ts ds) (name, declarationRange)
 
     let TryGetIdentifierScope (project:Project) (identifier:Identifier) =
         let _, range = identifier
         let scopeTrees = makeScopeTrees (Ast.Parse project.CurrentFileContents range.FileName).Value
-        let identifierDeclaration = TryFindIdentifierDeclaration scopeTrees identifier
+        let identifierDeclaration = tryFindIdentifierDeclaration scopeTrees identifier
         let identifierScope =
-            Option.bind (TryFindDeclarationScope scopeTrees) identifierDeclaration
+            Option.bind (tryFindDeclarationScope scopeTrees) identifierDeclaration
         if Option.isSome identifierScope then Some (new IdentifierScope(identifierDeclaration.Value, identifierScope.Value, project))
         else None
         
