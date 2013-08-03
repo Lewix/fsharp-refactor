@@ -41,7 +41,7 @@ type ModuleScopeTreeModule() =
         let moduleScopeTrees = makeModuleScopeTrees (Ast.Parse source "test.fs").Value
         
         match moduleScopeTrees with
-            | [Declaration((("TestModule1", _), ["TopLevelFunction1",_;"TopLevelFunction2",_]),[])] -> ()
+            | [Declaration((("TestModule1", _), ["TestModule1.TopLevelFunction1",_;"TestModule1.TopLevelFunction2",_]),[])] -> ()
             | _ -> Assert.Fail(incorrectScopeTrees source moduleScopeTrees)
 
     [<Test>]
@@ -50,7 +50,7 @@ type ModuleScopeTreeModule() =
         let moduleScopeTrees = makeModuleScopeTrees (Ast.Parse source "test.fs").Value
         
         match moduleScopeTrees with
-            | [Declaration((("TestModule1", _), ["TopLevelValue1",_;"TestModule2.TopLevelValue2",_]),  [])] ->  ()
+            | [Declaration((("TestModule1", _), ["TestModule1.TopLevelValue1",_;"TestModule1.TestModule2.TopLevelValue2",_]),  [])] ->  ()
             | _ -> Assert.Fail(incorrectScopeTrees source moduleScopeTrees)
             
     [<Test>]
@@ -59,6 +59,16 @@ type ModuleScopeTreeModule() =
         let moduleScopeTrees = makeModuleScopeTrees (Ast.Parse source "test.fs").Value
         
         match moduleScopeTrees with
-            | [Declaration((("Test1", _), ["TestModule1.TopLevelValue1",_]),
-                [Declaration((("Test2", _), ["TestModule2.TopLevelValue2",_]),[])])] -> ()
+            | [Declaration((("Test1.TestModule1", _), ["Test1.TestModule1.TopLevelValue1",_]),
+                [Declaration((("Test2.TestModule2", _), ["Test2.TestModule2.TopLevelValue2",_]),[])])] -> ()
+            | _ -> Assert.Fail(incorrectScopeTrees source moduleScopeTrees)
+            
+    [<Test>]
+    member this.``Can create the scope trees for a namespace with nested modules``() =
+        let source = "namespace Test\n\nmodule TestModule1 = \n  let TopLevelValue1 = 1\n\nmodule TestModule2 =\n  let TopLevelValue2 = 2"
+        let moduleScopeTrees = makeModuleScopeTrees (Ast.Parse source "test.fs").Value
+        
+        match moduleScopeTrees with
+            | [Declaration((("Test.TestModule1",_), ["Test.TestModule1.TopLevelValue1",_]),
+                [Declaration((("Test.TestModule2",_), ["Test.TestModule2.TopLevelValue2",_]),[])])] -> ()
             | _ -> Assert.Fail(incorrectScopeTrees source moduleScopeTrees)

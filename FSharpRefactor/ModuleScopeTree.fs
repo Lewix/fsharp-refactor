@@ -10,7 +10,7 @@ type Module = string * range
 type Declaration = string * range
 type ModuleScopeTree = ScopeTree<Module * Declaration list, Module * Declaration>
 
-let moduleFromLongIdent moduleIdentifier =
+let moduleOrNamespaceFromLongIdent moduleIdentifier =
     let moduleName = String.concat "." (Seq.map (fun (i:Ident) -> i.idText) moduleIdentifier)
     let filename = (List.head moduleIdentifier).idRange.FileName
     let moduleRange = mkRange filename (List.head moduleIdentifier).idRange.Start (Seq.last moduleIdentifier).idRange.End
@@ -24,23 +24,32 @@ let declarationFromBinding prefix binding =
         | _ -> None
 
        
-let getDeclarations declarations =
-    let rec getDeclarationsWithPrefix prefix declarations =
-        match declarations with
-            | SynModuleDecl.Let(_, bs, _) ->
-                List.collect (declarationFromBinding prefix >> Option.toList) bs
-            | SynModuleDecl.NestedModule(ComponentInfo(_,_,_,moduleIdentifier,_,_,_,_),ds,_,_) ->
-                let moduleName, _ = moduleFromLongIdent moduleIdentifier
-                List.collect (getDeclarationsWithPrefix (prefix + moduleName + ".")) ds
-            | _ -> []
-    getDeclarationsWithPrefix "" declarations
+let rec getDeclarations prefix declarations =
+    match declarations with
+        | SynModuleDecl.Let(_, bs, _) ->
+            List.collect (declarationFromBinding prefix >> Option.toList) bs
+        | SynModuleDecl.NestedModule(ComponentInfo(_,_,_,moduleIdentifier,_,_,_,_),ds,_,_) ->
+            let moduleName, _ = moduleOrNamespaceFromLongIdent moduleIdentifier
+            List.collect (getDeclarations (prefix + moduleName + ".")) ds
+        | _ -> []
 
-let rec makeModuleScopeTrees (tree:Ast.AstNode) : ModuleScopeTree list =
+let rec makeModuleScopeTreesWithPrefix prefix (tree:Ast.AstNode) : ModuleScopeTree list =
     match tree with
         | Ast.AstNode.File(ParsedImplFileInput(_,_,_,_,_,ns,_)) ->
-            makeNestedScopeTrees makeModuleScopeTrees (List.map Ast.AstNode.ModuleOrNamespace ns)
-        | Ast.AstNode.ModuleOrNamespace(SynModuleOrNamespace(moduleIdentifier, _, declarations, _, _, _, _)) ->
-            let moduleDeclarations = List.collect getDeclarations declarations
-            [Declaration((moduleFromLongIdent moduleIdentifier, moduleDeclarations),[])]
-        | Ast.Children cs -> List.collect makeModuleScopeTrees cs
+            makeNestedScopeTrees (makeModuleScopeTreesWithPrefix prefix) (List.map Ast.AstNode.ModuleOrNamespace ns)
+        | Ast.AstNode.ModuleOrNamespace(SynModuleOrNamespace(namespaceIdentifier, false, declarations, _, _, _, _)) ->
+            let namespaceName, _ = moduleOrNamespaceFromLongIdent namespaceIdentifier
+            makeNestedScopeTrees (makeModuleScopeTreesWithPrefix (prefix + namespaceName + ".")) (List.map Ast.AstNode.ModuleDeclaration declarations)
+        | Ast.AstNode.ModuleOrNamespace(SynModuleOrNamespace(moduleIdentifier, true, declarations, _, _, _, _)) ->
+            let moduleName, moduleRange = moduleOrNamespaceFromLongIdent moduleIdentifier
+            let moduleDeclarations = List.collect (getDeclarations (prefix + moduleName + ".")) declarations
+            [Declaration(((prefix + moduleName, moduleRange), moduleDeclarations),[])]
+        | Ast.AstNode.ModuleDeclaration(SynModuleDecl.NestedModule(ComponentInfo(_,_,_,moduleIdentifier,_,_,_,_),declarations,_,_)) ->
+            let moduleName, moduleRange = moduleOrNamespaceFromLongIdent moduleIdentifier
+            let moduleDeclarations = List.collect (getDeclarations (prefix + moduleName + ".")) declarations
+            [Declaration(((prefix + moduleName, moduleRange), moduleDeclarations),[])]
+        | Ast.Children cs -> List.collect (makeModuleScopeTreesWithPrefix prefix) cs
         | _ -> []
+        
+let rec makeModuleScopeTrees tree =
+    makeModuleScopeTreesWithPrefix "" tree
