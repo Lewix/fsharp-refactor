@@ -3,9 +3,15 @@ namespace FSharpRefactor.Tests.ProjectTests
 open System.IO
 open NUnit.Framework
 
+open FSharpRefactor.Engine.Ast
+open FSharpRefactor.Engine.ScopeAnalysis
+open FSharpRefactor.Engine.ModuleScopeTree
+
 [<TestFixture>]
-type ProjectModule() =
+type ModuleScopeTreeModule() =
     let files = ["file1.fs"; "file2.fs"]
+    let incorrectScopeTrees source scopeTrees =
+        sprintf "ModuleScopeTrees for '%s' were incorrect:\n %A" source scopeTrees
 
     [<SetUp>]
     member this.CreateFiles () =
@@ -22,9 +28,18 @@ type ProjectModule() =
         fprintf fileWriters.[1] "       f(TopLevelFunction1 (TopLevelFunction2 b))"
         
         List.map (fun (f:StreamWriter) -> f.Flush()) fileWriters
+        |> ignore
         
     [<TearDown>]
     member this.DeleteFiles () =
         List.map File.Delete files
+        |> ignore
         
-    
+    [<Test>]
+    member this.``Can create the scope trees for a single module declaration``() =
+        let source = "module TestModule1\n  let TopLevelFunction1 a = 1+a\n  let TopLevelFunction2 = 2*(TopLevelFunction1b)"
+        let moduleScopeTrees = makeModuleScopeTrees (Ast.Parse source "test.fs").Value
+        
+        match moduleScopeTrees with
+            | [Declaration((("TestModule1", _), ["TopLevelFunction1",_;"TopLevelFunction2",_]),[])] -> ()
+            | _ -> Assert.Fail(incorrectScopeTrees source moduleScopeTrees)
