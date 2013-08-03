@@ -32,8 +32,7 @@ let GetErrorMessage (position:(int*int) option, newName:string option) (project:
     let checkPositionAndName (position, newName) =
         let oldName = identifierScope.Force().Value.IdentifierName
         let newNameIsBound =
-            identifierScope.Value.Value.NamesDeclaredInBinding
-            |> IsDeclared newName
+            identifierScope.Value.Value.IsDeclaredInBinding newName
             |> (&&) (oldName <> newName)
 
         let newNameIsFree =

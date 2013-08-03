@@ -8,7 +8,7 @@ open FSharpRefactor.Engine.Ast
 
 module ScopeAnalysis =
     type Identifier = string * range
-
+    
     type ScopeTree =
         | TopLevelDeclaration of Identifier list * ScopeTree list
         | Declaration of Identifier list * ScopeTree list
@@ -39,19 +39,6 @@ module ScopeAnalysis =
             | Usage(name, range)::rest -> (name,range)::(ListIdentifiers rest)
             | TopLevelDeclaration(is,ts)::rest
             | Declaration(is,ts)::rest -> List.append is (ListIdentifiers (List.append ts rest))
-
-    let IsDeclared (name : string) (identifiers : Identifier list) =
-        List.exists (fun (n,_) -> n = name) identifiers
-
-    let TryFindIdentifierWithName (trees : ScopeTree list) (name : string) =
-        let rec tryFindIdentifierWithName tree =
-            match tree with
-                | TopLevelDeclaration(is, ts)
-                | Declaration(is, ts) ->
-                    if IsDeclared name is then Some (List.find (fun (n,r) -> n = name) is)
-                    else List.tryPick tryFindIdentifierWithName ts
-                | Usage(_, _) -> None
-        List.tryPick tryFindIdentifierWithName trees
 
     let isDeclaration (tree : ScopeTree) =
         match tree with
@@ -203,49 +190,6 @@ module ScopeAnalysis =
 
     let makeScopeTrees (tree : Ast.AstNode) =
         makeScopeTreesAtLevel false tree
-
-    let getDeclarations (trees : ScopeTree list) =
-        let rec declarationsInSingleTree tree =
-            match tree with
-                | Usage(n,_) -> Set []
-                | TopLevelDeclaration(is, ts)
-                | Declaration(is, ts) ->
-                    let declarationsInChildren =
-                        Set.unionMany (Seq.map declarationsInSingleTree ts)
-                    Set.union declarationsInChildren (Set(List.map fst is))
-
-        Set.unionMany (Seq.map declarationsInSingleTree trees)
-
-    let FindUnusedName (tree : Ast.AstNode) =
-        let scopeTrees = makeScopeTrees tree
-        let usedNames = getDeclarations scopeTrees
-        let randomNumberGenerator = new System.Random()
-
-        let rec generateWhileUsed () =
-            let name = "tmpFunction" + string (randomNumberGenerator.Next())
-            if Set.contains name usedNames then generateWhileUsed ()
-            else name
-
-        generateWhileUsed ()
-
-    let FindDeclarationReferences (name, declarationRange) (tree:ScopeTree) =
-        let rangeOfIdent (name : string) (identifiers : Identifier list) =
-            let identifier = List.tryFind (fun (n,_) -> n = name) identifiers
-            if Option.isNone identifier then None else Some(snd identifier.Value)
-        let isNestedDeclaration idents =
-            List.exists (fun (n,r) -> n = name && not (rangeContainsRange r declarationRange)) idents
-        
-        let rec findReferencesInTree tree =
-            match tree with
-                | Usage(n, r) when n = name -> [r]
-                | TopLevelDeclaration(is, ts)
-                | Declaration(is, ts) when not (isNestedDeclaration is) ->
-                    let remainingRanges = List.concat (Seq.map findReferencesInTree ts)
-                    let declarationRange = rangeOfIdent name is
-                    if Option.isSome declarationRange then declarationRange.Value::remainingRanges
-                    else remainingRanges
-                | _ -> []
-        findReferencesInTree tree
 
 
 module RangeAnalysis =           

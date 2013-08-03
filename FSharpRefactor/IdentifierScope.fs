@@ -27,10 +27,12 @@ type ExpressionScope (scopeTrees:ScopeTree list, project:Project) =
                     
         List.collect (freeIdentifiersInSingleTree [] Set.empty<string>) scopeTrees
     member self.FindNestedDeclarations identifierName =
+        let isDeclared (name : string) (identifiers : Identifier list) =
+            List.exists (fun (n,_) -> n = name) identifiers
         let rec getShallowestDeclarations targetName tree =
             match tree with
-                | TopLevelDeclaration(is, ts) when IsDeclared targetName is -> [is, ts, true]
-                | Declaration(is, ts) when IsDeclared targetName is -> [is, ts, false]
+                | TopLevelDeclaration(is, ts) when isDeclared targetName is -> [is, ts, true]
+                | Declaration(is, ts) when isDeclared targetName is -> [is, ts, false]
                 | TopLevelDeclaration(is, ts) 
                 | Declaration(is, ts) as declaration ->
                     List.collect (getShallowestDeclarations targetName) ts
@@ -41,6 +43,7 @@ type ExpressionScope (scopeTrees:ScopeTree list, project:Project) =
     
     override self.ToString () =
         sprintf "%A" scopeTrees
+
 
 and IdentifierScope (identifier:Identifier, identifierScope:ScopeTree, project:Project) =
     inherit ExpressionScope([identifierScope], project)
@@ -59,7 +62,7 @@ and IdentifierScope (identifier:Identifier, identifierScope:ScopeTree, project:P
 
     override self.GetHashCode () =
         self.IdentifierDeclaration.GetHashCode ()
-        
+
     member self.IdentifierDeclaration with get() = identifier
     member self.DeclarationRange with get() = snd identifier
     member self.IdentifierName with get() = fst identifier
@@ -67,11 +70,29 @@ and IdentifierScope (identifier:Identifier, identifierScope:ScopeTree, project:P
         with get() =
             match identifierScope with
                 | TopLevelDeclaration(is,ts)
-                | Declaration(is,ts) -> is
+                | Declaration(is,ts) -> List.map fst is
                 | _ -> []
-
+    member self.IsDeclaredInBinding identifierName =
+        List.exists ((=) identifierName) self.NamesDeclaredInBinding
     member self.FindReferences () =
-        FindDeclarationReferences identifier identifierScope
+        let rangeOfIdent (name : string) (identifiers : Identifier list) =
+            let identifier = List.tryFind (fun (n,_) -> n = name) identifiers
+            if Option.isNone identifier then None else Some(snd identifier.Value)
+        let isNestedDeclaration idents =
+            List.exists (fun (n,r) -> n = self.IdentifierName && not (rangeContainsRange r self.DeclarationRange)) idents
+        
+        let rec findReferencesInTree tree =
+            match tree with
+                | Usage(n, r) when n = self.IdentifierName -> [r]
+                | TopLevelDeclaration(is, ts)
+                | Declaration(is, ts) when not (isNestedDeclaration is) ->
+                    let remainingRanges = List.concat (Seq.map findReferencesInTree ts)
+                    let declarationRange = rangeOfIdent self.IdentifierName is
+                    if Option.isSome declarationRange then declarationRange.Value::remainingRanges
+                    else remainingRanges
+                | _ -> []
+        findReferencesInTree identifierScope
+
 
 module Scoping =
     let tryFindIdentifierDeclaration (trees : ScopeTree list) ((name, range) : Identifier) =
@@ -101,6 +122,30 @@ module Scoping =
                 let isDeclaration = (fun (n,r) -> n = name && rangeContainsRange r declarationRange)
                 if List.exists isDeclaration is then Some d
                 else tryFindDeclarationScope (List.append ts ds) (name, declarationRange)
+                
+    let getDeclarations (trees : ScopeTree list) =
+        let rec declarationsInSingleTree tree =
+            match tree with
+                | Usage(n,_) -> Set []
+                | TopLevelDeclaration(is, ts)
+                | Declaration(is, ts) ->
+                    let declarationsInChildren =
+                        Set.unionMany (Seq.map declarationsInSingleTree ts)
+                    Set.union declarationsInChildren (Set(List.map fst is))
+
+        Set.unionMany (Seq.map declarationsInSingleTree trees)
+
+    let FindUnusedName (tree : Ast.AstNode) =
+        let scopeTrees = makeScopeTrees tree
+        let usedNames = getDeclarations scopeTrees
+        let randomNumberGenerator = new System.Random()
+
+        let rec generateWhileUsed () =
+            let name = "tmpFunction" + string (randomNumberGenerator.Next())
+            if Set.contains name usedNames then generateWhileUsed ()
+            else name
+
+        generateWhileUsed ()
 
     let TryGetIdentifierScope (project:Project) (identifier:Identifier) =
         let _, range = identifier
