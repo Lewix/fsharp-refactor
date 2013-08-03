@@ -4,7 +4,7 @@ open Microsoft.FSharp.Compiler.Range
 open FSharpRefactor.Engine.Ast
 open FSharpRefactor.Engine.ScopeAnalysis
 
-let tryFindIdentifierDeclaration (trees : ScopeTree list) ((name, range) : Identifier) =
+let tryFindIdentifierDeclaration (trees : IdentifierScopeTree list) ((name, range) : Identifier) =
     let isDeclaration (n,r) = n = name && r = range
     let isSameName (n,r) = n = name
         
@@ -32,7 +32,7 @@ let rec tryFindDeclarationScope trees (name, declarationRange) =
             if List.exists isDeclaration is then Some d
             else tryFindDeclarationScope (List.append ts ds) (name, declarationRange)
             
-let getDeclarations (trees : ScopeTree list) =
+let getDeclarations (trees : IdentifierScopeTree list) =
     let rec declarationsInSingleTree tree =
         match tree with
             | Usage(n,_) -> Set []

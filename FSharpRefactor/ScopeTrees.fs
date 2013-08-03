@@ -4,12 +4,13 @@ open Microsoft.FSharp.Compiler.Range
 open Microsoft.FSharp.Compiler.Ast
 open FSharpRefactor.Engine.Ast
 
-type Identifier = string * range
+type ScopeTree<'declaration, 'usage> =
+    | TopLevelDeclaration of 'declaration  * ScopeTree<'declaration, 'usage> list
+    | Declaration of 'declaration * ScopeTree<'declaration, 'usage> list
+    | Usage of 'usage
 
-type ScopeTree =
-    | TopLevelDeclaration of Identifier list * ScopeTree list
-    | Declaration of Identifier list * ScopeTree list
-    | Usage of Identifier
+type Identifier = string * range
+type IdentifierScopeTree = ScopeTree<Identifier list, Identifier>
 
 let (|UsedIdent|_|) (node : Ast.AstNode) =
     match node with
@@ -37,18 +38,18 @@ let rec ListIdentifiers trees =
         | TopLevelDeclaration(is,ts)::rest
         | Declaration(is,ts)::rest -> List.append is (ListIdentifiers (List.append ts rest))
 
-let isDeclaration (tree : ScopeTree) =
+let isDeclaration (tree : IdentifierScopeTree) =
     match tree with
         | TopLevelDeclaration(_,_)
         | Declaration(_,_) -> true
         | _ -> false
 
-let isUsage (tree : ScopeTree) =
+let isUsage (tree : IdentifierScopeTree) =
     match tree with
         | Usage(_,_) -> true
         | _ -> false
 
-let addChildren (tree : ScopeTree) (children : ScopeTree list) =
+let addChildren (tree : IdentifierScopeTree) (children : IdentifierScopeTree list) =
     if List.isEmpty children then tree else
     match tree with
         | Usage(text,range) ->
@@ -57,7 +58,7 @@ let addChildren (tree : ScopeTree) (children : ScopeTree list) =
         | TopLevelDeclaration(is, cs) -> TopLevelDeclaration(is, List.append cs children)
         | Declaration(is, cs) -> Declaration(is, List.append cs children)
 
-let mergeBindings (bindingTrees : ScopeTree list list) =
+let mergeBindings (bindingTrees : IdentifierScopeTree list list) =
     let rec mergeDeclarations declarations =
         match declarations with
             | [] -> Declaration([],[])

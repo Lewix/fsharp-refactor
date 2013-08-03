@@ -6,7 +6,7 @@ open Microsoft.FSharp.Compiler.Ast
 open FSharpRefactor.Engine.Ast
 open FSharpRefactor.Engine.ScopeAnalysis
 
-type ExpressionScope (scopeTrees:ScopeTree list, project:Project) =
+type ExpressionScope (scopeTrees:IdentifierScopeTree list, project:Project) =
     new(expression:Ast.AstNode, project:Project) =
         ExpressionScope(makeScopeTrees expression, project)
 
@@ -45,7 +45,7 @@ type ExpressionScope (scopeTrees:ScopeTree list, project:Project) =
         sprintf "%A" scopeTrees
 
 
-and IdentifierScope (identifier:Identifier, identifierScope:ScopeTree, project:Project) =
+and IdentifierScope (identifier:Identifier, identifierScope:IdentifierScopeTree, project:Project) =
     inherit ExpressionScope([identifierScope], project)
 
     new(identifiers, trees, isTopLevel, project:Project) =
