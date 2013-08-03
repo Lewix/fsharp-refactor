@@ -8,7 +8,7 @@ open FSharpRefactor.Engine.ScopeAnalysis
 
 type Module = string * range
 type Declaration = string * range
-type ModuleScopeTree = ScopeTree<Module * (Declaration list), Module * Declaration>
+type ModuleScopeTree = ScopeTree<Module * Declaration list, Module * Declaration>
 
 let moduleFromLongIdent moduleIdentifier =
     let moduleName = String.concat "." (Seq.map (fun (i:Ident) -> i.idText) moduleIdentifier)
@@ -16,19 +16,25 @@ let moduleFromLongIdent moduleIdentifier =
     let moduleRange = mkRange filename (List.head moduleIdentifier).idRange.Start (Seq.last moduleIdentifier).idRange.End
     (moduleName, moduleRange)
 
-let declarationFromBinding binding =
+let declarationFromBinding prefix binding =
     let pattern =
         match binding with SynBinding.Binding(_,_,_,_,_,_,_,pattern,_,_,_,_) -> pattern
     match Ast.AstNode.Pattern pattern with
-        | DeclaredIdent identifier -> Some identifier
+        | DeclaredIdent (name, range) -> Some (prefix + name, range)
         | _ -> None
 
+       
 let getDeclarations declarations =
-    match declarations with
-        | SynModuleDecl.Let(_, bs, _) ->
-            List.collect (declarationFromBinding >> Option.toList) bs
-        | _ -> []
-    
+    let rec getDeclarationsWithPrefix prefix declarations =
+        match declarations with
+            | SynModuleDecl.Let(_, bs, _) ->
+                List.collect (declarationFromBinding prefix >> Option.toList) bs
+            | SynModuleDecl.NestedModule(ComponentInfo(_,_,_,moduleIdentifier,_,_,_,_),ds,_,_) ->
+                let moduleName, _ = moduleFromLongIdent moduleIdentifier
+                List.collect (getDeclarationsWithPrefix (prefix + moduleName + ".")) ds
+            | _ -> []
+    getDeclarationsWithPrefix "" declarations
+
 let rec makeModuleScopeTrees (tree:Ast.AstNode) : ModuleScopeTree list =
     match tree with
         | Ast.AstNode.ModuleOrNamespace(SynModuleOrNamespace(moduleIdentifier, true, declarations, _, _, _, _)) ->

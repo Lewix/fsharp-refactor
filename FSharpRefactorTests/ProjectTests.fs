@@ -43,3 +43,12 @@ type ModuleScopeTreeModule() =
         match moduleScopeTrees with
             | [Declaration((("TestModule1", _), ["TopLevelFunction1",_;"TopLevelFunction2",_]),[])] -> ()
             | _ -> Assert.Fail(incorrectScopeTrees source moduleScopeTrees)
+
+    [<Test>]
+    member this.``Can create the scope trees for a module declaration with nested modules``() =
+        let source = "module TestModule1\n  let TopLevelValue1 = 1\n  module TestModule2 =\n    let TopLevelValue2 = 2"
+        let moduleScopeTrees = makeModuleScopeTrees (Ast.Parse source "test.fs").Value
+        
+        match moduleScopeTrees with
+            | [Declaration((("TestModule1", _), ["TopLevelValue1",_;"TestModule2.TopLevelValue2",_]),  [])] ->  ()
+            | _ -> Assert.Fail(incorrectScopeTrees source moduleScopeTrees)
