@@ -8,7 +8,7 @@ open Microsoft.FSharp.Compiler.Range
 open FSharpRefactor.Engine
 open FSharpRefactor.Engine.Ast
 open FSharpRefactor.Engine.CodeTransforms
-open FSharpRefactor.Engine.CodeAnalysis
+open FSharpRefactor.Engine.RangeAnalysis
 
 
 [<TestFixture>]
@@ -110,22 +110,22 @@ type RangeAnalysisModule() =
         let aDeclarationRange = mkRange "test.fs" (mkPos 1 12) (mkPos 1 13)
         let fDeclarationRange = mkRange "test.fs" (mkPos 1 4) (mkPos 1 11)
 
-        Assert.AreEqual(Some("a",aDeclarationRange), RangeAnalysis.TryFindIdentifier source filename aDeclarationRange.Start)
-        Assert.AreEqual(Some("functio",fDeclarationRange), RangeAnalysis.TryFindIdentifier source filename fDeclarationRange.Start)
+        Assert.AreEqual(Some("a",aDeclarationRange), TryFindIdentifier source filename aDeclarationRange.Start)
+        Assert.AreEqual(Some("functio",fDeclarationRange), TryFindIdentifier source filename fDeclarationRange.Start)
 
     [<Test>]
     member this.``Can find identifier position when identifiers are just next to each other``() =
         let source = "a+b"
         let range = mkRange "test.fs" (mkPos 1 2) (mkPos 1 3)
 
-        Assert.AreEqual(Some("b", range), RangeAnalysis.TryFindIdentifier source "test.fs" range.Start)
+        Assert.AreEqual(Some("b", range), TryFindIdentifier source "test.fs" range.Start)
     
     [<Test>]
     member this.``Can find the AstNode.Expression corresponding to a range``() =
         let source = "let a = 1+(2+3)+4"
         let tree = (Ast.Parse source "test.fs").Value
         let expressionRange = mkRange "test.fs" (mkPos 1 10) (mkPos 1 15)
-        let expression = RangeAnalysis.TryFindExpressionAtRange expressionRange tree
+        let expression = TryFindExpressionAtRange expressionRange tree
 
         match expression with
             | Some(Ast.AstNode.Expression(SynExpr.Paren(SynExpr.App(_,_,SynExpr.App(_,_,_,SynExpr.Const(_,_),_),SynExpr.Const(_,_),_),_,_,_))) -> ()
@@ -136,7 +136,7 @@ type RangeAnalysisModule() =
         let source = "let f a b = a+b"
         let tree = (Ast.Parse source "test.fs").Value
         let bindingRange = mkRange "test.fs" (mkPos 1 4) (mkPos 1 15)
-        let binding = RangeAnalysis.FindBindingAtRange bindingRange tree
+        let binding = FindBindingAtRange bindingRange tree
 
         match binding with
             | SynBinding.Binding(_,_,_,_,_,_,_,SynPat.LongIdent(_,_,_,_,_,_),_,_,_,_) -> ()

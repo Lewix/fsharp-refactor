@@ -7,8 +7,8 @@ open Mono.Options
 open Microsoft.FSharp.Compiler.Range
 open FSharpRefactor.Engine
 open FSharpRefactor.Engine.Ast
-open FSharpRefactor.Engine.CodeAnalysis.RangeAnalysis
-open FSharpRefactor.Engine.CodeAnalysis.ScopeAnalysis
+open FSharpRefactor.Engine.RangeAnalysis
+open FSharpRefactor.Engine.ScopeAnalysis
 open FSharpRefactor.Engine.Refactoring
 open FSharpRefactor.Refactorings
 open FSharpRefactor.Refactorings

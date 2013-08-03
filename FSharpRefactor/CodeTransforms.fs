@@ -3,8 +3,8 @@ namespace FSharpRefactor.Engine.CodeTransforms
 open System
 open Microsoft.FSharp.Compiler.Range
 open FSharpRefactor.Engine.Ast
-open FSharpRefactor.Engine.CodeAnalysis.RangeAnalysis
-open FSharpRefactor.Engine.CodeAnalysis.ScopeAnalysis
+open FSharpRefactor.Engine.RangeAnalysis
+open FSharpRefactor.Engine.ScopeAnalysis
 
 module CodeTransforms =
     exception InvalidRange

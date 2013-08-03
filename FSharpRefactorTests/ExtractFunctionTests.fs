@@ -5,7 +5,7 @@ open Microsoft.FSharp.Compiler.Range
 open Microsoft.FSharp.Compiler.Ast
 open FSharpRefactor.Engine
 open FSharpRefactor.Engine.Ast
-open FSharpRefactor.Engine.CodeAnalysis.RangeAnalysis
+open FSharpRefactor.Engine.RangeAnalysis
 open FSharpRefactor.Engine.CodeTransforms
 open FSharpRefactor.Engine.Refactoring
 open FSharpRefactor.Refactorings.ExtractFunction

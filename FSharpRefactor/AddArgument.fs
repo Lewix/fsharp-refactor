@@ -5,8 +5,8 @@ open System.Collections.Generic
 open Microsoft.FSharp.Compiler.Ast
 open Microsoft.FSharp.Compiler.Range
 open FSharpRefactor.Engine.Ast
-open FSharpRefactor.Engine.CodeAnalysis.RangeAnalysis
-open FSharpRefactor.Engine.CodeAnalysis.ScopeAnalysis
+open FSharpRefactor.Engine.RangeAnalysis
+open FSharpRefactor.Engine.ScopeAnalysis
 open FSharpRefactor.Engine.CodeTransforms.CodeTransforms
 open FSharpRefactor.Engine.Refactoring
 open FSharpRefactor.Engine.ValidityChecking

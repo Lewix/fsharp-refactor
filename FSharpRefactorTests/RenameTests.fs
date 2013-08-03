@@ -6,7 +6,6 @@ open Microsoft.FSharp.Compiler.Range
 
 open FSharpRefactor.Engine
 open FSharpRefactor.Engine.Ast
-open FSharpRefactor.Engine.CodeAnalysis
 open FSharpRefactor.Engine.Refactoring
 open FSharpRefactor.Refactorings.Rename
 
