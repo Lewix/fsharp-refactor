@@ -43,7 +43,7 @@
     <Compile Include="Ast.fs" />
     <Compile Include="Project.fs" />
     <Compile Include="ScopeTrees.fs" />
-    <Compile Include="CodeAnalysis.fs" />
+    <Compile Include="RangeAnalysis.fs" />
     <Compile Include="IdentifierScope.fs" />
     <Compile Include="Scoping.fs" />
     <Compile Include="CodeTransforms.fs" />
