@@ -37,9 +37,10 @@ let getDeclarations declarations =
 
 let rec makeModuleScopeTrees (tree:Ast.AstNode) : ModuleScopeTree list =
     match tree with
-        | Ast.AstNode.ModuleOrNamespace(SynModuleOrNamespace(moduleIdentifier, true, declarations, _, _, _, _)) ->
+        | Ast.AstNode.File(ParsedImplFileInput(_,_,_,_,_,ns,_)) ->
+            makeNestedScopeTrees makeModuleScopeTrees (List.map Ast.AstNode.ModuleOrNamespace ns)
+        | Ast.AstNode.ModuleOrNamespace(SynModuleOrNamespace(moduleIdentifier, _, declarations, _, _, _, _)) ->
             let moduleDeclarations = List.collect getDeclarations declarations
             [Declaration((moduleFromLongIdent moduleIdentifier, moduleDeclarations),[])]
-            //TODO: nested modules
         | Ast.Children cs -> List.collect makeModuleScopeTrees cs
         | _ -> []

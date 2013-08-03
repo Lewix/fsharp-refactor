@@ -38,23 +38,22 @@ let rec ListIdentifiers trees =
         | TopLevelDeclaration(is,ts)::rest
         | Declaration(is,ts)::rest -> List.append is (ListIdentifiers (List.append ts rest))
 
-let isDeclaration (tree : IdentifierScopeTree) =
+let isDeclaration (tree : ScopeTree<'declaration,'usage>) =
     match tree with
         | TopLevelDeclaration(_,_)
         | Declaration(_,_) -> true
         | _ -> false
 
-let isUsage (tree : IdentifierScopeTree) =
+let isUsage (tree : ScopeTree<'declaration, 'usage>) =
     match tree with
-        | Usage(_,_) -> true
+        | Usage(_) -> true
         | _ -> false
 
-let addChildren (tree : IdentifierScopeTree) (children : IdentifierScopeTree list) =
+let addChildren (tree : ScopeTree<'declaration, 'usage>) (children : ScopeTree<'declaration, 'usage> list) =
     if List.isEmpty children then tree else
     match tree with
-        | Usage(text,range) ->
-            printfn "transforming usage into decl"
-            Declaration([text,range],children)
+        | Usage(_) ->
+            failwith "transforming usage into decl"
         | TopLevelDeclaration(is, cs) -> TopLevelDeclaration(is, List.append cs children)
         | Declaration(is, cs) -> Declaration(is, List.append cs children)
 
@@ -77,22 +76,23 @@ let mergeBindings (bindingTrees : IdentifierScopeTree list list) =
 
     let declaration = mergeDeclarations mainDeclarations
     addChildren declaration rest
-    
+
+let rec makeNestedScopeTrees makeScopeTreesFunction declarations =
+    match declarations with
+        | [] -> []
+        | d::ds ->
+            let headScopeTrees = makeScopeTreesFunction d
+            let tailScopeTrees = makeNestedScopeTrees makeScopeTreesFunction ds
+            let headDeclarations = List.filter isDeclaration headScopeTrees
+            let headUsages = List.filter isUsage headScopeTrees
+
+            if List.isEmpty headDeclarations then
+                List.append headUsages tailScopeTrees
+            else
+                (addChildren (List.head headDeclarations) tailScopeTrees)::(List.append headUsages (List.tail headDeclarations))
+
+            
 let rec makeScopeTreesAtLevel isTopLevel (tree : Ast.AstNode) =
-    let rec makeNestedScopeTrees isTopLevel declarations =
-        match declarations with
-            | [] -> []
-            | d::ds ->
-                let headScopeTrees = makeScopeTreesAtLevel isTopLevel d
-                let tailScopeTrees = makeNestedScopeTrees isTopLevel ds
-                let headDeclarations = List.filter isDeclaration headScopeTrees
-                let headUsages = List.filter isUsage headScopeTrees
-
-                if List.isEmpty headDeclarations then
-                    List.append headUsages tailScopeTrees
-                else
-                    (addChildren (List.head headDeclarations) tailScopeTrees)::(List.append headUsages (List.tail headDeclarations))
-
     let declarationsFromMatchPattern pattern =
         let rec declarationsFromAstNode node =
             match node with
@@ -127,9 +127,9 @@ let rec makeScopeTreesAtLevel isTopLevel (tree : Ast.AstNode) =
 
     match tree with
         | Ast.ModuleOrNamespace(SynModuleOrNamespace.SynModuleOrNamespace(_,_,ds,_,_,_,_)) ->
-            makeNestedScopeTrees isTopLevel (List.map Ast.AstNode.ModuleDeclaration ds)
+            makeNestedScopeTrees (makeScopeTreesAtLevel isTopLevel) (List.map Ast.AstNode.ModuleDeclaration ds)
         | Ast.TypeDefinitionRepresentation(SynTypeDefnRepr.ObjectModel(_,ms,_)) ->
-            makeNestedScopeTrees isTopLevel (List.map Ast.MemberDefinition ms)
+            makeNestedScopeTrees (makeScopeTreesAtLevel isTopLevel) (List.map Ast.MemberDefinition ms)
         | Ast.MemberDefinition(SynMemberDefn.ImplicitCtor(_,_,ps,selfId,_)) ->
             let idsDeclaredInPatterns = declarationsFromSimplePatterns ps
             let idsInScopeInCtor =
@@ -137,15 +137,15 @@ let rec makeScopeTreesAtLevel isTopLevel (tree : Ast.AstNode) =
                 else (selfId.Value.idText, selfId.Value.idRange)::idsDeclaredInPatterns
             [Declaration(idsInScopeInCtor, [])]
         | Ast.AstNode.ModuleDeclaration(SynModuleDecl.Let(false,bs,_)) ->
-            makeNestedScopeTrees true (List.map Ast.AstNode.Binding bs)
+            makeNestedScopeTrees (makeScopeTreesAtLevel true) (List.map Ast.AstNode.Binding bs)
         | Ast.AstNode.ModuleDeclaration(SynModuleDecl.Let(true,bs,_)) ->
             let scopeTreesFromBindings =
                 List.map (makeScopeTreesAtLevel true) (List.map Ast.AstNode.Binding bs)
             [mergeBindings scopeTreesFromBindings]
         | Ast.AstNode.ModuleDeclaration(SynModuleDecl.NestedModule(_,ds,_,_)) ->
-            makeNestedScopeTrees true (List.map Ast.AstNode.ModuleDeclaration ds)
+            makeNestedScopeTrees (makeScopeTreesAtLevel true) (List.map Ast.AstNode.ModuleDeclaration ds)
         | Ast.AstNode.Expression(SynExpr.LetOrUse(false,_,bs,e,_)) ->
-            let bindingScopeTrees = makeNestedScopeTrees false (List.map Ast.AstNode.Binding bs)
+            let bindingScopeTrees = makeNestedScopeTrees (makeScopeTreesAtLevel false) (List.map Ast.AstNode.Binding bs)
             let expressionScopeTrees = makeScopeTreesAtLevel false (Ast.AstNode.Expression e)
             (addChildren (List.head bindingScopeTrees) expressionScopeTrees)::(List.tail bindingScopeTrees)
         | Ast.AstNode.Expression(SynExpr.LetOrUse(true,_,bs,e,_)) ->
