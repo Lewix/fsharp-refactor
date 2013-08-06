@@ -160,8 +160,11 @@ let rec makeScopeTreesAtLevel isTopLevel (tree : Ast.AstNode) =
             [Declaration(idsDeclaredInPatterns,
                          makeScopeTreesAtLevel false (Ast.AstNode.Expression e))]
         | Ast.AstNode.MatchClause(Clause(p,we,e,_,_)) ->
-            [Declaration(declarationsFromMatchPattern p,
-                         makeScopeTreesAtLevel false (Ast.AstNode.Expression e))]
+            let children =
+                List.append (if Option.isNone we then []
+                             else makeScopeTreesAtLevel false (Ast.AstNode.Expression we.Value))
+                            (makeScopeTreesAtLevel false (Ast.AstNode.Expression e))
+            [Declaration(declarationsFromMatchPattern p, children)]
         | Ast.AstNode.Binding(SynBinding.Binding(_,_,_,_,_,_,_,pattern,_,expression,_,_)) ->
             let idsDeclaredInBinding = declarationsFromFunctionPatterns [pattern]
             let scopeTreesFromBinding = makeScopeTreesAtLevel false (Ast.AstNode.Expression expression)
