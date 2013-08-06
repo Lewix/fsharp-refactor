@@ -72,3 +72,14 @@ type ModuleScopeTreeModule() =
             | [Declaration((("Test.TestModule1",_), ["Test.TestModule1.TopLevelValue1",_]),
                 [Declaration((("Test.TestModule2",_), ["Test.TestModule2.TopLevelValue2",_]),[])])] -> ()
             | _ -> Assert.Fail(incorrectScopeTrees source moduleScopeTrees)
+            
+    [<Test>]
+    member this.``Can create the scope trees for code with a fully qualified module usage``() =
+        let source = "namespace Test\n\nmodule TestModule1 =\n  let TopLevelValue = 1\n\nmodule TestModule2 =\n  let TopLevelValue = Test.TestModule1.TopLevelValue"
+        let moduleScopeTrees = makeModuleScopeTrees (Ast.Parse source "test.fs").Value
+        
+        match moduleScopeTrees with
+            | [Declaration((("Test.TestModule1",_),["Test.TestModule1.TopLevelValue",_]),
+                [Declaration((("Test.TestModule2",_),["Test.TestModule2.TopLevelValue",_]),[]);
+                 Usage(("Test.TestModule1.TopLevelValue",_))])] -> ()
+            | _ -> Assert.Fail(incorrectScopeTrees source moduleScopeTrees)
