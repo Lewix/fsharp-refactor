@@ -26,13 +26,38 @@ module Ast =
             | Some(ParsedInput.ImplFile(f)) -> Some(AstNode.File(f))
             | _ -> raise (new NotImplementedException("Use an impl file instead of a sig file"))
 
-    let getParseTree source filename = 
+    let getCheckerAndOptions source filename =
         let checker = InteractiveChecker.Create(NotifyFileTypeCheckStateIsDirty(fun _ -> ()))
-        let filename = filename
-        let options source = checker.GetCheckOptionsFromScriptRoot(filename, source, DateTime.Now, [| |])
-        checker.UntypedParse(filename, source, options source).ParseTree
+        let options = checker.GetCheckOptionsFromScriptRoot(filename, source, DateTime.Now, [| |])
+        checker, options
+    
+
+    let getParseTree source filename = 
+        let checker, options = getCheckerAndOptions source filename
+        checker.UntypedParse(filename, source, options).ParseTree
         
     let Parse source filename = MakeAstNode (getParseTree source filename)
+    
+    let tryTypeCheckSource source filename =
+        let checker, options = getCheckerAndOptions source filename
+        checker.StartBackgroundCompile options
+        //FIXME: don't always block here
+        checker.WaitForBackgroundCompile()
+        let info = checker.UntypedParse(filename, source, options)
+        let typeCheckResults = checker.TypeCheckSource(info, filename, 0, source, options, IsResultObsolete(fun _ -> false), "")
+        match typeCheckResults with
+            | TypeCheckSucceeded results -> Some results
+            | _ -> None
+    
+    let TryGetDeclarationLocation source filename names position =
+        let typedInfo = tryTypeCheckSource source filename
+        if Option.isNone typedInfo then None
+        else
+            let declarationLocation =
+                typedInfo.Value.GetDeclarationLocation(position, "", names, 188, true)
+            match declarationLocation with
+                | DeclFound((line, col), filename) -> Some ((line+1, col), filename)
+                | _ -> None
 
     // Active patterns to make dealing with the syntax tree more convenient
     let (|ModuleOrNamespaceChildren|_|) (expression : SynModuleOrNamespace) =

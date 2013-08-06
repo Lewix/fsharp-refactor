@@ -1,6 +1,7 @@
 namespace FSharpRefactor.Tests.EngineTests
 
 open System
+open System.IO
 open NUnit.Framework
 open Microsoft.FSharp.Compiler.Ast
 open Microsoft.FSharp.Compiler.Range
@@ -30,7 +31,27 @@ type AstModule() =
                 | Some(Ast.AstNode.ModuleDeclaration(_)::_) -> true
                 | _ -> false
         Assert.IsTrue(expectModule rootNode)
-
+            
+    [<Test>]
+    member this.``Can type check the source code in a project file``() =
+        let source = "let f a = 1"
+        let typeCheckResults = Ast.tryTypeCheckSource source "test.fs"
+        Assert.IsTrue(Option.isSome typeCheckResults)
+        
+    [<Test>]
+    member this.``Can find declarations across modules``() =
+        // Cannot find declaration if the file doesn't exist
+        let file = new StreamWriter("test.fs")
+        let source =
+            String.concat "\n" ["namespace Test";
+                                "module TestModule1 =";
+                                "  let f = 1";
+                                "module TestModule2 =";
+                                "  let g = TestModule1.f+2"]
+        let declaration = Ast.TryGetDeclarationLocation source "test.fs" ["TestModule1";"f"] (5, 10)
+        Assert.AreEqual(Some ((3, 6), "./test.fs"), declaration)
+        File.Delete "test.fs"
+        
 [<TestFixture>]
 type CodeTransformsModule() =
     [<Test>]
