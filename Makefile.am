@@ -34,7 +34,11 @@ DISTCLEANFILES = \
 	missing
 
 CORE_SOURCES=FSharpRefactor/Ast.fs \
-			 FSharpRefactor/CodeAnalysis.fs \
+			 FSharpRefactor/RangeAnalysis.fs \
+			 FSharpRefactor/ScopeTrees.fs \
+			 FSharpRefactor/Project.fs \
+			 FSharpRefactor/ModuleScopeTree.fs \
+			 FSharpRefactor/Scoping.fs \
              FSharpRefactor/CodeTransforms.fs \
              FSharpRefactor/ValidityChecking.fs \
              FSharpRefactor/Refactoring.fs \
@@ -49,7 +53,9 @@ CLI_SOURCES=FSharpRefactor.CommandLine/CommandLine.fs \
 TESTS=FSharpRefactorTests/EngineTests.fs \
       FSharpRefactorTests/RenameTests.fs \
       FSharpRefactorTests/ExtractFunctionTests.fs \
-      FSharpRefactorTests/AddArgumentTests.fs
+      FSharpRefactorTests/AddArgumentTests.fs \
+      FSharpRefactorTests/ScopingTests.fs \
+      FSharpRefactorTests/ProjectTests.fs
 
 EXTRA_DIST = FSharpRefactor/FSharpRefactor.fsproj \
              FSharpRefactor.CommandLine/FSharpRefactor.CommandLine.fsproj \
