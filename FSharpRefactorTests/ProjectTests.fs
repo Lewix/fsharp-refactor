@@ -2,6 +2,7 @@ namespace FSharpRefactor.Tests.ProjectTests
 
 open System.IO
 open NUnit.Framework
+open Microsoft.FSharp.Compiler.Range
 
 open FSharpRefactor.Engine.Ast
 open FSharpRefactor.Engine.ScopeAnalysis
@@ -41,7 +42,7 @@ type ModuleScopeTreeModule() =
         let moduleScopeTrees = makeModuleScopeTrees (Ast.Parse source "test.fs").Value
         
         match moduleScopeTrees with
-            | [Declaration((("TestModule1", _), ["TestModule1.TopLevelFunction1",_;"TestModule1.TopLevelFunction2",_]),[])] -> ()
+            | [Declaration((("TestModule1", r), ["TestModule1.TopLevelFunction1",_;"TestModule1.TopLevelFunction2",_]),[])] when r = mkRange "test.fs" (mkPos 1 0) (mkPos 3 48) -> ()
             | _ -> Assert.Fail(incorrectScopeTrees source moduleScopeTrees)
 
     [<Test>]
