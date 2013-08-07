@@ -9,6 +9,7 @@ type Project(currentFile:string, filesAndContents:(string * string option) array
     new(source:string, fileName:string) =
         Project(fileName, [|fileName, Some source|])
 
+    //TODO:: use some canonical representation of filenames
     member self.Files with get() = Array.map fst filesAndContents
     member self.CurrentFile with get() = currentFile
     member self.FileContents = Array.map snd filesAndContents
