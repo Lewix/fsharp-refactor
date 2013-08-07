@@ -39,23 +39,32 @@ let rec getUsages node =
             [Usage(nameFromLongIdent declarationIdentifier, rangeFromLongIdent declarationIdentifier)]
         | Ast.Children cs -> List.collect getUsages cs
         | _ -> []
+        
+let makeNestedScopeTrees followingFilesScope makeScopeTreesFunction nodes =
+    let reversedNodes = List.rev nodes
+    Seq.fold makeScopeTreesFunction followingFilesScope reversedNodes
 
-let rec makeModuleScopeTreesWithPrefix prefix (tree:Ast.AstNode) : ModuleScopeTree list =
+let rec makeModuleScopeTreesWithPrefix prefix followingFilesScope (tree:Ast.AstNode) : ModuleScopeTree list =
     match tree with
         | Ast.AstNode.File(ParsedImplFileInput(_,_,_,_,_,ns,_)) ->
-            makeNestedScopeTrees (makeModuleScopeTreesWithPrefix prefix) (List.map Ast.AstNode.ModuleOrNamespace ns)
+            makeNestedScopeTrees followingFilesScope (makeModuleScopeTreesWithPrefix prefix) (List.map Ast.AstNode.ModuleOrNamespace ns)
         | Ast.AstNode.ModuleOrNamespace(SynModuleOrNamespace(namespaceIdentifier, false, declarations, _, _, _, _)) ->
             let namespaceName = nameFromLongIdent namespaceIdentifier
-            makeNestedScopeTrees (makeModuleScopeTreesWithPrefix (prefix + namespaceName + ".")) (List.map Ast.AstNode.ModuleDeclaration declarations)
+            makeNestedScopeTrees followingFilesScope (makeModuleScopeTreesWithPrefix (prefix + namespaceName + ".")) (List.map Ast.AstNode.ModuleDeclaration declarations)
         | Ast.AstNode.ModuleOrNamespace(SynModuleOrNamespace(moduleIdentifier, true, declarations, _, _, _, _))
         | Ast.AstNode.ModuleDeclaration(SynModuleDecl.NestedModule(ComponentInfo(_,_,_,moduleIdentifier,_,_,_,_),declarations,_,_)) as m ->
             let moduleName = nameFromLongIdent moduleIdentifier
             let moduleRange = (Ast.GetRange m).Value
             let moduleDeclarations = List.collect (getDeclarations (prefix + moduleName + ".")) declarations
             let moduleUsages = List.collect getUsages (List.map Ast.AstNode.ModuleDeclaration declarations)
-            Declaration(((prefix + moduleName, moduleRange), moduleDeclarations),[])::moduleUsages
-        | Ast.Children cs -> List.collect (makeModuleScopeTreesWithPrefix prefix) cs
-        | _ -> []
+            Declaration(((prefix + moduleName, moduleRange), moduleDeclarations),followingFilesScope)::moduleUsages
+        | Ast.Children cs -> List.collect (makeModuleScopeTreesWithPrefix prefix followingFilesScope) cs
+        | _ -> followingFilesScope
         
-let rec makeModuleScopeTrees tree =
-    makeModuleScopeTreesWithPrefix "" tree
+let rec makeModuleScopeTrees (project:Project) =
+    let reversedFiles = Array.rev project.Files
+    let fileContents = Array.map project.GetContents reversedFiles
+    
+    Seq.zip fileContents reversedFiles
+    |> Seq.map (fun (source,filename) -> (Ast.Parse source filename).Value)
+    |> Seq.fold (makeModuleScopeTreesWithPrefix "") []
