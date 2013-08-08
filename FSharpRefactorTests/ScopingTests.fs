@@ -88,7 +88,7 @@ type ScopeTreeModule() =
     member this.``Can create a scope tree for a match clause with a when expression``() =
         let scopeTrees = ScopeTreeModule.getScopeTrees "match a with\n  | b when c -> d"
         match scopeTrees with
-            | [Declaration(["b",_],[Usage("c",_); Usage("d",_)]);Usage("a",_)]
+            | [Declaration(["b",_],[Usage(("c",_),[]); Usage(("d",_),[])]);Usage(("a",_),[])]
                 -> ()
             | _ -> Assert.Fail("The scope tree for 'match a with\n  | b when c -> d' was incorrect:\n" + (sprintf "%A" scopeTrees))
     
@@ -96,7 +96,7 @@ type ScopeTreeModule() =
     member this.``Can create a scope tree for a nested module``() =
         let scopeTrees = ScopeTreeModule.getScopeTrees "module nestedModule =\n  let x = 1\n  let y = x"
         match scopeTrees with
-            | [TopLevelDeclaration(["x",_],[TopLevelDeclaration(["y",_],[]);Usage("x",_)])]
+            | [TopLevelDeclaration(["x",_],[TopLevelDeclaration(["y",_],[]);Usage(("x",_),[])])]
                 -> ()
             | _ -> Assert.Fail("The scope tree for 'module nestedModule =\n  let x = 1\n let y = x' was incorrect:\n" +
                                (sprintf "%A" scopeTrees))
@@ -105,9 +105,9 @@ type ScopeTreeModule() =
     member this.``Can create a scope tree for a class with an implicit inherit``() =
         let scopeTrees = ScopeTreeModule.getScopeTrees "type TestClass(x) = \n  inherit BaseClass(x)\n  let a = x"
         match scopeTrees with
-            | [Declaration(["x",_],[Usage("x",_);
+            | [Declaration(["x",_],[Usage(("x",_),[]);
                                                   Declaration(["a",_],[]);
-                                                  Usage("x",_)])] -> ()
+                                                  Usage(("x",_),[])])] -> ()
             | _ -> Assert.Fail("The scope tree for 'type TestClass(x) = inherit BaseClass(x)' was incorrect:\n" +
                                (sprintf "%A" scopeTrees))
 
@@ -117,7 +117,7 @@ type ScopeTreeModule() =
         match scopeTrees with
             | [Declaration(["this",_;"x",_;"y",_],
                 [Declaration(["a",_],[]);
-                 Usage("this",_)])] -> ()
+                 Usage(("this",_),[])])] -> ()
             | _ -> Assert.Fail("The scope tree for 'type TestClass(x, y) as this = let a = this' was incorrect:\n" +
                                (sprintf "%A" scopeTrees))
 
@@ -126,7 +126,7 @@ type ScopeTreeModule() =
         let scopeTrees = ScopeTreeModule.getScopeTrees "type TestClass(x, y) = member self.x = x"
         match scopeTrees with
             | [Declaration(["x",_;"y",_],
-                [Declaration(["self",_],[Usage("x",_)])])] -> ()
+                [Declaration(["self",_],[Usage(("x",_),[])])])] -> ()
             | _ -> Assert.Fail("The scope tree for 'type TestClass(x, y) = member self.x = x' was incorrect:\n" +
                                (sprintf "%A" scopeTrees))
 
@@ -142,7 +142,7 @@ type ScopeTreeModule() =
     member this.``Can recognise used identifiers in LongIdentWithDots``() =
         let scopeTrees = ScopeTreeModule.getScopeTrees "ident1.ident2"
         match scopeTrees with
-            | [Usage("ident1",_)] -> ()
+            | [Usage(("ident1",_),["ident2",_])] -> ()
             | _ -> Assert.Fail("The scope tree for 'ident1.ident2' was incorrect:\n" +
                                (sprintf "%A" scopeTrees))
     
@@ -150,7 +150,7 @@ type ScopeTreeModule() =
     member this.``Creates a scope tree for a simple let statement``() =
         let scopeTrees = ScopeTreeModule.getScopeTrees "let a = 1 in a"
         match scopeTrees with
-            | [Declaration(["a",_],[Usage("a",_)])] -> ()
+            | [Declaration(["a",_],[Usage(("a",_),[])])] -> ()
             | _ -> Assert.Fail("The scope tree for 'let a = 1 in a' was incorrect:\n" +
                                (sprintf "%A" scopeTrees))
 
@@ -160,18 +160,18 @@ type ScopeTreeModule() =
         match scopeTrees with
             | [TopLevelDeclaration(["a",_],
                                      [TopLevelDeclaration(["b",_],[]);
-                                      Usage("op_Addition",_);
-                                      Usage("a",_)]);
+                                      Usage(("op_Addition",_),[]);
+                                      Usage(("a",_),[])]);
                Declaration(["b",_],
                                      [Declaration(["c",_],
                                                             [Declaration(["d",_],
-                                                                                   [Usage("op_Addition",_);
-                                                                                    Usage("b",_);
-                                                                                    Usage("c",_)])]);
-                                      Usage("op_Addition",_);
-                                      Usage("op_Addition",_);
-                                      Usage("b",_);
-                                      Usage("b",_)])] -> ()
+                                                                                   [Usage(("op_Addition",_),[]);
+                                                                                    Usage(("b",_),[]);
+                                                                                    Usage(("c",_),[])])]);
+                                      Usage(("op_Addition",_),[]);
+                                      Usage(("op_Addition",_),[]);
+                                      Usage(("b",_),[]);
+                                      Usage(("b",_),[])])] -> ()
             
             | _ -> Assert.Fail("The scope tree for elaborate let expression was incorrect:\n" +
                                (sprintf "%A" scopeTrees))
@@ -181,8 +181,8 @@ type ScopeTreeModule() =
         let scopeTrees = ScopeTreeModule.getScopeTrees "match a with (a,b) -> a"
         match scopeTrees with
             | [Declaration([("a",_);("b",_)],
-                                     [Usage("a",_)]);
-               Usage("a",_)] -> ()
+                                     [Usage(("a",_),[])]);
+               Usage(("a",_),[])] -> ()
             | _ -> Assert.Fail("The scope tree for 'match a with (a,b) -> a' was incorrect:\n" +
                                (sprintf "%A" scopeTrees))
 
@@ -193,8 +193,8 @@ type ScopeTreeModule() =
         let doMatch scopeTrees =
             match scopeTrees with
                 | [Declaration(["id",_],
-                                             [Usage("id",_)]);
-                   Usage("a",_)] -> ()
+                                             [Usage(("id",_),[])]);
+                   Usage(("a",_),[])] -> ()
                 | _ -> Assert.Fail("The scope tree for 'match a with Tag(id) -> id' was incorrect:\n" +
                                    (sprintf "%A" scopeTrees))
 
@@ -205,8 +205,8 @@ type ScopeTreeModule() =
     member this.``Can create a scope tree for a function declaration``() =
         let scopeTrees = ScopeTreeModule.getScopeTrees "let f a b c = a in f 1"
         match scopeTrees with
-            | [Declaration([("f",_)],[Usage("f",_)]);
-               Declaration([("a",_);("b",_);("c",_)],[Usage("a",_)])] -> ()
+            | [Declaration([("f",_)],[Usage(("f",_),[])]);
+               Declaration([("a",_);("b",_);("c",_)],[Usage(("a",_),[])])] -> ()
             | _ -> Assert.Fail("The scope tree for 'let f a b c = a in f 1' was incorrect:\n" +
                                (sprintf "%A" scopeTrees))
 
@@ -215,8 +215,8 @@ type ScopeTreeModule() =
         let scopeTrees = ScopeTreeModule.getScopeTrees "let rec f = g\nand g = f"
         match scopeTrees with
             | [TopLevelDeclaration([("f",_);("g",_)],
-                                         [Usage("g",_);
-                                          Usage("f",_)])] -> ()
+                                         [Usage(("g",_),[]);
+                                          Usage(("f",_),[])])] -> ()
             | _ -> Assert.Fail("The scope tree for\n 'let rec f = g\nand g = f'\n was incorrect:\n" +
                                (sprintf "%A" scopeTrees))
 
@@ -226,9 +226,9 @@ type ScopeTreeModule() =
         match scopeTrees with
             | [TopLevelDeclaration([("a",_)],[]);
                Declaration([("f",_);("g",_)],
-                                         [Usage("g",_);
-                                          Usage("f",_);
-                                          Usage("f",_)])] -> ()
+                                         [Usage(("g",_),[]);
+                                          Usage(("f",_),[]);
+                                          Usage(("f",_),[])])] -> ()
             | _ -> Assert.Fail("The scope tree for\n 'let a =\n  let rec f = g\n  and g = f\n  f'\n was incorrect:\n" +
                                (sprintf "%A" scopeTrees))
 
@@ -236,7 +236,7 @@ type ScopeTreeModule() =
     member this.``Can create a scope tree for a single recursive identifier``() =
         let scopeTrees = ScopeTreeModule.getScopeTrees "let rec f = f"
         match scopeTrees with
-            | [TopLevelDeclaration([("f",_)],[Usage("f",_)])] -> ()
+            | [TopLevelDeclaration([("f",_)],[Usage(("f",_),[])])] -> ()
             | _ -> Assert.Fail("The scope tree for 'let rec f = f' was incorrect:\n" +
                                (sprintf "%A" scopeTrees))
 
@@ -245,8 +245,8 @@ type ScopeTreeModule() =
         let scopeTrees = ScopeTreeModule.getScopeTrees "let a =\n  let rec f = f\n  f"
         match scopeTrees with
             | [TopLevelDeclaration([("a",_)],[]);
-               Declaration([("f",_)],[Usage("f",_);
-                                                    Usage("f",_)])] -> ()
+               Declaration([("f",_)],[Usage(("f",_),[]);
+                                                    Usage(("f",_),[])])] -> ()
             | _ -> Assert.Fail("The scope tree for 'let a =\n  let rec f = f\n  f' was incorrect:\n" +
                                (sprintf "%A" scopeTrees))
 
@@ -257,9 +257,9 @@ type ScopeTreeModule() =
         match scopeTrees with
             | [Declaration([("f",_)],
                                          [Declaration([("x",_)],
-                                                                    [Usage("f",_);
-                                                                     Usage("x",_)]);
-                                          Usage("f",_)])] -> ()
+                                                                    [Usage(("f",_),[]);
+                                                                     Usage(("x",_),[])]);
+                                          Usage(("f",_),[])])] -> ()
             | _ -> Assert.Fail("The scope tree for 'let rec f x = f x in f 1' was incorrect:\n" +
                                (sprintf "%A" scopeTrees))
 
@@ -269,9 +269,9 @@ type ScopeTreeModule() =
         match scopeTrees with
             | [Declaration([("a",_)],
                                          [Declaration([("b",_);("c",_)],
-                                                                    [Usage("a",_);
-                                                                     Usage("b",_);
-                                                                     Usage("c",_)])])] ->
+                                                                    [Usage(("a",_),[]);
+                                                                     Usage(("b",_),[]);
+                                                                     Usage(("c",_),[])])])] ->
                 ()
             | _ -> Assert.Fail("The scope tree for 'fun a (b,c) -> a b c' was incorrect:\n" +
                                (sprintf "%A" scopeTrees))

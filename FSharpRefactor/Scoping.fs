@@ -10,7 +10,7 @@ let tryFindIdentifierDeclaration (trees : IdentifierScopeTree list) ((name, rang
         
     let rec tryFindIdentifierAndDeclaration previousDeclaration tree =
         match tree with
-            | Usage(n,r) -> if n = name && r = range then previousDeclaration else None
+            | Usage((n,r),_) -> if n = name && r = range then previousDeclaration else None
             | TopLevelDeclaration(is, ts)
             | Declaration(is, ts) ->
                 if List.exists isDeclaration is then

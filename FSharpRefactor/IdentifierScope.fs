@@ -17,7 +17,7 @@ type ExpressionScope (scopeTrees:IdentifierScopeTree list, project:Project) =
     member self.FindFreeIdentifiers () =
         let rec freeIdentifiersInSingleTree foundFree declared tree =
             match tree with
-                | Usage(n,r) ->
+                | Usage((n,r),_) ->
                     if Set.contains n declared then foundFree
                     else (n,r)::foundFree
                 | TopLevelDeclaration(is, ts)
@@ -83,7 +83,7 @@ and IdentifierScope (identifier:Identifier, identifierScope:IdentifierScopeTree,
         
         let rec findReferencesInTree tree =
             match tree with
-                | Usage(n, r) when n = self.IdentifierName -> [r]
+                | Usage((n,r),_) when n = self.IdentifierName -> [r]
                 | TopLevelDeclaration(is, ts)
                 | Declaration(is, ts) when not (isNestedDeclaration is) ->
                     let remainingRanges = List.concat (Seq.map findReferencesInTree ts)

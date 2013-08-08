@@ -10,13 +10,13 @@ type ScopeTree<'declaration, 'usage> =
     | Usage of 'usage
 
 type Identifier = string * range
-type IdentifierScopeTree = ScopeTree<Identifier list, Identifier>
+type IdentifierScopeTree = ScopeTree<Identifier list, Identifier * Identifier list>
 
 let (|UsedIdent|_|) (node : Ast.AstNode) =
     match node with
-        | Ast.AstNode.Expression(SynExpr.Ident(i)) -> Some(i.idText, i.idRange)
-        | Ast.AstNode.Expression(SynExpr.LongIdent(_,LongIdentWithDots(i::_,_),_,_)) ->
-            Some(i.idText, i.idRange)
+        | Ast.AstNode.Expression(SynExpr.Ident(i)) -> Some [i.idText, i.idRange]
+        | Ast.AstNode.Expression(SynExpr.LongIdent(_,LongIdentWithDots(is,_),_,_)) ->
+            Some (List.map (fun (i:Ident) -> i.idText, i.idRange) is)
         | _ -> None
 
 let (|DeclaredIdent|_|) (node : Ast.AstNode) =
@@ -34,7 +34,7 @@ let (|DeclaredIdent|_|) (node : Ast.AstNode) =
 let rec ListIdentifiers trees =
     match trees with
         | [] -> []
-        | Usage(name, range)::rest -> (name,range)::(ListIdentifiers rest)
+        | Usage((name,range),_)::rest -> (name,range)::(ListIdentifiers rest)
         | TopLevelDeclaration(is,ts)::rest
         | Declaration(is,ts)::rest -> List.append is (ListIdentifiers (List.append ts rest))
 
@@ -67,8 +67,8 @@ let mergeBindings (bindingTrees : IdentifierScopeTree list list) =
                 mergeDeclarations (TopLevelDeclaration(List.append is1 is2, List.append ts1 ts2)::ts)
             | Declaration(is1, ts1)::Declaration(is2, ts2)::ts ->
                 mergeDeclarations (Declaration(List.append is1 is2, List.append ts1 ts2)::ts)
-            | Usage(_,_)::ts -> mergeDeclarations ts
-            | (TopLevelDeclaration(_,_) | Declaration(_,_) as d)::Usage(_,_)::ts ->
+            | Usage(_)::ts -> mergeDeclarations ts
+            | (TopLevelDeclaration(_,_) | Declaration(_,_) as d)::Usage(_)::ts ->
                 mergeDeclarations (d::ts)
 
     let mainDeclarations = List.map List.head bindingTrees
@@ -185,7 +185,7 @@ let rec makeScopeTreesAtLevel isTopLevel (tree : Ast.AstNode) =
                         else Declaration(idsDeclaredInBinding, [])::argumentsScopeTrees
                 | true, _ -> TopLevelDeclaration(idsDeclaredInBinding, [])::scopeTreesFromBinding
                 | false, _ -> Declaration(idsDeclaredInBinding, [])::scopeTreesFromBinding
-        | UsedIdent(text,range) -> [Usage(text,range)]
+        | UsedIdent(idents) -> [Usage(List.head idents, List.tail idents)]
         | Ast.Children(cs) -> List.concat (Seq.map (makeScopeTreesAtLevel isTopLevel) cs)
         | _ -> []
 
