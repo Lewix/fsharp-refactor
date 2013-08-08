@@ -70,22 +70,12 @@ let mergeBindings (bindingTrees : IdentifierScopeTree list list) =
     let declaration = mergeDeclarations mainDeclarations
     addChildren declaration rest
 
-let rec makeNestedScopeTrees makeScopeTreesFunction declarations =
-    match declarations with
-        | [] -> []
-        | d::ds ->
-            let headScopeTrees = makeScopeTreesFunction d
-            let tailScopeTrees = makeNestedScopeTrees makeScopeTreesFunction ds
-            let headDeclarations = List.filter isDeclaration headScopeTrees
-            let headUsages = List.filter isUsage headScopeTrees
 
-            if List.isEmpty headDeclarations then
-                List.append headUsages tailScopeTrees
-            else
-                (addChildren (List.head headDeclarations) tailScopeTrees)::(List.append headUsages (List.tail headDeclarations))
-
+let makeNestedScopeTrees makeScopeTreesFunction childrenScopeTrees nodes =
+    let reversedNodes = List.rev nodes
+    Seq.fold makeScopeTreesFunction childrenScopeTrees reversedNodes
             
-let rec makeScopeTrees (tree : Ast.AstNode) =
+let rec makeScopeTreesWithChildren childrenScopeTrees (tree : Ast.AstNode) =
     let declarationsFromMatchPattern pattern =
         let rec declarationsFromAstNode node =
             match node with
@@ -120,47 +110,47 @@ let rec makeScopeTrees (tree : Ast.AstNode) =
 
     match tree with
         | Ast.ModuleOrNamespace(SynModuleOrNamespace.SynModuleOrNamespace(_,_,ds,_,_,_,_)) ->
-            makeNestedScopeTrees makeScopeTrees (List.map Ast.AstNode.ModuleDeclaration ds)
+            makeNestedScopeTrees makeScopeTreesWithChildren childrenScopeTrees (List.map Ast.AstNode.ModuleDeclaration ds)
         | Ast.TypeDefinitionRepresentation(SynTypeDefnRepr.ObjectModel(_,ms,_)) ->
-            makeNestedScopeTrees makeScopeTrees (List.map Ast.MemberDefinition ms)
+            makeNestedScopeTrees makeScopeTreesWithChildren childrenScopeTrees (List.map Ast.MemberDefinition ms)
         | Ast.MemberDefinition(SynMemberDefn.ImplicitCtor(_,_,ps,selfId,_)) ->
             let idsDeclaredInPatterns = declarationsFromSimplePatterns ps
             let idsInScopeInCtor =
                 if Option.isNone selfId then idsDeclaredInPatterns
                 else (selfId.Value.idText, selfId.Value.idRange)::idsDeclaredInPatterns
-            [Declaration(idsInScopeInCtor, [])]
+            [Declaration(idsInScopeInCtor, childrenScopeTrees)]
         | Ast.AstNode.ModuleDeclaration(SynModuleDecl.Let(false,bs,_)) ->
-            makeNestedScopeTrees makeScopeTrees (List.map Ast.AstNode.Binding bs)
+            makeNestedScopeTrees makeScopeTreesWithChildren childrenScopeTrees (List.map Ast.AstNode.Binding bs)
         | Ast.AstNode.ModuleDeclaration(SynModuleDecl.Let(true,bs,_)) ->
             let scopeTreesFromBindings =
-                List.map makeScopeTrees (List.map Ast.AstNode.Binding bs)
+                List.map (makeScopeTreesWithChildren childrenScopeTrees) (List.map Ast.AstNode.Binding bs)
             [mergeBindings scopeTreesFromBindings]
         | Ast.AstNode.ModuleDeclaration(SynModuleDecl.NestedModule(_,ds,_,_)) ->
-            makeNestedScopeTrees makeScopeTrees (List.map Ast.AstNode.ModuleDeclaration ds)
+            makeNestedScopeTrees makeScopeTreesWithChildren childrenScopeTrees (List.map Ast.AstNode.ModuleDeclaration ds)
         | Ast.AstNode.Expression(SynExpr.LetOrUse(false,_,bs,e,_)) ->
-            let bindingScopeTrees = makeNestedScopeTrees makeScopeTrees (List.map Ast.AstNode.Binding bs)
-            let expressionScopeTrees = makeScopeTrees (Ast.AstNode.Expression e)
-            (addChildren (List.head bindingScopeTrees) expressionScopeTrees)::(List.tail bindingScopeTrees)
+            let expressionScopeTrees = makeScopeTreesWithChildren childrenScopeTrees (Ast.AstNode.Expression e)
+            makeNestedScopeTrees makeScopeTreesWithChildren expressionScopeTrees (List.map Ast.AstNode.Binding bs)
         | Ast.AstNode.Expression(SynExpr.LetOrUse(true,_,bs,e,_)) ->
             let scopeTreesFromBindings =
-                List.map makeScopeTrees (List.map Ast.AstNode.Binding bs)
+                List.map (makeScopeTreesWithChildren []) (List.map Ast.AstNode.Binding bs)
             let bindingScopeTree = mergeBindings scopeTreesFromBindings
-            let expressionScopeTrees = makeScopeTrees (Ast.AstNode.Expression e)
-            [addChildren bindingScopeTree expressionScopeTrees]
+            let expressionScopeTrees = makeScopeTreesWithChildren childrenScopeTrees (Ast.AstNode.Expression e)
+            [addChildren bindingScopeTree expressionScopeTrees] //FIXME: don't call addChildren
         | Ast.AstNode.Expression(SynExpr.Lambda(_,_,ps,e,_)) ->
             let simplePatterns = flattenSimplePatterns ps
             let idsDeclaredInPatterns = declarationsFromSimplePatterns simplePatterns
             [Declaration(idsDeclaredInPatterns,
-                         makeScopeTrees (Ast.AstNode.Expression e))]
+                         makeScopeTreesWithChildren childrenScopeTrees (Ast.AstNode.Expression e))]
         | Ast.AstNode.MatchClause(Clause(p,we,e,_,_)) ->
             let children =
-                List.append (if Option.isNone we then []
-                             else makeScopeTrees (Ast.AstNode.Expression we.Value))
-                            (makeScopeTrees (Ast.AstNode.Expression e))
+                List.concat [childrenScopeTrees;
+                            (if Option.isNone we then []
+                             else makeScopeTreesWithChildren [] (Ast.AstNode.Expression we.Value));
+                            (makeScopeTreesWithChildren [] (Ast.AstNode.Expression e))]
             [Declaration(declarationsFromMatchPattern p, children)]
         | Ast.AstNode.Binding(SynBinding.Binding(_,_,_,_,_,_,_,pattern,_,expression,_,_)) ->
             let idsDeclaredInBinding = declarationsFromFunctionPatterns [pattern]
-            let scopeTreesFromBinding = makeScopeTrees (Ast.AstNode.Expression expression)
+            let scopeTreesFromBinding = makeScopeTreesWithChildren [] (Ast.AstNode.Expression expression)
             match pattern with
                 | SynPat.LongIdent(functionIdent,_,_,arguments,_,_) ->
                     let selfIdentifier = tryGetSelfIdentifier functionIdent
@@ -174,8 +164,10 @@ let rec makeScopeTrees (tree : Ast.AstNode) =
                         else [Declaration(idsInScopeInExpression, scopeTreesFromBinding)]
                     if idsDeclaredInBinding = [] then argumentsScopeTrees
                     else
-                        Declaration(idsDeclaredInBinding, [])::argumentsScopeTrees
-                |  _ -> Declaration(idsDeclaredInBinding, [])::scopeTreesFromBinding
-        | UsedIdent(idents) -> [Usage(List.head idents, List.tail idents)]
-        | Ast.Children(cs) -> List.concat (Seq.map makeScopeTrees cs)
-        | _ -> []
+                        Declaration(idsDeclaredInBinding, childrenScopeTrees)::argumentsScopeTrees
+                |  _ -> Declaration(idsDeclaredInBinding, childrenScopeTrees)::scopeTreesFromBinding
+        | UsedIdent(idents) -> Usage(List.head idents, List.tail idents)::childrenScopeTrees
+        | Ast.Children(cs) -> List.concat (Seq.map (makeScopeTreesWithChildren childrenScopeTrees) cs)
+        | _ -> childrenScopeTrees
+        
+let makeScopeTrees node = makeScopeTreesWithChildren [] node

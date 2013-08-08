@@ -95,7 +95,7 @@ type ScopeTreeModule() =
     member this.``Can create a scope tree for a match clause with a when expression``() =
         let scopeTrees = ScopeTreeModule.getScopeTrees "match a with\n  | b when c -> d"
         match scopeTrees with
-            | [Declaration(["b",_],[Usage(("c",_),[]); Usage(("d",_),[])]);Usage(("a",_),[])]
+            | [Usage(("a",_),[]); Declaration(["b",_],[Usage(("c",_),[]); Usage(("d",_),[])])]
                 -> ()
             | _ -> Assert.Fail("The scope tree for 'match a with\n  | b when c -> d' was incorrect:\n" + (sprintf "%A" scopeTrees))
     
@@ -113,8 +113,8 @@ type ScopeTreeModule() =
         let scopeTrees = ScopeTreeModule.getScopeTrees "type TestClass(x) = \n  inherit BaseClass(x)\n  let a = x"
         match scopeTrees with
             | [Declaration(["x",_],[Usage(("x",_),[]);
-                                                  Declaration(["a",_],[]);
-                                                  Usage(("x",_),[])])] -> ()
+                                    Declaration(["a",_],[]);
+                                    Usage(("x",_),[])])] -> ()
             | _ -> Assert.Fail("The scope tree for 'type TestClass(x) = inherit BaseClass(x)' was incorrect:\n" +
                                (sprintf "%A" scopeTrees))
 
@@ -187,9 +187,9 @@ type ScopeTreeModule() =
     member this.``Can create a scope tree for a match clause``() =
         let scopeTrees = ScopeTreeModule.getScopeTrees "match a with (a,b) -> a"
         match scopeTrees with
-            | [Declaration([("a",_);("b",_)],
-                                     [Usage(("a",_),[])]);
-               Usage(("a",_),[])] -> ()
+            | [Usage(("a",_),[]);
+               Declaration([("a",_);("b",_)],
+                           [Usage(("a",_),[])])] -> ()
             | _ -> Assert.Fail("The scope tree for 'match a with (a,b) -> a' was incorrect:\n" +
                                (sprintf "%A" scopeTrees))
 
@@ -199,9 +199,9 @@ type ScopeTreeModule() =
         let scopeTrees2 = ScopeTreeModule.getScopeTrees "match a with Tag(id)::_ -> id"
         let doMatch scopeTrees =
             match scopeTrees with
-                | [Declaration(["id",_],
-                                             [Usage(("id",_),[])]);
-                   Usage(("a",_),[])] -> ()
+                | [Usage(("a",_),[]);
+                   Declaration(["id",_],
+                               [Usage(("id",_),[])]);] -> ()
                 | _ -> Assert.Fail("The scope tree for 'match a with Tag(id) -> id' was incorrect:\n" +
                                    (sprintf "%A" scopeTrees))
 

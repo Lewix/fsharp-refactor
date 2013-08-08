@@ -58,17 +58,15 @@ let rec getUsages declaredNames (project:Project) node =
     |> List.choose fullNameAndUsageRange
     |> List.map Usage
 
-let makeNestedScopeTrees followingFilesScope makeScopeTreesFunction nodes =
-    let reversedNodes = List.rev nodes
-    Seq.fold makeScopeTreesFunction followingFilesScope reversedNodes
-
 let rec makeModuleScopeTreesWithPrefix declaredNames project prefix followingFilesScope (tree:Ast.AstNode) : ModuleScopeTree list =
     match tree with
         | Ast.AstNode.File(ParsedImplFileInput(_,_,_,_,_,ns,_)) ->
-            makeNestedScopeTrees followingFilesScope (makeModuleScopeTreesWithPrefix declaredNames project prefix) (List.map Ast.AstNode.ModuleOrNamespace ns)
+            makeNestedScopeTrees (makeModuleScopeTreesWithPrefix declaredNames project prefix) followingFilesScope (List.map Ast.AstNode.ModuleOrNamespace ns)
         | Ast.AstNode.ModuleOrNamespace(SynModuleOrNamespace(namespaceIdentifier, false, declarations, _, _, _, _)) ->
             let namespaceName = nameFromLongIdent namespaceIdentifier
-            makeNestedScopeTrees followingFilesScope (makeModuleScopeTreesWithPrefix declaredNames project (prefix + namespaceName + ".")) (List.map Ast.AstNode.ModuleDeclaration declarations)
+            makeNestedScopeTrees (makeModuleScopeTreesWithPrefix declaredNames project (prefix + namespaceName + "."))
+                                 followingFilesScope
+                                 (List.map Ast.AstNode.ModuleDeclaration declarations)
         | Ast.AstNode.ModuleOrNamespace(SynModuleOrNamespace(moduleIdentifier, true, declarations, _, _, _, _))
         | Ast.AstNode.ModuleDeclaration(SynModuleDecl.NestedModule(ComponentInfo(_,_,_,moduleIdentifier,_,_,_,_),declarations,_,_)) as m ->
             let moduleName = nameFromLongIdent moduleIdentifier
