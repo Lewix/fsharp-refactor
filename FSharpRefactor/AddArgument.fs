@@ -48,7 +48,7 @@ let tryFindFunctionName (binding:SynBinding) =
     
 let addArgumentToFunctionDeclaration (functionName, functionRange:range) argumentName : Refactoring<unit,Identifier> =
     let transform (project:Project, ()) =
-        let tree = (Ast.Parse project.CurrentFileContents project.CurrentFile).Value
+        let tree = (Ast.Parse project project.CurrentFile).Value
         let identEndRange = functionRange.EndRange
         let argumentIdentifier =
             createIdentifier (identEndRange.End.Line, (identEndRange.End.Column+1)) argumentName functionRange.FileName
@@ -72,7 +72,7 @@ let findFunctionUsageRanges (project:Project) (tree : Ast.AstNode) (functionName
 //TODO: Check arguments such as argumentName or defaultValue have a valid form
 let addTempArgument (functionIdentifier:Identifier) defaultValue : Refactoring<unit,Identifier> =
     let transform (project:Project, ()) =
-        let tree = (Ast.Parse project.CurrentFileContents project.CurrentFile).Value
+        let tree = (Ast.Parse project project.CurrentFile).Value
         let argumentName = FindUnusedName tree
         let usageRefactorings =
             findFunctionUsageRanges project tree functionIdentifier
@@ -88,7 +88,7 @@ let GetErrorMessage (position:(int*int) option, argumentName:string option, defa
     let pos = PosFromPositionOption position
     let binding =
         lazy
-            let tree = (Ast.Parse project.CurrentFileContents project.CurrentFile).Value
+            let tree = (Ast.Parse project project.CurrentFile).Value
             TryFindDefaultBinding project tree pos.Value
 
     let checkPosition (line, col) =
@@ -136,7 +136,7 @@ let AddArgument (functionIdentifier:Identifier) argumentName defaultValue : Refa
 
 let Transform ((line, col):int*int, argumentName:string, defaultValue:string) (project:Project) =
     let pos = mkPos line (col-1)
-    let tree = (Ast.Parse project.CurrentFileContents project.CurrentFile).Value
+    let tree = (Ast.Parse project project.CurrentFile).Value
     let binding = TryFindDefaultBinding project tree pos
     let functionIdentifier = TryFindFunctionIdentifier binding.Value
     RunRefactoring (AddArgument functionIdentifier.Value argumentName defaultValue) () project

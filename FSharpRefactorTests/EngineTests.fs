@@ -14,10 +14,13 @@ open FSharpRefactor.Engine.RangeAnalysis
 
 [<TestFixture>]
 type AstModule() =
+    let parse (source:string) (filename:string) =
+        Ast.Parse (new Project(source, filename)) filename
+
     [<Test>]
     member this.``Can instantiate a AstNode from the result of parsing source code``() =
         let source = "let a = 1"
-        let rootNode = Ast.Parse source "test.fs"
+        let rootNode = parse source "test.fs"
         let expectNamespace node =
             match node with
                 | Some(Ast.AstNode.File(_)) -> true
@@ -35,7 +38,7 @@ type AstModule() =
     [<Test>]
     member this.``Can type check the source code in a project file``() =
         let source = "let f a = 1"
-        let typeCheckResults = Ast.tryTypeCheckSource source "test.fs"
+        let typeCheckResults = Ast.tryTypeCheckSource (new Project(source, "test.fs")) "test.fs"
         Assert.IsTrue(Option.isSome typeCheckResults)
         
     [<Test>]
@@ -48,12 +51,15 @@ type AstModule() =
                                 "  let f = 1";
                                 "module TestModule2 =";
                                 "  let g = TestModule1.f+2"]
-        let declaration = Ast.TryGetDeclarationLocation source "test.fs" ["TestModule1";"f"] (5, 10)
+        let declaration = Ast.TryGetDeclarationLocation (new Project(source, "test.fs")) "test.fs" ["TestModule1";"f"] (5, 10)
         Assert.AreEqual(Some ((3, 6), "./test.fs"), declaration)
         File.Delete "test.fs"
         
 [<TestFixture>]
 type CodeTransformsModule() =
+    let parse (source:string) (filename:string) =
+        Ast.Parse (new Project(source, filename)) filename
+
     [<Test>]
     member this.``Can indent a string``() =
         let indent body = CodeTransforms.Indent body "    "
@@ -70,7 +76,7 @@ type CodeTransformsModule() =
     [<Test>]
     member this.``Can change the text corresponding to an ast node``() =
         let source = "let a = 1\n\n"
-        let tree = (Ast.Parse source "test.fs").Value
+        let tree = (parse source "test.fs").Value
         let a = Ast.GetChildren(Ast.GetChildren(Ast.GetChildren(Ast.GetChildren(tree).Value.Head).Value.Head).Value.Head).Value.Head
         let expected = "let b = 1\n\n"
 
@@ -79,7 +85,7 @@ type CodeTransformsModule() =
     [<Test>]
     member this.``Can change the text for two ast nodes``() =
         let source = "\nlet a = 1\nlet b = 2"
-        let tree = (Ast.Parse source "test.fs").Value
+        let tree = (parse source "test.fs").Value
         let a = Ast.GetChildren(Ast.GetChildren(Ast.GetChildren(Ast.GetChildren(tree).Value.Head).Value.Head).Value.Head).Value.Head
         let b = Ast.GetChildren(Ast.GetChildren(Ast.GetChildren(Ast.GetChildren(tree).Value.Head).Value.[1]).Value.Head).Value.Head
         let expected = "\nlet b = 1\nlet a2 = 2"
@@ -124,6 +130,9 @@ type CodeTransformsModule() =
 
 [<TestFixture>]
 type RangeAnalysisModule() =
+    let parse (source:string) (filename:string) =
+        Ast.Parse (new Project(source, filename)) filename
+
     [<Test>]
     member this.``Can find identifier at position``() =
         let filename = "test.fs"
@@ -131,20 +140,20 @@ type RangeAnalysisModule() =
         let aDeclarationRange = mkRange "test.fs" (mkPos 1 12) (mkPos 1 13)
         let fDeclarationRange = mkRange "test.fs" (mkPos 1 4) (mkPos 1 11)
 
-        Assert.AreEqual(Some("a",aDeclarationRange), TryFindIdentifier source filename aDeclarationRange.Start)
-        Assert.AreEqual(Some("functio",fDeclarationRange), TryFindIdentifier source filename fDeclarationRange.Start)
+        Assert.AreEqual(Some("a",aDeclarationRange), TryFindIdentifier (new Project(source, filename)) filename aDeclarationRange.Start)
+        Assert.AreEqual(Some("functio",fDeclarationRange), TryFindIdentifier (new Project(source, filename)) filename fDeclarationRange.Start)
 
     [<Test>]
     member this.``Can find identifier position when identifiers are just next to each other``() =
         let source = "a+b"
         let range = mkRange "test.fs" (mkPos 1 2) (mkPos 1 3)
 
-        Assert.AreEqual(Some("b", range), TryFindIdentifier source "test.fs" range.Start)
+        Assert.AreEqual(Some("b", range), TryFindIdentifier (new Project(source, "test.fs")) "test.fs" range.Start)
     
     [<Test>]
     member this.``Can find the AstNode.Expression corresponding to a range``() =
         let source = "let a = 1+(2+3)+4"
-        let tree = (Ast.Parse source "test.fs").Value
+        let tree = (parse source "test.fs").Value
         let expressionRange = mkRange "test.fs" (mkPos 1 10) (mkPos 1 15)
         let expression = TryFindExpressionAtRange expressionRange tree
 
@@ -155,7 +164,7 @@ type RangeAnalysisModule() =
     [<Test>]
     member this.``Can find the binding from the binding's range``() =
         let source = "let f a b = a+b"
-        let tree = (Ast.Parse source "test.fs").Value
+        let tree = (parse source "test.fs").Value
         let bindingRange = mkRange "test.fs" (mkPos 1 4) (mkPos 1 15)
         let binding = FindBindingAtRange bindingRange tree
 

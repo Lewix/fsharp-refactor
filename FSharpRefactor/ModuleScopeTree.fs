@@ -46,7 +46,7 @@ let rec getUsages declaredNames (project:Project) node =
     let usageRangeAndDeclarationLocation (names, usageRange:range) =
         let filename = usageRange.FileName
         let declarationLocation =
-            Ast.TryGetDeclarationLocation (project.GetContents filename) filename names (usageRange.StartLine, usageRange.StartColumn)
+            Ast.TryGetDeclarationLocation project filename names (usageRange.StartLine, usageRange.StartColumn)
         if Option.isSome declarationLocation then Some (usageRange, declarationLocation.Value)
         else None
     let fullNameAndUsageRange (usageRange, ((line, col), filename)) =
@@ -94,8 +94,7 @@ let rec makeModuleScopeTrees (project:Project) =
     let reversedFiles = Array.rev project.Files
     let fileContents = Array.map project.GetContents reversedFiles
     let trees =
-        Seq.zip fileContents reversedFiles
-        |> Seq.map (fun (source,filename) -> (Ast.Parse source filename).Value)
+        Seq.map (fun filename -> (Ast.Parse project filename).Value) reversedFiles
     let declaredNames = Seq.collect (getModuleDeclarations "") trees |> Seq.toList
     
     Seq.fold (makeModuleScopeTreesWithPrefix declaredNames project "") [] trees

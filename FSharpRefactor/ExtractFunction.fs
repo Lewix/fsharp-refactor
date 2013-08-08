@@ -74,7 +74,7 @@ let callFunction functionName arguments callRange : Refactoring<unit,unit> =
     { analysis = (fun _ -> true); transform = transform; getErrorMessage = fun _ -> None }
 
 let extractTempFunctionTransform (project:Project) (expressionRange : range) inScopeTree  =
-        let tree = (Ast.Parse project.CurrentFileContents project.CurrentFile).Value
+        let tree = (Ast.Parse project project.CurrentFile).Value
         let functionName = FindUnusedName tree
         let unindentedBody = 
             (String.replicate (expressionRange.StartColumn) " ") + (TextOfRange project.CurrentFileContents expressionRange)
@@ -117,7 +117,7 @@ let extractTempFunction inScopeTree (expressionRange : range) : Refactoring<unit
 
 
 let GetErrorMessage (range:((int*int)*(int*int)) option, functionName:string option) (project:Project) =
-    let tree = (Ast.Parse project.CurrentFileContents project.CurrentFile).Value
+    let tree = (Ast.Parse project project.CurrentFile).Value
 
     let checkRange ((startLine, startCol), (endLine, endCol)) =
         let range = mkRange project.CurrentFile (mkPos startLine (startCol-1)) (mkPos endLine (endCol-1))
@@ -165,7 +165,7 @@ let ExtractFunction inScopeTree (expressionRange : range) functionName : Refacto
     { extractFunctionRefactoring with analysis = analysis; getErrorMessage = getErrorMessage }
 
 let Transform (((startLine, startColumn), (endLine, endColumn)), functionName) (project:Project) =
-    let tree = (Ast.Parse project.CurrentFileContents project.CurrentFile).Value
+    let tree = (Ast.Parse project project.CurrentFile).Value
     let expressionRange = mkRange project.CurrentFile (mkPos startLine (startColumn-1)) (mkPos endLine (endColumn-1))
     let inScopeTree = (defaultInScopeTree tree expressionRange).Value
     RunRefactoring (ExtractFunction inScopeTree expressionRange functionName) () project

@@ -13,7 +13,7 @@ open FSharpRefactor.Engine
 let GetErrorMessage (position:(int*int) option, newName:string option) (project:Project) =
     let pos = PosFromPositionOption position
     let identifier =
-        lazy Option.bind (TryFindIdentifier project.CurrentFileContents project.CurrentFile) pos
+        lazy Option.bind (TryFindIdentifier project project.CurrentFile) pos
     let identifierScope =
         lazy Option.bind (fun (identifier:Identifier) -> (TryGetIdentifierScope project identifier)) (identifier.Force())
 
@@ -77,6 +77,6 @@ let Rename newName : Refactoring<Identifier,unit> =
 
 let Transform ((line:int, col:int), newName:string) (project:Project) =
     let position = mkPos line (col-1)
-    let tree = (Ast.Parse project.CurrentFileContents project.CurrentFile).Value
-    let identifierScope = GetIdentifierScope project (FindIdentifier project.CurrentFileContents project.CurrentFile position)
+    let tree = (Ast.Parse project project.CurrentFile).Value
+    let identifierScope = GetIdentifierScope project (FindIdentifier project project.CurrentFile position)
     RunRefactoring (Rename newName) identifierScope.IdentifierDeclaration project

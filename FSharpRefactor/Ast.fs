@@ -5,6 +5,8 @@ open Microsoft.FSharp.Compiler.SourceCodeServices
 open Microsoft.FSharp.Compiler.Ast
 open Microsoft.FSharp.Compiler.Range
 
+open FSharpRefactor.Engine
+
 module Ast =
     type AstNode =
         | Expression of SynExpr
@@ -26,25 +28,34 @@ module Ast =
             | Some(ParsedInput.ImplFile(f)) -> Some(AstNode.File(f))
             | _ -> raise (new NotImplementedException("Use an impl file instead of a sig file"))
 
-    let getCheckerAndOptions source filename =
+    let getCheckerAndOptions (project:Project) filename =
         let checker = InteractiveChecker.Create(NotifyFileTypeCheckStateIsDirty(fun _ -> ()))
-        let options = checker.GetCheckOptionsFromScriptRoot(filename, source, DateTime.Now, [| |])
+        let options =
+            {
+                ProjectFileName = "test.fsproj"
+                ProjectFileNames = project.Files
+                ProjectOptions = [||]
+                IsIncompleteTypeCheckEnvironment = false
+                UseScriptResolutionRules = false
+                LoadTime = DateTime.Now
+                UnresolvedReferences = None
+            }
         checker, options
     
 
-    let getParseTree source filename = 
-        let checker, options = getCheckerAndOptions source filename
-        checker.UntypedParse(filename, source, options).ParseTree
+    let getParseTree project filename = 
+        let checker, options = getCheckerAndOptions project filename
+        checker.UntypedParse(filename, project.GetContents filename, options).ParseTree
         
-    let Parse source filename = MakeAstNode (getParseTree source filename)
+    let Parse project filename = MakeAstNode (getParseTree project filename)
     
-    let tryTypeCheckSource source filename =
-        let checker, options = getCheckerAndOptions source filename
+    let tryTypeCheckSource project filename =
+        let checker, options = getCheckerAndOptions project filename
         checker.StartBackgroundCompile options
         //FIXME: don't always block here
         checker.WaitForBackgroundCompile()
-        let info = checker.UntypedParse(filename, source, options)
-        let typeCheckResults = checker.TypeCheckSource(info, filename, 0, source, options, IsResultObsolete(fun _ -> false), "")
+        let info = checker.UntypedParse(filename, project.GetContents filename, options)
+        let typeCheckResults = checker.TypeCheckSource(info, filename, 0, project.GetContents filename, options, IsResultObsolete(fun _ -> false), "")
         match typeCheckResults with
             | TypeCheckSucceeded results -> Some results
             | _ -> None

@@ -58,7 +58,7 @@ let FindUnusedName (tree : Ast.AstNode) =
 
 let TryGetIdentifierScope (project:Project) (identifier:Identifier) =
     let _, range = identifier
-    let scopeTrees = makeScopeTrees (Ast.Parse project.CurrentFileContents range.FileName).Value
+    let scopeTrees = makeScopeTrees (Ast.Parse project range.FileName).Value
     let identifierDeclaration = tryFindIdentifierDeclaration scopeTrees identifier
     let identifierScope =
         Option.bind (tryFindDeclarationScope scopeTrees) identifierDeclaration

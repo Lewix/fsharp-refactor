@@ -33,12 +33,15 @@ type IdentifierScopeModule() =
 
 [<TestFixture>]
 type ScopeAnalysisModule() =
-    let getTrees source = makeScopeTrees (Ast.Parse source "test.fs").Value
+    let parse (source:string) (filename:string) =
+        Ast.Parse (new Project(source, filename)) filename
+
+    let getTrees source = makeScopeTrees (parse source "test.fs").Value
 
     [<Test>]
     member this.``Can find an unused name``() =
         let source = "let f a b c = 1\nlet g = 3"
-        let tree = (Ast.Parse source "test.fs").Value
+        let tree = (parse source "test.fs").Value
         
         Assert.IsFalse(Set.contains (FindUnusedName tree) (Set ["f";"a";"b";"c";"g"]))
 
@@ -51,7 +54,7 @@ type ScopeAnalysisModule() =
         let expected2 = Set(["b"])
         let expected3 = Set(["c"; "d"; "f"; "op_Addition"])
         let assertFun (source, expected) =
-            let scope = new ExpressionScope((Ast.Parse source "test.fs").Value, new Project("test.fs", source))
+            let scope = new ExpressionScope((parse source "test.fs").Value, new Project("test.fs", source))
             let actual =
                 scope.FindFreeIdentifiers ()
                 |> List.map fst
@@ -81,8 +84,12 @@ type ScopeAnalysisModule() =
 
 [<TestFixture>]
 type ScopeTreeModule() =
+
+
     static member getScopeTrees source =
-        makeScopeTrees (Ast.Parse source "test.fs").Value
+        let parse (source:string) (filename:string) =
+            Ast.Parse (new Project(source, filename)) filename
+        makeScopeTrees (parse source "test.fs").Value
         
     [<Test>]
     member this.``Can create a scope tree for a match clause with a when expression``() =

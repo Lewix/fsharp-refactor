@@ -82,15 +82,17 @@ type ModuleScopeTreeModule() =
             | _ -> Assert.Fail(incorrectScopeTrees source moduleScopeTrees)
             
     [<Test>]
-    member this.``Can create the declarations in the scope trees for modules over two files``() =
+    member this.``Can create the entire scope trees for modules over two files``() =
         let files = [files.[0]; files.[1]]
-        let project = new Project(files.[0], List.zip files (List.map (fun f -> Some (File.ReadAllText f)) files) |> List.toArray)
+        let project = new Project(files.[0], List.zip files [None; None] |> List.toArray)
         let moduleScopeTrees = makeModuleScopeTrees project
-                
+        
         match moduleScopeTrees with
             | [Declaration((("Test.TestModule1",_), ["Test.TestModule1.TopLevelFunction1",_; "Test.TestModule1.TopLevelFunction2",_]),
                 [Declaration((("Test.TestModule2",_), ["Test.TestModule2.TopLevelFunction1",_]),
-                    [Declaration((("Test.TestModule3",_), ["Test.TestModule3.TopLevelFunction3",_]),[])])])] -> ()
+                    [Declaration((("Test.TestModule3",_), ["Test.TestModule3.TopLevelFunction3",_]),[]);
+                     Usage("Test.TestModule1.TopLevelFunction1",_);
+                     Usage("Test.TestModule1.TopLevelFunction2",_)])])] -> ()
             | _ -> Assert.Fail(incorrectScopeTrees project.CurrentFileContents moduleScopeTrees)
             
     [<Test>]
