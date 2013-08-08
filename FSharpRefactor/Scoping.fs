@@ -11,7 +11,6 @@ let tryFindIdentifierDeclaration (trees : IdentifierScopeTree list) ((name, rang
     let rec tryFindIdentifierAndDeclaration previousDeclaration tree =
         match tree with
             | Usage((n,r),_) -> if n = name && r = range then previousDeclaration else None
-            | TopLevelDeclaration(is, ts)
             | Declaration(is, ts) ->
                 if List.exists isDeclaration is then
                     List.tryFind isDeclaration is
@@ -26,7 +25,6 @@ let rec tryFindDeclarationScope trees (name, declarationRange) =
     match trees with
         | [] -> None
         | Usage(_,_)::ds -> tryFindDeclarationScope ds (name, declarationRange)
-        | (TopLevelDeclaration(is, ts) as d)::ds
         | (Declaration(is, ts) as d)::ds ->
             let isDeclaration = (fun (n,r) -> n = name && rangeContainsRange r declarationRange)
             if List.exists isDeclaration is then Some d
@@ -36,7 +34,6 @@ let getDeclarations (trees : IdentifierScopeTree list) =
     let rec declarationsInSingleTree tree =
         match tree with
             | Usage(n,_) -> Set []
-            | TopLevelDeclaration(is, ts)
             | Declaration(is, ts) ->
                 let declarationsInChildren =
                     Set.unionMany (Seq.map declarationsInSingleTree ts)

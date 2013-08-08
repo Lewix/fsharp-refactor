@@ -39,7 +39,7 @@ let listUsedIdentifiers (node:Ast.AstNode) project =
             | Usage(((n, r) as i, is)) ->
                 let fullRange = mkRange r.FileName r.Start (i::is |> Seq.last |> snd).End
                 [n::(List.map fst is), fullRange]
-            | Declaration(_, ts) | TopLevelDeclaration(_, ts) -> List.collect usedIdentifiers ts
+            | Declaration(_, ts) -> List.collect usedIdentifiers ts
     List.collect usedIdentifiers (makeScopeTrees node)
 
 let rec getUsages declaredNames (project:Project) node =

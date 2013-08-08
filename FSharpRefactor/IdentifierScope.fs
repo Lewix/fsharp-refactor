@@ -20,7 +20,6 @@ type ExpressionScope (scopeTrees:IdentifierScopeTree list, project:Project) =
                 | Usage((n,r),_) ->
                     if Set.contains n declared then foundFree
                     else (n,r)::foundFree
-                | TopLevelDeclaration(is, ts)
                 | Declaration(is, ts) ->
                     let updatedDeclared = Set.union declared (Set(List.map fst is))
                     List.collect (freeIdentifiersInSingleTree foundFree updatedDeclared) ts
@@ -31,15 +30,13 @@ type ExpressionScope (scopeTrees:IdentifierScopeTree list, project:Project) =
             List.exists (fun (n,_) -> n = name) identifiers
         let rec getShallowestDeclarations targetName tree =
             match tree with
-                | TopLevelDeclaration(is, ts) when isDeclared targetName is -> [is, ts, true]
-                | Declaration(is, ts) when isDeclared targetName is -> [is, ts, false]
-                | TopLevelDeclaration(is, ts) 
+                | Declaration(is, ts) when isDeclared targetName is -> [is, ts]
                 | Declaration(is, ts) as declaration ->
                     List.collect (getShallowestDeclarations targetName) ts
                 | _ -> []
 
         List.collect (getShallowestDeclarations identifierName) scopeTrees
-        |> List.map (fun (identifiers, trees, isTopLevel) -> new IdentifierScope(identifiers, trees, isTopLevel, project))
+        |> List.map (fun (identifiers, trees) -> new IdentifierScope(identifiers, trees, project))
     
     override self.ToString () =
         sprintf "%A" scopeTrees
@@ -48,10 +45,9 @@ type ExpressionScope (scopeTrees:IdentifierScopeTree list, project:Project) =
 and IdentifierScope (identifier:Identifier, identifierScope:IdentifierScopeTree, project:Project) =
     inherit ExpressionScope([identifierScope], project)
 
-    new(identifiers, trees, isTopLevel, project:Project) =
+    new(identifiers, trees, project:Project) =
         let identifierScope =
-            if isTopLevel then TopLevelDeclaration(identifiers, trees)
-            else Declaration(identifiers, trees)
+            Declaration(identifiers, trees)
         IdentifierScope(List.head identifiers, identifierScope, project)
 
     override self.Equals(other) =
@@ -69,7 +65,6 @@ and IdentifierScope (identifier:Identifier, identifierScope:IdentifierScopeTree,
     member self.NamesDeclaredInBinding
         with get() =
             match identifierScope with
-                | TopLevelDeclaration(is,ts)
                 | Declaration(is,ts) -> List.map fst is
                 | _ -> []
     member self.IsDeclaredInBinding identifierName =
@@ -84,7 +79,6 @@ and IdentifierScope (identifier:Identifier, identifierScope:IdentifierScopeTree,
         let rec findReferencesInTree tree =
             match tree with
                 | Usage((n,r),_) when n = self.IdentifierName -> [r]
-                | TopLevelDeclaration(is, ts)
                 | Declaration(is, ts) when not (isNestedDeclaration is) ->
                     let remainingRanges = List.concat (Seq.map findReferencesInTree ts)
                     let declarationRange = rangeOfIdent self.IdentifierName is
