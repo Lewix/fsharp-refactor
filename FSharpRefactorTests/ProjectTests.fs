@@ -11,7 +11,7 @@ open FSharpRefactor.Engine.ModuleScopeTree
 
 [<TestFixture>]
 type ModuleScopeTreeModule() =
-    let files = ["file1.fs"; "file2.fs"]
+    let files = ["file1.fs"; "file2.fs"; "test.fs"]
     let incorrectScopeTrees source scopeTrees =
         sprintf "ModuleScopeTrees for '%s' were incorrect:\n %A" source scopeTrees
     let singleFileProject source =
@@ -82,18 +82,8 @@ type ModuleScopeTreeModule() =
             | _ -> Assert.Fail(incorrectScopeTrees source moduleScopeTrees)
             
     [<Test>]
-    member this.``Can create the scope trees for code with a fully qualified module usage``() =
-        let source = "namespace Test\n\nmodule TestModule1 =\n  let TopLevelValue = 1\n\nmodule TestModule2 =\n  let TopLevelValue = Test.TestModule1.TopLevelValue"
-        let moduleScopeTrees = makeModuleScopeTrees (singleFileProject source)
-        
-        match moduleScopeTrees with
-            | [Declaration((("Test.TestModule1",_),["Test.TestModule1.TopLevelValue",_]),
-                [Declaration((("Test.TestModule2",_),["Test.TestModule2.TopLevelValue",_]),[]);
-                 Usage(("Test.TestModule1.TopLevelValue",_))])] -> ()
-            | _ -> Assert.Fail(incorrectScopeTrees source moduleScopeTrees)
-            
-    [<Test>]
     member this.``Can create the declarations in the scope trees for modules over two files``() =
+        let files = [files.[0]; files.[1]]
         let project = new Project(files.[0], List.zip files (List.map (fun f -> Some (File.ReadAllText f)) files) |> List.toArray)
         let moduleScopeTrees = makeModuleScopeTrees project
                 
@@ -102,3 +92,23 @@ type ModuleScopeTreeModule() =
                 [Declaration((("Test.TestModule2",_), ["Test.TestModule2.TopLevelFunction1",_]),
                     [Declaration((("Test.TestModule3",_), ["Test.TestModule3.TopLevelFunction3",_]),[])])])] -> ()
             | _ -> Assert.Fail(incorrectScopeTrees project.CurrentFileContents moduleScopeTrees)
+            
+    [<Test>]
+    member this.``Can create the usages in the scope trees for opened modules``() =
+        let source =
+            String.concat "\n" ["namespace Test";
+                                "module TestModule1 =";
+                                "  let TopLevelValue1 = 1";
+                                "  let TopLevelValue2 = 2";
+                                "  let TopLevelFunction3 a = 2*a";
+                                "module TestModule2 =";
+                                "  open TestModule1";
+                                "  let f = TestModule1.TopLevelValue2 + (TopLevelFunction3 2)"]
+        let moduleScopeTrees = makeModuleScopeTrees (singleFileProject source)
+                
+        match moduleScopeTrees with
+            | [Declaration((("Test.TestModule1",_),["Test.TestModule1.TopLevelValue1",_;"Test.TestModule1.TopLevelValue2",_;"Test.TestModule1.TopLevelFunction3",_]),
+                [Declaration((("Test.TestModule2",_),["Test.TestModule2.f",_]),[]);
+                 Usage("Test.TestModule1.TopLevelValue2",r);
+                 Usage("Test.TestModule1.TopLevelFunction3",_)])] when r = mkRange "test.fs" (mkPos 8 10) (mkPos 8 36) -> ()
+            | _ -> Assert.Fail(incorrectScopeTrees source moduleScopeTrees)
