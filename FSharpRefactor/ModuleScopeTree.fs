@@ -5,6 +5,7 @@ open Microsoft.FSharp.Compiler.Ast
 
 open FSharpRefactor.Engine.Ast
 open FSharpRefactor.Engine.ScopeAnalysis
+open FSharpRefactor.Engine.Modules
 
 type Module = string * range
 type Declaration = string * range

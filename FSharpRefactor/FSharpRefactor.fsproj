@@ -42,6 +42,7 @@
   <ItemGroup>
     <Compile Include="Project.fs" />
     <Compile Include="Ast.fs" />
+    <Compile Include="Module.fs" />
     <Compile Include="ScopeTrees.fs" />
     <Compile Include="ModuleScopeTree.fs" />
     <Compile Include="RangeAnalysis.fs" />

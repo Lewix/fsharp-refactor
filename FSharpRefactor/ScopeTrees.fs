@@ -3,6 +3,7 @@ module FSharpRefactor.Engine.ScopeAnalysis
 open Microsoft.FSharp.Compiler.Range
 open Microsoft.FSharp.Compiler.Ast
 open FSharpRefactor.Engine.Ast
+open FSharpRefactor.Engine.Modules
 
 type ScopeTree<'declaration, 'usage> =
     | Declaration of 'declaration * ScopeTree<'declaration, 'usage> list
@@ -16,18 +17,6 @@ let (|UsedIdent|_|) (node : Ast.AstNode) =
         | Ast.AstNode.Expression(SynExpr.Ident(i)) -> Some [i.idText, i.idRange]
         | Ast.AstNode.Expression(SynExpr.LongIdent(_,LongIdentWithDots(is,_),_,_)) ->
             Some (List.map (fun (i:Ident) -> i.idText, i.idRange) is)
-        | _ -> None
-
-let (|DeclaredIdent|_|) (node : Ast.AstNode) =
-    match node with
-        | Ast.Pattern(SynPat.Named(_,i,_,_,_)) -> Some(i.idText, i.idRange)
-        | Ast.Pattern(SynPat.LongIdent(LongIdentWithDots([_;_],_),_,_,_,_,_)) ->
-            // This is a member declaration of the form self.id, ignore both idents
-            None
-        | Ast.Pattern(SynPat.LongIdent(LongIdentWithDots(i::_,_),_,_,_,_,_)) ->
-            Some(i.idText, i.idRange)
-        | Ast.SimplePattern(SynSimplePat.Id(i,_,_,_,_,_)) ->
-            Some(i.idText, i.idRange)
         | _ -> None
 
 let rec ListIdentifiers trees =
