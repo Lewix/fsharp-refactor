@@ -46,6 +46,7 @@
     <Compile Include="ScopeTrees.fs" />
     <Compile Include="ModuleScopeTree.fs" />
     <Compile Include="RangeAnalysis.fs" />
+    <Compile Include="ReferenceFinder.fs" />
     <Compile Include="IdentifierScope.fs" />
     <Compile Include="Scoping.fs" />
     <Compile Include="CodeTransforms.fs" />

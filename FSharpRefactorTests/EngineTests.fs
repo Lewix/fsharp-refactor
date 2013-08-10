@@ -42,9 +42,26 @@ type AstModule() =
         Assert.IsTrue(Option.isSome typeCheckResults)
         
     [<Test>]
+    member this.``Can find declarations inside modules``() =
+        let file = new StreamWriter("test.fs")
+        file.Close()
+        let source =
+            String.concat "\n" ["namespace Test";
+                                "module M1 =";
+                                "  let x = 1";
+                                "  let y = x+1";
+                                "module M2 =";
+                                "  let f x = M1.x*x"]
+
+        let declaration = Ast.TryGetDeclarationLocation (new Project(source, "test.fs")) "test.fs" ["x"] (4, 10)
+        Assert.AreEqual(Some ((3, 6), "./test.fs"), declaration)
+        File.Delete "test.fs"
+    
+    [<Test>]
     member this.``Can find declarations across modules``() =
         // Cannot find declaration if the file doesn't exist
         let file = new StreamWriter("test.fs")
+        file.Close()
         let source =
             String.concat "\n" ["namespace Test";
                                 "module TestModule1 =";
@@ -171,3 +188,55 @@ type RangeAnalysisModule() =
         match binding with
             | SynBinding.Binding(_,_,_,_,_,_,_,SynPat.LongIdent(_,_,_,_,_,_),_,_,_,_) -> ()
             | _ -> Assert.Fail("The AstNode was not the one for the binding 'let f a b = a+b': " + (sprintf "%A" binding))
+
+[<TestFixture>]
+type ReferenceFinderModule() =
+    let files = ["test.fs"]
+    [<SetUp>]
+    member this.CreateFiles () =
+        List.map (fun (f:string) -> new StreamWriter(f)) files
+        |> List.map (fun (s:StreamWriter) -> s.Close())
+        |> ignore
+    [<TearDown>]
+    member this.DeleteFiles () =
+        List.map File.Delete files
+        |> ignore
+
+    [<Test>]
+    member this.``Can find the references in two nested modules``() =
+        let filename = Path.GetFullPath "test.fs"
+        let source =
+            String.concat "\n" ["namespace Test";
+                                "module M1 =";
+                                "  let x = 1";
+                                "  let y = x+1";
+                                "module M2 =";
+                                "  let f x = M1.x*x";
+                                "  open M1";
+                                "  let g = x"]
+        let references =
+            ReferenceFinder.FindReferences (new Project(source, "test.fs")) ["x"] (mkRange filename (mkPos 8 10) (mkPos 8 11))
+            |> Seq.map (fun (ns, r) -> Seq.toList ns, r) |> Seq.toList
+        let expected =
+            [["x"], mkRange filename (mkPos 4 10) (mkPos 4 11);
+             ["x"], mkRange filename (mkPos 8 10) (mkPos 8 11);
+             ["M1";"x"], mkRange filename (mkPos 6 15) (mkPos 6 16)]
+             
+        Assert.AreEqual(expected, references, sprintf "%A" references)
+        
+    [<Test>]
+    member this.``Can find references to a declaration``() =
+        let filename = Path.GetFullPath "test.fs"
+        let source =
+            String.concat "\n" ["module Test";
+                                "let x = 1";
+                                "let y = 2*x+x";
+                                "let g x = x"]
+        let references =
+            ReferenceFinder.FindDeclarationReferences (new Project(source, "test.fs")) ("x", mkRange filename (mkPos 2 4) (mkPos 2 5))
+            |> Seq.toList
+        let expected =
+            ["x", mkRange filename (mkPos 3 10) (mkPos 3 11);
+             "x", mkRange filename (mkPos 3 12) (mkPos 3 13)]
+        
+        Assert.AreEqual(expected, references, sprintf "%A" references)

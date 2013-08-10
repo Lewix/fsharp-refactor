@@ -60,12 +60,18 @@ module Ast =
             | TypeCheckSucceeded results -> Some results
             | _ -> None
     
-    let TryGetDeclarationLocation project filename names position =
+    // typedInfo.GetDeclarationLocation expects columns and lines indexed from 0
+    // It will fail to recognise a position containing an identifier if
+    // the position directly preceding it doesn't contain whitespace
+    // For example in "1+<pos>x", getting declaration location at <pos> will not find
+    // x's declaration location. col is incremented to avoid this
+    let TryGetDeclarationLocation (project:Project) filename names ((line, col) as position) =
+        let lineStr = (project.GetContents filename).Split('\n').[line-1]
         let typedInfo = tryTypeCheckSource project filename
         if Option.isNone typedInfo then None
         else
             let declarationLocation =
-                typedInfo.Value.GetDeclarationLocation(position, "", names |> Seq.toList, 188, true)
+                typedInfo.Value.GetDeclarationLocation((line-1, col+1), lineStr, names |> Seq.toList, 188, true)
             match declarationLocation with
                 | DeclFound((line, col), filename) -> Some ((line+1, col), filename)
                 | _ -> None
