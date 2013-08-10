@@ -1,12 +1,13 @@
 namespace FSharpRefactor.Engine
 
 open Microsoft.FSharp.Compiler.Ast
+open Microsoft.FSharp.Compiler.Range
 open FSharpRefactor.Engine.Ast
 
 type Module =
     {
         fullName : string * string list
-        declarations : string list
+        declarations : (string * range) list
         nestedModules : Module list
         filename : string
     }
@@ -31,7 +32,7 @@ module Modules =
         let pattern =
             match binding with SynBinding.Binding(_,_,_,_,_,_,_,pattern,_,_,_,_) -> pattern
         match Ast.AstNode.Pattern pattern with
-            | DeclaredIdent (name, _) -> Some name
+            | DeclaredIdent (name, range) -> Some(name, range)
             | _ -> None
            
 

@@ -130,17 +130,17 @@ type ModuleScopeTreeModule() =
         let expected =
             [{
                 fullName = "Test", ["M1"];
-                declarations = ["D1"; "D2"];
+                declarations = ["D1", mkRange "test.fs" (mkPos 3 6) (mkPos 3 8); "D2", mkRange "test.fs" (mkPos 4 6) (mkPos 4 8)];
                 nestedModules = [];
                 filename = "test.fs"
             };
             {
                 fullName = "Test", ["M2"];
-                declarations = ["D2"];
+                declarations = ["D2", mkRange "test.fs" (mkPos 6 6) (mkPos 6 8)];
                 nestedModules = 
                     [{
                         fullName = "Test", ["M2";"M3"];
-                        declarations = ["D4"];
+                        declarations = ["D4", mkRange "test.fs" (mkPos 8 8) (mkPos 8 10)];
                         nestedModules = [];
                         filename = "test.fs"
                     }];
@@ -157,19 +157,20 @@ type ModuleScopeTreeModule() =
         let expected =
             [{
                 fullName = "Test", ["TestModule1"];
-                declarations = ["TopLevelFunction1"; "TopLevelFunction2"];
+                declarations = ["TopLevelFunction1", mkRange "file1.fs" (mkPos 3 6) (mkPos 3 23);
+                                "TopLevelFunction2", mkRange "file1.fs" (mkPos 4 6) (mkPos 4 23)];
                 nestedModules = [];
                 filename = files.[0]
             };
             {
                 fullName = "Test", ["TestModule2"];
-                declarations = ["TopLevelFunction1"];
+                declarations = ["TopLevelFunction1", mkRange "file1.fs" (mkPos 6 6) (mkPos 6 23)];
                 nestedModules = [];
                 filename = files.[0]
             };
             {
                 fullName = "Test", ["TestModule3"];
-                declarations = ["TopLevelFunction3"];
+                declarations = ["TopLevelFunction3", mkRange "file2.fs" (mkPos 4 7) (mkPos 4 24)];
                 nestedModules = [];
                 filename = files.[1]
             }]
