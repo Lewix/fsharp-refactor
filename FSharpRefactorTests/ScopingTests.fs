@@ -1,6 +1,7 @@
 namespace FSharpRefactorTests
 
 open System
+open System.IO
 open NUnit.Framework
 open Microsoft.FSharp.Compiler.Range
 
@@ -84,7 +85,8 @@ type ScopeAnalysisModule() =
 
 [<TestFixture>]
 type ScopeTreeModule() =
-
+    let incorrectScopeTrees source scopeTrees =
+        sprintf "ModuleScopeTrees for '%s' were incorrect:\n %A" source scopeTrees
 
     static member getScopeTrees source =
         let parse (source:string) (filename:string) =
@@ -282,3 +284,18 @@ type ScopeTreeModule() =
                 ()
             | _ -> Assert.Fail("The scope tree for 'fun a (b,c) -> a b c' was incorrect:\n" +
                                (sprintf "%A" scopeTrees))
+
+    [<Test>]
+    member this.``Can create a scope tree for a namespace with two nested modules``() =
+        let source =
+            String.concat "\n" ["namespace Test";
+                                "module M1 =";
+                                "  let f = 1";
+                                "module M2 =";
+                                "  let g = 2";
+                                "  let h = 3"]
+        let scopeTrees = ScopeTreeModule.getScopeTrees source
+        match scopeTrees with
+            | [Declaration(["f",_],[]);
+               Declaration(["g",_],[Declaration([("h",_)],[])])] -> ()
+            | _ -> Assert.Fail(incorrectScopeTrees source scopeTrees)

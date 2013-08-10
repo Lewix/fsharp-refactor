@@ -98,8 +98,16 @@ let rec makeScopeTreesWithChildren childrenScopeTrees (tree : Ast.AstNode) =
             | SynSimplePats.Typed(ps,_,_) -> flattenSimplePatterns ps
 
     match tree with
+        | Ast.AstNode.ModuleDeclaration(SynModuleDecl.NestedModule(_,ds,_,_))
         | Ast.ModuleOrNamespace(SynModuleOrNamespace.SynModuleOrNamespace(_,_,ds,_,_,_,_)) ->
-            makeNestedScopeTrees makeScopeTreesWithChildren childrenScopeTrees (List.map Ast.AstNode.ModuleDeclaration ds)
+            let isNestedModule = function
+                | Ast.AstNode.ModuleDeclaration(SynModuleDecl.NestedModule(_,_,_,_)) -> true
+                | _ -> false
+            let nestedModules, otherDeclarations = 
+                List.map Ast.AstNode.ModuleDeclaration ds
+                |> List.partition isNestedModule
+            List.append (List.collect (makeScopeTreesWithChildren []) nestedModules)
+                        (makeNestedScopeTrees makeScopeTreesWithChildren childrenScopeTrees otherDeclarations)
         | Ast.TypeDefinitionRepresentation(SynTypeDefnRepr.ObjectModel(_,ms,_)) ->
             makeNestedScopeTrees makeScopeTreesWithChildren childrenScopeTrees (List.map Ast.MemberDefinition ms)
         | Ast.MemberDefinition(SynMemberDefn.ImplicitCtor(_,_,ps,selfId,_)) ->
@@ -114,8 +122,6 @@ let rec makeScopeTreesWithChildren childrenScopeTrees (tree : Ast.AstNode) =
             let scopeTreesFromBindings =
                 List.map (makeScopeTreesWithChildren childrenScopeTrees) (List.map Ast.AstNode.Binding bs)
             [mergeBindings scopeTreesFromBindings]
-        | Ast.AstNode.ModuleDeclaration(SynModuleDecl.NestedModule(_,ds,_,_)) ->
-            makeNestedScopeTrees makeScopeTreesWithChildren childrenScopeTrees (List.map Ast.AstNode.ModuleDeclaration ds)
         | Ast.AstNode.Expression(SynExpr.LetOrUse(false,_,bs,e,_)) ->
             let expressionScopeTrees = makeScopeTreesWithChildren childrenScopeTrees (Ast.AstNode.Expression e)
             makeNestedScopeTrees makeScopeTreesWithChildren expressionScopeTrees (List.map Ast.AstNode.Binding bs)
