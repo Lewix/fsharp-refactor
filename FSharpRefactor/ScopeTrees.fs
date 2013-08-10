@@ -64,8 +64,8 @@ let makeNestedScopeTrees makeScopeTreesFunction childrenScopeTrees nodes =
     let reversedNodes = List.rev nodes
     Seq.fold makeScopeTreesFunction childrenScopeTrees reversedNodes
             
-let rec makeScopeTreesWithChildren modules childrenScopeTrees (tree : Ast.AstNode) =
-    let makeScopeTreesWithChildren = makeScopeTreesWithChildren modules
+let rec makeScopeTreesWithChildren (project:Project) modules childrenScopeTrees (tree : Ast.AstNode) =
+    let makeScopeTreesWithChildren = makeScopeTreesWithChildren project modules
     let declarationsFromMatchPattern pattern =
         let rec declarationsFromAstNode node =
             match node with
@@ -118,12 +118,9 @@ let rec makeScopeTreesWithChildren modules childrenScopeTrees (tree : Ast.AstNod
                 else (selfId.Value.idText, selfId.Value.idRange)::idsDeclaredInPatterns
             [Declaration(idsInScopeInCtor, childrenScopeTrees)]
         | Ast.AstNode.ModuleDeclaration(SynModuleDecl.Open(LongIdentWithDots(i::is,_), r)) ->
-            let fileInScope filename =
-                //FIXME: project isn't available
-                //List.exists ((=) r.FileName) (project.FilesInScope filename)
-                true
+            //TODO: proper name resolution
             let fullName = i.idText, List.map (fun (i:Ident) -> i.idText) is
-            let openedModule = Seq.tryFind (fun (m:Module) -> m.fullName = fullName && fileInScope m.filename) modules
+            let openedModule = Seq.tryFind (fun (m:Module) -> m.fullName = fullName) modules
             let declarations = if Option.isSome openedModule then openedModule.Value.declarations else []
             [Declaration(declarations,childrenScopeTrees)]
         | Ast.AstNode.ModuleDeclaration(SynModuleDecl.Let(false,bs,_)) ->
@@ -174,9 +171,7 @@ let rec makeScopeTreesWithChildren modules childrenScopeTrees (tree : Ast.AstNod
         | UsedIdent(idents) -> Usage(List.head idents, List.tail idents)::childrenScopeTrees
         | Ast.Children(cs) -> List.concat (Seq.map (makeScopeTreesWithChildren childrenScopeTrees) cs)
         | _ -> childrenScopeTrees
-        
-let makeScopeTrees node = makeScopeTreesWithChildren [] [] node
 
-let makeProjectScopeTrees project filename =
+let makeProjectScopeTrees project tree =
     let modules = GetModules project
-    makeScopeTreesWithChildren modules [] (Ast.Parse project filename).Value
+    makeScopeTreesWithChildren project modules [] tree

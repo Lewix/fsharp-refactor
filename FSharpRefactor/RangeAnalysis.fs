@@ -73,14 +73,14 @@ let FindExpressionsAroundRange range (tree : Ast.AstNode) =
     FindNodesAroundRange range tree
     |> List.filter isExpression
 
-let TryFindIdentifier source filename (position : pos) =
+let TryFindIdentifier project filename (position : pos) =
     let containsPos (name,range) =
         // Identifiers' ranges extend past the end of the text
         // so avoid range.End for cases like b in a+b
         rangeContainsPos range position && range.End <> position
 
-    (Ast.Parse source filename).Value
-    |> makeScopeTrees
+    (Ast.Parse project filename).Value
+    |> (makeProjectScopeTrees project)
     |> ListIdentifiers
     |> List.tryFind containsPos
 

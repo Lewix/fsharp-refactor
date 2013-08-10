@@ -74,7 +74,7 @@ let findFunctionUsageRanges (project:Project) (tree : Ast.AstNode) (functionName
 let addTempArgument (functionIdentifier:Identifier) defaultValue : Refactoring<unit,Identifier> =
     let transform (project:Project, ()) =
         let tree = (Ast.Parse project project.CurrentFile).Value
-        let argumentName = FindUnusedName tree
+        let argumentName = FindUnusedName project tree
         let usageRefactorings =
             findFunctionUsageRanges project tree functionIdentifier
             |> List.map (addArgumentToFunctionUsage project defaultValue)

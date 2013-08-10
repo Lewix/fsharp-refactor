@@ -37,14 +37,14 @@ type ScopeAnalysisModule() =
     let parse (source:string) (filename:string) =
         Ast.Parse (new Project(source, filename)) filename
 
-    let getTrees source = makeScopeTrees (parse source "test.fs").Value
+    let getTrees source = makeProjectScopeTrees (new Project(source, "test.fs")) (parse source "test.fs").Value
 
     [<Test>]
     member this.``Can find an unused name``() =
         let source = "let f a b c = 1\nlet g = 3"
         let tree = (parse source "test.fs").Value
         
-        Assert.IsFalse(Set.contains (FindUnusedName tree) (Set ["f";"a";"b";"c";"g"]))
+        Assert.IsFalse(Set.contains (FindUnusedName (new Project(source, "test.fs")) tree) (Set ["f";"a";"b";"c";"g"]))
 
     [<Test>]
     member this.``Can get all the free identifiers names in a ScopeTree``() =
@@ -91,7 +91,7 @@ type ScopeTreeModule() =
     static member getScopeTrees source =
         let parse (source:string) (filename:string) =
             Ast.Parse (new Project(source, filename)) filename
-        makeScopeTrees (parse source "test.fs").Value
+        makeProjectScopeTrees (new Project(source, "test.fs")) (parse source "test.fs").Value
         
     [<Test>]
     member this.``Can create a scope tree for a match clause with a when expression``() =
@@ -319,7 +319,7 @@ type ScopeTreeModule() =
         List.map (fun (f:StreamWriter) -> f.Close()) fileWriters |> ignore
 
         let project = new Project("test2.fs", List.zip files [None; None] |> Seq.toArray)
-        let scopeTrees = makeProjectScopeTrees project "test2.fs"
+        let scopeTrees = makeProjectScopeTrees project (Ast.Parse project "test2.fs").Value
         
         match scopeTrees with
             | [Declaration(["TopLevelFunction1",_;"TopLevelFunction2",_],[])] -> ()

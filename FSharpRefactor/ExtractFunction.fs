@@ -75,12 +75,11 @@ let callFunction functionName arguments callRange : Refactoring<unit,unit> =
 
 let extractTempFunctionTransform (project:Project) (expressionRange : range) inScopeTree  =
         let tree = (Ast.Parse project project.CurrentFile).Value
-        let functionName = FindUnusedName tree
+        let functionName = FindUnusedName project tree
         let unindentedBody = 
             (String.replicate (expressionRange.StartColumn) " ") + (TextOfRange project.CurrentFileContents expressionRange)
             |> RemoveLeading ' '
         let bodyExpressionScope = ExpressionScope(FindExpressionAtRange expressionRange inScopeTree, project)
-        let debug = makeScopeTrees inScopeTree
         let inScopeScope = ExpressionScope(inScopeTree, project)
 
         let getFreeIdentifierDeclarations (expressionScope:ExpressionScope) =

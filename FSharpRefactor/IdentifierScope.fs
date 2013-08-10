@@ -8,7 +8,7 @@ open FSharpRefactor.Engine.ScopeAnalysis
 
 type ExpressionScope (scopeTrees:IdentifierScopeTree list, project:Project) =
     new(expression:Ast.AstNode, project:Project) =
-        ExpressionScope(makeScopeTrees expression, project)
+        ExpressionScope(makeProjectScopeTrees project expression, project)
 
     member self.IsFree identifierName =
         let hasTargetName (n,_) = n = identifierName            

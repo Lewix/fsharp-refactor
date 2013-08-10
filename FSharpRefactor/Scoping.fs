@@ -41,8 +41,8 @@ let getDeclarations (trees : IdentifierScopeTree list) =
 
     Set.unionMany (Seq.map declarationsInSingleTree trees)
 
-let FindUnusedName (tree : Ast.AstNode) =
-    let scopeTrees = makeScopeTrees tree
+let FindUnusedName project (tree : Ast.AstNode) =
+    let scopeTrees = makeProjectScopeTrees project tree
     let usedNames = getDeclarations scopeTrees
     let randomNumberGenerator = new System.Random()
 
@@ -55,7 +55,7 @@ let FindUnusedName (tree : Ast.AstNode) =
 
 let TryGetIdentifierScope (project:Project) (identifier:Identifier) =
     let _, range = identifier
-    let scopeTrees = makeScopeTrees (Ast.Parse project range.FileName).Value
+    let scopeTrees = makeProjectScopeTrees project (Ast.Parse project range.FileName).Value
     let identifierDeclaration = tryFindIdentifierDeclaration scopeTrees identifier
     let identifierScope =
         Option.bind (tryFindDeclarationScope scopeTrees) identifierDeclaration
