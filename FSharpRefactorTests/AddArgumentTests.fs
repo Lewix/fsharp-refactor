@@ -1,5 +1,6 @@
 namespace FSharpRefactor.Tests.AddArgumentTests
 
+open System.IO
 open NUnit.Framework
 open Microsoft.FSharp.Compiler.Range
 open Microsoft.FSharp.Compiler.Ast
@@ -105,7 +106,7 @@ type AddArgumentModule() =
     [<Test>]
     member this.``Can find a sensible default binding range for a given position``() =
         let source = "let f a b =\n  let x = 3+4+5"
-        let tree = (parse source "test.fs").Value
+        let tree = (parse source (Path.GetFullPath "test.fs")).Value
         let position1 = mkPos 2 11
         let position2 = mkPos 2 1
         let expected1 = "x = 3+4+5"

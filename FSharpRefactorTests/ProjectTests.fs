@@ -49,7 +49,7 @@ type ModuleScopeTreeModule() =
         let moduleScopeTrees = makeModuleScopeTrees (singleFileProject source)
         
         match moduleScopeTrees with
-            | [Declaration((("TestModule1", r), ["TestModule1.TopLevelFunction1",_;"TestModule1.TopLevelFunction2",_]),[])] when r = mkRange "test.fs" (mkPos 1 0) (mkPos 3 48) -> ()
+            | [Declaration((("TestModule1", r), ["TestModule1.TopLevelFunction1",_;"TestModule1.TopLevelFunction2",_]),[])] when r = mkRange (Path.GetFullPath "test.fs") (mkPos 1 0) (mkPos 3 48) -> ()
             | _ -> Assert.Fail(incorrectScopeTrees source moduleScopeTrees)
 
     [<Test>]
@@ -112,11 +112,12 @@ type ModuleScopeTreeModule() =
             | [Declaration((("Test.TestModule1",_),["Test.TestModule1.TopLevelValue1",_;"Test.TestModule1.TopLevelValue2",_;"Test.TestModule1.TopLevelFunction3",_]),
                 [Declaration((("Test.TestModule2",_),["Test.TestModule2.f",_]),[]);
                  Usage("Test.TestModule1.TopLevelValue2",r);
-                 Usage("Test.TestModule1.TopLevelFunction3",_)])] when r = mkRange "test.fs" (mkPos 8 10) (mkPos 8 36) -> ()
+                 Usage("Test.TestModule1.TopLevelFunction3",_)])] when r = mkRange (Path.GetFullPath "test.fs") (mkPos 8 10) (mkPos 8 36) -> ()
             | _ -> Assert.Fail(incorrectScopeTrees source moduleScopeTrees)
             
     [<Test>]
     member this.``Can get a list of modules from a piece of source code``() =
+        let filename = Path.GetFullPath "test.fs"
         let source =
             String.concat "\n" ["namespace Test";
                                 "module M1 =";
@@ -126,25 +127,25 @@ type ModuleScopeTreeModule() =
                                 "  let D2 = 2";
                                 "  module M3 =";
                                 "    let D4 = 4"]
-        let modules = Modules.GetModules (new Project(source, "test.fs"))
+        let modules = Modules.GetModules (new Project(source, filename))
         let expected =
             [{
                 fullName = "Test", ["M1"];
-                declarations = ["D1", mkRange "test.fs" (mkPos 3 6) (mkPos 3 8); "D2", mkRange "test.fs" (mkPos 4 6) (mkPos 4 8)];
+                declarations = ["D1", mkRange filename (mkPos 3 6) (mkPos 3 8); "D2", mkRange filename (mkPos 4 6) (mkPos 4 8)];
                 nestedModules = [];
-                filename = "test.fs"
+                filename = filename
             };
             {
                 fullName = "Test", ["M2"];
-                declarations = ["D2", mkRange "test.fs" (mkPos 6 6) (mkPos 6 8)];
+                declarations = ["D2", mkRange filename (mkPos 6 6) (mkPos 6 8)];
                 nestedModules = 
                     [{
                         fullName = "Test", ["M2";"M3"];
-                        declarations = ["D4", mkRange "test.fs" (mkPos 8 8) (mkPos 8 10)];
+                        declarations = ["D4", mkRange filename (mkPos 8 8) (mkPos 8 10)];
                         nestedModules = [];
-                        filename = "test.fs"
+                        filename = filename
                     }];
-                filename = "test.fs"
+                filename = filename
             }]
         
         Assert.AreEqual(expected, modules, sprintf "%A" modules)
@@ -152,27 +153,28 @@ type ModuleScopeTreeModule() =
     [<Test>]
     member this.``Can get a list of modules from an entire project``() =
         let files = [files.[0]; files.[1]]
+        let fullFilenames = List.map Path.GetFullPath files
         let project = new Project(files.[0], List.zip files [None; None] |> List.toArray)
         let modules = Modules.GetModules project
         let expected =
             [{
                 fullName = "Test", ["TestModule1"];
-                declarations = ["TopLevelFunction1", mkRange "file1.fs" (mkPos 3 6) (mkPos 3 23);
-                                "TopLevelFunction2", mkRange "file1.fs" (mkPos 4 6) (mkPos 4 23)];
+                declarations = ["TopLevelFunction1", mkRange fullFilenames.[0] (mkPos 3 6) (mkPos 3 23);
+                                "TopLevelFunction2", mkRange fullFilenames.[0] (mkPos 4 6) (mkPos 4 23)];
                 nestedModules = [];
-                filename = files.[0]
+                filename = fullFilenames.[0]
             };
             {
                 fullName = "Test", ["TestModule2"];
-                declarations = ["TopLevelFunction1", mkRange "file1.fs" (mkPos 6 6) (mkPos 6 23)];
+                declarations = ["TopLevelFunction1", mkRange fullFilenames.[0] (mkPos 6 6) (mkPos 6 23)];
                 nestedModules = [];
-                filename = files.[0]
+                filename = fullFilenames.[0]
             };
             {
                 fullName = "Test", ["TestModule3"];
-                declarations = ["TopLevelFunction3", mkRange "file2.fs" (mkPos 4 7) (mkPos 4 24)];
+                declarations = ["TopLevelFunction3", mkRange fullFilenames.[1] (mkPos 4 7) (mkPos 4 24)];
                 nestedModules = [];
-                filename = files.[1]
+                filename = fullFilenames.[1]
             }]
         
         Assert.AreEqual(expected, modules, sprintf "%A" modules)
