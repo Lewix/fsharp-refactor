@@ -299,3 +299,28 @@ type ScopeTreeModule() =
             | [Declaration(["f",_],[]);
                Declaration(["g",_],[Declaration([("h",_)],[])])] -> ()
             | _ -> Assert.Fail(incorrectScopeTrees source scopeTrees)
+            
+    [<Test>]
+    member this.``Can create a scope tree for a module with an open statement``() =
+        let files = ["test1.fs"; "test2.fs"]
+        let fileWriters = List.map (fun (f:string) -> new StreamWriter(f)) files
+        
+        fprintfn fileWriters.[0] "namespace Test"
+        fprintfn fileWriters.[0] "module TestModule1 ="
+        fprintfn fileWriters.[0] "  let TopLevelFunction1 a = 1+a"
+        fprintfn fileWriters.[0] "  let TopLevelFunction2 b = 2*(TopLevelFunction1 b)"
+        fprintfn fileWriters.[0] "module TestModule2 ="
+        fprintfn fileWriters.[0] "  let TopLevelFunction1 c = 3"
+        
+        fprintfn fileWriters.[1] "module TestModule3"
+        fprintfn fileWriters.[1] "open Test.TestModule1"
+
+        List.map (fun (f:StreamWriter) -> f.Flush()) fileWriters |> ignore
+        List.map (fun (f:StreamWriter) -> f.Close()) fileWriters |> ignore
+
+        let project = new Project("test2.fs", List.zip files [None; None] |> Seq.toArray)
+        let scopeTrees = makeProjectScopeTrees project "test2.fs"
+        
+        match scopeTrees with
+            | [Declaration(["TopLevelFunction1",_;"TopLevelFunction2",_],[])] -> ()
+            | _ -> Assert.Fail(incorrectScopeTrees project.CurrentFileContents scopeTrees)
