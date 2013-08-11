@@ -17,6 +17,17 @@ type AstModule() =
     let parse (source:string) (filename:string) =
         Ast.Parse (new Project(source, filename)) filename
 
+    let files = ["test.fs"]
+    [<SetUp>]
+    member this.CreateFiles () =
+        List.map (fun (f:string) -> new StreamWriter(f)) files
+        |> List.map (fun (s:StreamWriter) -> s.Close())
+        |> ignore
+    [<TearDown>]
+    member this.DeleteFiles () =
+        List.map File.Delete files
+        |> ignore
+
     [<Test>]
     member this.``Can instantiate a AstNode from the result of parsing source code``() =
         let source = "let a = 1"
@@ -43,8 +54,6 @@ type AstModule() =
         
     [<Test>]
     member this.``Can find declarations inside modules``() =
-        let file = new StreamWriter("test.fs")
-        file.Close()
         let source =
             String.concat "\n" ["namespace Test";
                                 "module M1 =";
@@ -55,13 +64,9 @@ type AstModule() =
 
         let declaration = Ast.TryGetDeclarationLocation (new Project(source, "test.fs")) "test.fs" ["x"] (4, 10)
         Assert.AreEqual(Some ((3, 6), Path.GetFullPath "test.fs"), declaration)
-        File.Delete "test.fs"
     
     [<Test>]
     member this.``Can find declarations across modules``() =
-        // Cannot find declaration if the file doesn't exist
-        let file = new StreamWriter("test.fs")
-        file.Close()
         let source =
             String.concat "\n" ["namespace Test";
                                 "module TestModule1 =";
@@ -70,7 +75,6 @@ type AstModule() =
                                 "  let g = TestModule1.f+2"]
         let declaration = Ast.TryGetDeclarationLocation (new Project(source, "test.fs")) "test.fs" ["TestModule1";"f"] (5, 10)
         Assert.AreEqual(Some ((3, 6), Path.GetFullPath "test.fs"), declaration)
-        File.Delete "test.fs"
         
 [<TestFixture>]
 type CodeTransformsModule() =

@@ -76,7 +76,24 @@ type ExtractFunctionTransformModule() =
         RunRefactoring (ExtractFunction inScopeTree expressionRange functionName) () source
         
     let mkRange filename startPos endPos = mkRange (Path.GetFullPath filename) startPos endPos
+    let files = ["test.fs"]
 
+    [<SetUp>]
+    member this.CreateFiles () =
+        List.map (fun (f:string) -> new StreamWriter(f)) files
+        |> List.map (fun (s:StreamWriter) -> s.Close())
+        |> ignore
+    [<TearDown>]
+    member this.DeleteFiles () =
+        List.map File.Delete files
+        |> ignore
+
+    [<Test>]
+    member this.``Can get changes``() =
+        let source = "let f a = 1+1"
+        let expected = "let f a = let g = (1+1) in g"
+        Assert.AreEqual(expected, Transform (((1,11),(1,14)), "g") (new Project(source, "test.fs")))
+        
     [<Test>]
     member this.``Can extract an expression into a value, if it needs no arguments``() =
         let source = "1+3+4+4"
@@ -123,12 +140,6 @@ type ExtractFunctionTransformModule() =
 
 [<TestFixture>]
 type CreateFunctionModule() =
-    [<Test>]
-    member this.``Can get changes``() =
-        let source = "let f a = 1+1"
-        let expected = "let f a = let g = (1+1) in g"
-        Assert.AreEqual(expected, Transform (((1,11),(1,14)), "g") (new Project(source, "test.fs")))
-        
     [<Test>]
     member this.``Can add a function to an expression``() =
         let expected = "let f a b =\n    a+b\n"

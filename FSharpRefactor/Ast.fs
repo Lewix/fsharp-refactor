@@ -51,11 +51,12 @@ module Ast =
     let Parse project filename = MakeAstNode (getParseTree project filename)
     
     let tryTypeCheckSource project filename =
+        let filename = Path.GetFullPath filename
         let checker, options = getCheckerAndOptions project
         checker.StartBackgroundCompile options
         //FIXME: don't always block here
         checker.WaitForBackgroundCompile()
-        let info = checker.UntypedParse(Path.GetFullPath filename, project.GetContents filename, options)
+        let info = checker.UntypedParse(filename, project.GetContents filename, options)
         let typeCheckResults = checker.TypeCheckSource(info, filename, 0, project.GetContents filename, options, IsResultObsolete(fun _ -> false), "")
         match typeCheckResults with
             | TypeCheckSucceeded results -> Some results

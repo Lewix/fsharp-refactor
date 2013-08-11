@@ -62,6 +62,17 @@ type RenameTransformModule() =
         RunRefactoring (Rename newName) declarationIdentifier source
         
     let mkRange filename startPos endPos = mkRange (Path.GetFullPath filename) startPos endPos
+    let files = ["test.fs"]
+
+    [<SetUp>]
+    member this.CreateFiles () =
+        List.map (fun (f:string) -> new StreamWriter(f)) files
+        |> List.map (fun (s:StreamWriter) -> s.Close())
+        |> ignore
+    [<TearDown>]
+    member this.DeleteFiles () =
+        List.map File.Delete files
+        |> ignore
 
     [<Test>]
     member this.``Can get changes``() =
@@ -79,7 +90,7 @@ type RenameTransformModule() =
  
     [<Test>]
     member this.``Can carry out another renaming transformation``() =
-        let source = "let a = a in let b = 3*a + a"
+        let source = "let a = a in let b = 3*a + a in ()"
         let expected = "let c = a in let b = 3*c + c"
         let declarationRange = mkRange "test.fs" (mkPos 1 4) (mkPos 1 5)
 

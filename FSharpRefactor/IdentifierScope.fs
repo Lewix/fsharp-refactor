@@ -70,20 +70,24 @@ and IdentifierScope (identifier:Identifier, identifierScope:IdentifierScopeTree,
     member self.IsDeclaredInBinding identifierName =
         List.exists ((=) identifierName) self.NamesDeclaredInBinding
     member self.FindReferences () =
-        let rangeOfIdent (name : string) (identifiers : Identifier list) =
-            let identifier = List.tryFind (fun (n,_) -> n = name) identifiers
-            if Option.isNone identifier then None else Some(snd identifier.Value)
-        let isNestedDeclaration idents =
-            List.exists (fun (n,r) -> n = self.IdentifierName && not (rangeContainsRange r self.DeclarationRange)) idents
-        
-        let rec findReferencesInTree tree =
-            match tree with
-                | Usage((n,r),_) when n = self.IdentifierName -> [r]
-                | Declaration(is, ts) when not (isNestedDeclaration is) ->
-                    let remainingRanges = List.concat (Seq.map findReferencesInTree ts)
-                    let declarationRange = rangeOfIdent self.IdentifierName is
-                    if Option.isSome declarationRange then declarationRange.Value::remainingRanges
-                    else remainingRanges
-                | _ -> []
-        findReferencesInTree identifierScope
+        let referenceRanges =
+            ReferenceFinder.FindDeclarationReferences project self.IdentifierDeclaration
+            |> Seq.map snd |> Seq.toList
+        self.DeclarationRange::referenceRanges
+//        let rangeOfIdent (name : string) (identifiers : Identifier list) =
+//            let identifier = List.tryFind (fun (n,_) -> n = name) identifiers
+//            if Option.isNone identifier then None else Some(snd identifier.Value)
+//        let isNestedDeclaration idents =
+//            List.exists (fun (n,r) -> n = self.IdentifierName && not (rangeContainsRange r self.DeclarationRange)) idents
+//        
+//        let rec findReferencesInTree tree =
+//            match tree with
+//                | Usage((n,r),_) when n = self.IdentifierName -> [r]
+//                | Declaration(is, ts) when not (isNestedDeclaration is) ->
+//                    let remainingRanges = List.concat (Seq.map findReferencesInTree ts)
+//                    let declarationRange = rangeOfIdent self.IdentifierName is
+//                    if Option.isSome declarationRange then declarationRange.Value::remainingRanges
+//                    else remainingRanges
+//                | _ -> []
+//        findReferencesInTree identifierScope
 

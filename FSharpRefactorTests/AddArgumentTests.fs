@@ -16,6 +16,17 @@ type AddArgumentModule() =
         Ast.Parse (new Project(source, filename)) filename
         
     let mkRange filename startPos endPos = mkRange (Path.GetFullPath filename) startPos endPos
+    let files = ["test.fs"]
+
+    [<SetUp>]
+    member this.CreateFiles () =
+        List.map (fun (f:string) -> new StreamWriter(f)) files
+        |> List.map (fun (s:StreamWriter) -> s.Close())
+        |> ignore
+    [<TearDown>]
+    member this.DeleteFiles () =
+        List.map File.Delete files
+        |> ignore
 
     [<Test>]
     member this.``Can get changes``() =
@@ -62,12 +73,12 @@ type AddArgumentModule() =
 
     [<Test>]
     member this.``Can find all the App nodes calling a certain function``() =
-        let source = "(let f a b c = 1 in (f 1 2 3) + ((f 2) 2) + (1 + (2 + (f 3 3 4)))) + (f 1)"
+        let source = "(let f a b c = 1 in (f 1 2 3) + ((f 2) 2 3) + (1 + (2 + (f 3 3 4)))) + (f 1)"
         let tree = (parse source "test.fs").Value
         let bindingRange = "f", mkRange "test.fs" (mkPos 1 5) (mkPos 1 6)
         let functionUsageRanges = findFunctionUsageRanges (new Project(source, "test.fs")) tree bindingRange
 
-        Assert.AreEqual([mkRange "test.fs" (mkPos 1 21) (mkPos 1 22); mkRange "test.fs" (mkPos 1 34) (mkPos 1 35); mkRange "test.fs" (mkPos 1 55) (mkPos 1 56)], functionUsageRanges, sprintf "%A" functionUsageRanges)
+        Assert.AreEqual([mkRange "test.fs" (mkPos 1 21) (mkPos 1 22); mkRange "test.fs" (mkPos 1 34) (mkPos 1 35); mkRange "test.fs" (mkPos 1 57) (mkPos 1 58)], functionUsageRanges, sprintf "%A" functionUsageRanges)
 
     [<Test>]
     member this.``Can find App nodes calling a function without duplicates``() =
