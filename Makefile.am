@@ -37,7 +37,6 @@ CORE_SOURCES=FSharpRefactor/Ast.fs \
 			 FSharpRefactor/RangeAnalysis.fs \
 			 FSharpRefactor/ScopeTrees.fs \
 			 FSharpRefactor/Project.fs \
-			 FSharpRefactor/ModuleScopeTree.fs \
 			 FSharpRefactor/Scoping.fs \
              FSharpRefactor/CodeTransforms.fs \
              FSharpRefactor/ValidityChecking.fs \
