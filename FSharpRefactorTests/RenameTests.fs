@@ -1,5 +1,6 @@
 namespace FSharpRefactor.Tests.RenameTests
 
+open System.IO
 open NUnit.Framework
 
 open Microsoft.FSharp.Compiler.Range
@@ -59,6 +60,8 @@ type RenameTransformModule() =
 
     let DoRename source (tree: Ast.AstNode) declarationIdentifier (newName : string) =
         RunRefactoring (Rename newName) declarationIdentifier source
+        
+    let mkRange filename startPos endPos = mkRange (Path.GetFullPath filename) startPos endPos
 
     [<Test>]
     member this.``Can get changes``() =

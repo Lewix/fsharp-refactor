@@ -14,6 +14,8 @@ open FSharpRefactor.Refactorings.AddArgument
 type AddArgumentModule() =
     let parse (source:string) (filename:string) =
         Ast.Parse (new Project(source, filename)) filename
+        
+    let mkRange filename startPos endPos = mkRange (Path.GetFullPath filename) startPos endPos
 
     [<Test>]
     member this.``Can get changes``() =

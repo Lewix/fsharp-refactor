@@ -1,6 +1,7 @@
 namespace FSharpRefactor.Engine.Ast
 
 open System
+open System.IO
 open Microsoft.FSharp.Compiler.SourceCodeServices
 open Microsoft.FSharp.Compiler.Ast
 open Microsoft.FSharp.Compiler.Range
@@ -28,7 +29,7 @@ module Ast =
             | Some(ParsedInput.ImplFile(f)) -> Some(AstNode.File(f))
             | _ -> raise (new NotImplementedException("Use an impl file instead of a sig file"))
 
-    let getCheckerAndOptions (project:Project) filename =
+    let getCheckerAndOptions (project:Project) =
         let checker = InteractiveChecker.Create(NotifyFileTypeCheckStateIsDirty(fun _ -> ()))
         let options =
             {
@@ -44,17 +45,17 @@ module Ast =
     
 
     let getParseTree project filename = 
-        let checker, options = getCheckerAndOptions project filename
-        checker.UntypedParse(filename, project.GetContents filename, options).ParseTree
+        let checker, options = getCheckerAndOptions project
+        checker.UntypedParse(Path.GetFullPath filename, project.GetContents filename, options).ParseTree
         
     let Parse project filename = MakeAstNode (getParseTree project filename)
     
     let tryTypeCheckSource project filename =
-        let checker, options = getCheckerAndOptions project filename
+        let checker, options = getCheckerAndOptions project
         checker.StartBackgroundCompile options
         //FIXME: don't always block here
         checker.WaitForBackgroundCompile()
-        let info = checker.UntypedParse(filename, project.GetContents filename, options)
+        let info = checker.UntypedParse(Path.GetFullPath filename, project.GetContents filename, options)
         let typeCheckResults = checker.TypeCheckSource(info, filename, 0, project.GetContents filename, options, IsResultObsolete(fun _ -> false), "")
         match typeCheckResults with
             | TypeCheckSucceeded results -> Some results

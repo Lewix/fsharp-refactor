@@ -54,7 +54,7 @@ type AstModule() =
                                 "  let f x = M1.x*x"]
 
         let declaration = Ast.TryGetDeclarationLocation (new Project(source, "test.fs")) "test.fs" ["x"] (4, 10)
-        Assert.AreEqual(Some ((3, 6), "./test.fs"), declaration)
+        Assert.AreEqual(Some ((3, 6), Path.GetFullPath "test.fs"), declaration)
         File.Delete "test.fs"
     
     [<Test>]
@@ -69,7 +69,7 @@ type AstModule() =
                                 "module TestModule2 =";
                                 "  let g = TestModule1.f+2"]
         let declaration = Ast.TryGetDeclarationLocation (new Project(source, "test.fs")) "test.fs" ["TestModule1";"f"] (5, 10)
-        Assert.AreEqual(Some ((3, 6), "./test.fs"), declaration)
+        Assert.AreEqual(Some ((3, 6), Path.GetFullPath "test.fs"), declaration)
         File.Delete "test.fs"
         
 [<TestFixture>]
@@ -149,6 +149,8 @@ type CodeTransformsModule() =
 type RangeAnalysisModule() =
     let parse (source:string) (filename:string) =
         Ast.Parse (new Project(source, filename)) filename
+    
+    let mkRange filename startPos endPos = mkRange (Path.GetFullPath filename) startPos endPos
 
     [<Test>]
     member this.``Can find identifier at position``() =

@@ -12,6 +12,8 @@ open FSharpRefactor.Engine
 
 [<TestFixture>]
 type IdentifierScopeModule() =
+    let mkRange filename startPos endPos = mkRange (Path.GetFullPath filename) startPos endPos
+
     [<Test>]
     member this.``Can check whether an identifier is free in another's scope``() =
         let source = "let a b = b in f ((a 1) + (fun d -> d + c))"
@@ -38,6 +40,8 @@ type ScopeAnalysisModule() =
         Ast.Parse (new Project(source, filename)) filename
 
     let getTrees source = makeProjectScopeTrees (new Project(source, "test.fs")) (parse source "test.fs").Value
+    
+    let mkRange filename startPos endPos = mkRange (Path.GetFullPath filename) startPos endPos
 
     [<Test>]
     member this.``Can find an unused name``() =

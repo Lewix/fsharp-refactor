@@ -1,5 +1,6 @@
 namespace FSharpRefactor.Tests.ExtractFunctionTests
 
+open System.IO
 open NUnit.Framework
 open Microsoft.FSharp.Compiler.Range
 open Microsoft.FSharp.Compiler.Ast
@@ -14,6 +15,8 @@ open FSharpRefactor.Refactorings.ExtractFunction
 type ExtractFunctionAnalysisModule() =
     let parse (source:string) (filename:string) =
         Ast.Parse (new Project(source, filename)) filename
+    
+    let mkRange filename startPos endPos = mkRange (Path.GetFullPath filename) startPos endPos
 
     [<Test>]
     member this.``Can check arguments separately``() =
@@ -71,6 +74,8 @@ type ExtractFunctionTransformModule() =
 
     let DoExtractFunction source (tree : Ast.AstNode) (inScopeTree : Ast.AstNode) (expressionRange : range) (functionName : string) =
         RunRefactoring (ExtractFunction inScopeTree expressionRange functionName) () source
+        
+    let mkRange filename startPos endPos = mkRange (Path.GetFullPath filename) startPos endPos
 
     [<Test>]
     member this.``Can extract an expression into a value, if it needs no arguments``() =
@@ -98,7 +103,7 @@ type ExtractFunctionTransformModule() =
         Assert.AreEqual(expected, DoExtractFunction (new Project(source, "test.fs")) tree letTree expressionRange "f")
         
     [<Test>]
-    member this.``Can extract an expression into a function aroud a Let expression``() =
+    member this.``Can extract an expression into a function around a Let expression``() =
         let source = "let a b = b+b"
         let expected = "let double b = (b+b) in let a b = (double b)"
         let tree = (parse source "test.fs").Value
