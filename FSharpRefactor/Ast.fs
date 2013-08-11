@@ -2,6 +2,8 @@ namespace FSharpRefactor.Engine.Ast
 
 open System
 open System.IO
+open System.Text.RegularExpressions
+open Microsoft.FSharp.Compiler
 open Microsoft.FSharp.Compiler.SourceCodeServices
 open Microsoft.FSharp.Compiler.Ast
 open Microsoft.FSharp.Compiler.Range
@@ -62,6 +64,17 @@ module Ast =
             | TypeCheckSucceeded results -> Some results
             | _ -> None
     
+    let notDefinedIdentifierRanges (typedInfo:TypeCheckResults) =
+        let rangeIfNotDeclared (error:ErrorInfo) =
+            let m = Regex.Match(error.Message, "The value or constructor '[^']*' is not defined")
+            if not m.Success then None
+            else
+                let errorRange =
+                    mkRange error.FileName (mkPos (error.StartLine+1) error.StartColumn)
+                                           (mkPos (error.EndLine+1) error.EndColumn)
+                Some errorRange
+        Seq.choose rangeIfNotDeclared typedInfo.Errors
+    
     // typedInfo.GetDeclarationLocation expects columns and lines indexed from 0
     // It will fail to recognise a position containing an identifier if
     // the position directly preceding it doesn't contain whitespace
@@ -72,10 +85,13 @@ module Ast =
         let typedInfo = tryTypeCheckSource project filename
         if Option.isNone typedInfo then None
         else
+            let isDefined =
+                Seq.exists (fun r -> rangeContainsPos r (mkPos line col)) (notDefinedIdentifierRanges typedInfo.Value)
+                |> not
             let declarationLocation =
                 typedInfo.Value.GetDeclarationLocation((line-1, col+1), lineStr, names |> Seq.toList, 188, true)
             match declarationLocation with
-                | DeclFound((line, col), filename) -> Some ((line+1, col), filename)
+                | DeclFound((line, col), filename) when isDefined -> Some ((line+1, col), filename)
                 | _ -> None
 
     // Active patterns to make dealing with the syntax tree more convenient

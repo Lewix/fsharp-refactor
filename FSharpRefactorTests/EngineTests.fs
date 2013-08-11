@@ -53,6 +53,12 @@ type AstModule() =
         Assert.IsTrue(Option.isSome typeCheckResults)
         
     [<Test>]
+    member this.``Cannot find the declaration location of an undeclared identifier``() =
+        let source = "let a = a"
+        let declaration = Ast.TryGetDeclarationLocation (new Project(source, "test.fs")) "test.fs" ["a"] (1, 8)
+        Assert.IsTrue(Option.isNone declaration)
+        
+    [<Test>]
     member this.``Can find declarations inside modules``() =
         let source =
             String.concat "\n" ["namespace Test";
