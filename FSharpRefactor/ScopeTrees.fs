@@ -154,19 +154,24 @@ let rec makeScopeTreesWithChildren (project:Project) modules childrenScopeTrees 
             let idsDeclaredInBinding = declarationsFromFunctionPatterns [pattern]
             let scopeTreesFromBinding = makeScopeTreesWithChildren [] (Ast.AstNode.Expression expression)
             match pattern with
-                | SynPat.LongIdent(functionIdent,_,_,arguments,_,_) ->
-                    let selfIdentifier = tryGetSelfIdentifier functionIdent
-                    let idsFromArguments =
-                        declarationsFromFunctionPatterns arguments
-                    let idsInScopeInExpression =
-                        if Option.isNone selfIdentifier then idsFromArguments
-                        else selfIdentifier.Value::idsFromArguments
+                | SynPat.LongIdent(functionIdent,a,b,arguments,c,d) ->
+                    let functionScopeTrees =
+                        let functionIdentifiers =
+                            declarationsFromFunctionPatterns [SynPat.LongIdent(functionIdent,a,b,[],c,d)]
+                        if functionIdentifiers = [] then childrenScopeTrees
+                        else [Declaration(functionIdentifiers, childrenScopeTrees)]
                     let argumentsScopeTrees =
+                        let selfIdentifier = tryGetSelfIdentifier functionIdent
+                        let idsFromArguments =
+                            declarationsFromFunctionPatterns arguments
+                        let idsInScopeInExpression =
+                            if Option.isNone selfIdentifier then idsFromArguments
+                            else selfIdentifier.Value::idsFromArguments
                         if idsInScopeInExpression = [] then scopeTreesFromBinding
                         else [Declaration(idsInScopeInExpression, scopeTreesFromBinding)]
                     if idsDeclaredInBinding = [] then argumentsScopeTrees
                     else
-                        Declaration(idsDeclaredInBinding, childrenScopeTrees)::argumentsScopeTrees
+                        functionScopeTrees @ argumentsScopeTrees
                 |  _ -> Declaration(idsDeclaredInBinding, childrenScopeTrees)::scopeTreesFromBinding
         | UsedIdent(idents) -> Usage(List.head idents, List.tail idents)::childrenScopeTrees
         | Ast.Children(cs) -> List.concat (Seq.map (makeScopeTreesWithChildren childrenScopeTrees) cs)

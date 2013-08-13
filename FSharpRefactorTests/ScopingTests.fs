@@ -150,6 +150,16 @@ type ScopeTreeModule() =
             | [Declaration(["self",_],_)] -> ()
             | _ -> Assert.Fail("The scope tree for 'type TestClass = member self.x = 1' was incorrect:\n" +
                                (sprintf "%A" scopeTrees))
+            
+    [<Test>]
+    member this.``Can create a scope tree for a type with multiple members``() =
+        let source = "type TestClass(x, y) =\n  member self.x a = 1\n  member self.y b = 2"
+        let scopeTrees  = ScopeTreeModule.getScopeTrees source
+        match scopeTrees with
+            | [Declaration(["x",_;"y",_],
+                [Declaration(["self",_;"b",_],[]);
+                 Declaration(["self",_;"a",_],[])])] -> ()
+            | _ -> Assert.Fail(incorrectScopeTrees source scopeTrees)
 
     [<Test>]
     member this.``Can recognise used identifiers in LongIdentWithDots``() =
