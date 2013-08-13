@@ -170,9 +170,7 @@ let rec makeScopeTreesWithChildren (project:Project) modules childrenScopeTrees 
                             else selfIdentifier.Value::idsFromArguments
                         if idsInScopeInExpression = [] then scopeTreesFromBinding
                         else [Declaration(idsInScopeInExpression, scopeTreesFromBinding)]
-                    if idsDeclaredInBinding = [] then argumentsScopeTrees
-                    else
-                        functionScopeTrees @ argumentsScopeTrees
+                    functionScopeTrees @ argumentsScopeTrees
                 |  _ -> Declaration(idsDeclaredInBinding, childrenScopeTrees)::scopeTreesFromBinding
         | UsedIdent(idents) -> Usage(List.head idents, List.tail idents)::childrenScopeTrees
         | Ast.Children(cs) -> List.concat (Seq.map (makeScopeTreesWithChildren childrenScopeTrees) cs)
