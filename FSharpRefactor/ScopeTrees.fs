@@ -101,13 +101,14 @@ let rec makeScopeTreesWithChildren (project:Project) modules childrenScopeTrees 
     match tree with
         | Ast.AstNode.ModuleDeclaration(SynModuleDecl.NestedModule(_,ds,_,_))
         | Ast.ModuleOrNamespace(SynModuleOrNamespace.SynModuleOrNamespace(_,_,ds,_,_,_,_)) ->
-            let isNestedModule = function
+            let shouldNestScopes = function
                 | Ast.AstNode.ModuleDeclaration(SynModuleDecl.NestedModule(_,_,_,_)) -> true
+                | Ast.AstNode.ModuleDeclaration(SynModuleDecl.Types(_,_)) -> true
                 | _ -> false
-            let nestedModules, otherDeclarations = 
+            let nestedDeclarations, otherDeclarations = 
                 List.map Ast.AstNode.ModuleDeclaration ds
-                |> List.partition isNestedModule
-            List.append (List.collect (makeScopeTreesWithChildren []) nestedModules)
+                |> List.partition shouldNestScopes
+            List.append (List.collect (makeScopeTreesWithChildren []) nestedDeclarations)
                         (makeNestedScopeTrees makeScopeTreesWithChildren childrenScopeTrees otherDeclarations)
         | Ast.TypeDefinitionRepresentation(SynTypeDefnRepr.ObjectModel(_,ms,_)) ->
             makeNestedScopeTrees makeScopeTreesWithChildren childrenScopeTrees (List.map Ast.MemberDefinition ms)

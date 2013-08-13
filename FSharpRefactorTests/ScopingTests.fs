@@ -160,6 +160,15 @@ type ScopeTreeModule() =
                 [Declaration(["self",_;"b",_],[]);
                  Declaration(["self",_;"a",_],[])])] -> ()
             | _ -> Assert.Fail(incorrectScopeTrees source scopeTrees)
+            
+    [<Test>]
+    member this.``Can create scope trees for multiple types in a namespace``() =
+        let source = "namespace TN\n\ntype Type1(x, y) = member self.x = x\n\ntype Type2(z, t) = member self.z = z"
+        let scopeTrees = ScopeTreeModule.getScopeTrees source
+        match scopeTrees with
+            | [Declaration(["x",_;"y",_],[Declaration(["self",_],[Usage(("x",_),[])])]);
+               Declaration(["z",_;"t",_],[Declaration(["self",_],[Usage(("z",_),[])])])] -> ()
+            | _ -> Assert.Fail(incorrectScopeTrees source scopeTrees)
 
     [<Test>]
     member this.``Can recognise used identifiers in LongIdentWithDots``() =
