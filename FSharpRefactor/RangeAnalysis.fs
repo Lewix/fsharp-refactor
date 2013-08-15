@@ -74,9 +74,10 @@ let FindExpressionsAroundRange range (tree : Ast.AstNode) =
     |> List.filter isExpression
 
 let TryFindIdentifier project filename (position : pos) =
-    let containsPos (name,range) =
+    let containsPos (i,is) =
         // Identifiers' ranges extend past the end of the text
         // so avoid range.End for cases like b in a+b
+        let _, range = Seq.last (i::is)
         rangeContainsPos range position && range.End <> position
 
     (Ast.Parse project filename).Value
@@ -89,8 +90,8 @@ let FindIdentifier source filename (position : pos) =
     |> Option.get
 
 let FindIdentifierName source filename (line, col) =
-    let name, _ = FindIdentifier source filename (mkPos line (col-1))
-    name
+    let i, is = FindIdentifier source filename (mkPos line (col-1))
+    (Seq.last (i::is)) |> fst
     
 let RangeToTuple (range : range) =
     (range.StartLine, range.StartColumn+1), (range.EndLine, range.EndColumn+1)

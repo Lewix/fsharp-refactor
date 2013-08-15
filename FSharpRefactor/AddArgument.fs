@@ -67,7 +67,7 @@ let addArgumentToFunctionUsage (project:Project) (argument : string) (identRange
       getErrorMessage = fun _ -> None }
 
 let findFunctionUsageRanges (project:Project) (tree : Ast.AstNode) (functionName, functionRange) =
-    (GetIdentifierScope project (functionName, functionRange)).FindReferences()
+    (GetIdentifierScope project ((functionName, functionRange), [])).FindReferences()
     |> List.filter ((<>) functionRange)
 
 //TODO: Check arguments such as argumentName or defaultValue have a valid form

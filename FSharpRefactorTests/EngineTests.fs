@@ -174,6 +174,17 @@ type RangeAnalysisModule() =
     
     let mkRange filename startPos endPos = mkRange (Path.GetFullPath filename) startPos endPos
 
+    let files = ["test.fs"]
+    [<SetUp>]
+    member this.CreateFiles () =
+        List.map (fun (f:string) -> new StreamWriter(f)) files
+        |> List.map (fun (s:StreamWriter) -> s.Close())
+        |> ignore
+    [<TearDown>]
+    member this.DeleteFiles () =
+        List.map File.Delete files
+        |> ignore
+
     [<Test>]
     member this.``Can find identifier at position``() =
         let filename = "test.fs"
@@ -181,15 +192,15 @@ type RangeAnalysisModule() =
         let aDeclarationRange = mkRange "test.fs" (mkPos 1 12) (mkPos 1 13)
         let fDeclarationRange = mkRange "test.fs" (mkPos 1 4) (mkPos 1 11)
 
-        Assert.AreEqual(Some("a",aDeclarationRange), TryFindIdentifier (new Project(source, filename)) filename aDeclarationRange.Start)
-        Assert.AreEqual(Some("functio",fDeclarationRange), TryFindIdentifier (new Project(source, filename)) filename fDeclarationRange.Start)
+        Assert.AreEqual(Some(("a",aDeclarationRange), List<string*range>.Empty), TryFindIdentifier (new Project(source, filename)) filename aDeclarationRange.Start)
+        Assert.AreEqual(Some(("functio",fDeclarationRange), List<string*range>.Empty), TryFindIdentifier (new Project(source, filename)) filename fDeclarationRange.Start)
 
     [<Test>]
     member this.``Can find identifier position when identifiers are just next to each other``() =
         let source = "a+b"
         let range = mkRange "test.fs" (mkPos 1 2) (mkPos 1 3)
 
-        Assert.AreEqual(Some("b", range), TryFindIdentifier (new Project(source, "test.fs")) "test.fs" range.Start)
+        Assert.AreEqual(Some(("b", range), List<string*range>.Empty), TryFindIdentifier (new Project(source, "test.fs")) "test.fs" range.Start)
     
     [<Test>]
     member this.``Can find the AstNode.Expression corresponding to a range``() =

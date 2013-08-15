@@ -15,7 +15,7 @@ let GetErrorMessage (position:(int*int) option, newName:string option) (project:
     let identifier =
         lazy Option.bind (TryFindIdentifier project project.CurrentFile) pos
     let identifierScope =
-        lazy Option.bind (fun (identifier:Identifier) -> (TryGetIdentifierScope project identifier)) (identifier.Force())
+        lazy Option.bind (fun (longIdentifier:Identifier * Identifier list) -> (TryGetIdentifierScope project longIdentifier)) (identifier.Force())
 
     let checkPosition (line, col) =
         match Option.isSome (identifier.Force()), Option.isSome (identifierScope.Force()) with
@@ -60,18 +60,18 @@ let IsValid (position:(int*int) option, newName:string option) project =
 
 let Rename newName : Refactoring<Identifier,unit> =
     let analysis (project:Project, identifier:Identifier) =
-        let identifierScope = GetIdentifierScope project identifier
+        let identifierScope = GetIdentifierScope project (identifier, [])
         IsValid (Some (identifierScope.DeclarationRange.StartLine, identifierScope.DeclarationRange.StartColumn+1), Some newName) project
 
     let transform (project:Project, identifier:Identifier) =
-        let identifierScope = GetIdentifierScope project identifier
+        let identifierScope = GetIdentifierScope project (identifier, [])
         let changes =
             identifierScope.FindReferences ()
             |> List.map (fun r -> (r,newName))
         project, changes, ()
 
     let getErrorMessage (project:Project, identifier:Identifier) =
-        let identifierScope = GetIdentifierScope project identifier
+        let identifierScope = GetIdentifierScope project (identifier, [])
         GetErrorMessage (Some (identifierScope.DeclarationRange.StartLine, identifierScope.DeclarationRange.StartColumn+1), Some newName) project
     { analysis = analysis; transform = transform; getErrorMessage = getErrorMessage }
 

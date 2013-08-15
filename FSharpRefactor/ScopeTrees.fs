@@ -20,10 +20,14 @@ let (|UsedIdent|_|) (node : Ast.AstNode) =
         | _ -> None
 
 let rec ListIdentifiers trees =
+    let subLists is =
+        List.scan (fun l i -> l @ [i]) [] (List.tail is)
+        |> List.map (fun l -> List.head is, l)
+    let longIdent i = i, []
     match trees with
         | [] -> []
-        | Usage((name,range),_)::rest -> (name,range)::(ListIdentifiers rest)
-        | Declaration(is,ts)::rest -> List.append is (ListIdentifiers (List.append ts rest))
+        | Usage((i, is))::rest -> (subLists (i::is)) @ (ListIdentifiers rest)
+        | Declaration(is,ts)::rest -> (List.map longIdent is) @ (ListIdentifiers (ts @ rest))
 
 let isDeclaration (tree : ScopeTree<'declaration,'usage>) =
     match tree with

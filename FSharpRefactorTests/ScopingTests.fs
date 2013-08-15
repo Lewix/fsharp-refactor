@@ -14,10 +14,21 @@ open FSharpRefactor.Engine
 type IdentifierScopeModule() =
     let mkRange filename startPos endPos = mkRange (Path.GetFullPath filename) startPos endPos
 
+    let files = ["test.fs"]
+    [<SetUp>]
+    member this.CreateFiles () =
+        List.map (fun (f:string) -> new StreamWriter(f)) files
+        |> List.map (fun (s:StreamWriter) -> s.Close())
+        |> ignore
+    [<TearDown>]
+    member this.DeleteFiles () =
+        List.map File.Delete files
+        |> ignore
+
     [<Test>]
     member this.``Can check whether an identifier is free in another's scope``() =
         let source = "let a b = b in f ((a 1) + (fun d -> d + c))"
-        let identifierScope = GetIdentifierScope (new Project(source, "test.fs")) ("a", mkRange "test.fs" (mkPos 1 4) (mkPos 1 5))
+        let identifierScope = GetIdentifierScope (new Project(source, "test.fs")) (("a", mkRange "test.fs" (mkPos 1 4) (mkPos 1 5)), [])
         
         Assert.IsTrue(identifierScope.IsFree "f")
         Assert.IsTrue(identifierScope.IsFree "c")
@@ -30,8 +41,22 @@ type IdentifierScopeModule() =
         let source = "let f a b c = a"
         let usageIdentifier = ("a", mkRange "test.fs" (mkPos 1 14) (mkPos 1 15))
         let expected = "a", mkRange "test.fs" (mkPos 1 6) (mkPos 1 7)
-        let identifierScope = GetIdentifierScope (new Project(source, "test.fs")) usageIdentifier
+        let identifierScope = GetIdentifierScope (new Project(source, "test.fs")) (usageIdentifier, [])
 
+        Assert.AreEqual(expected, identifierScope.IdentifierDeclaration)
+        
+    [<Test>]
+    member this.``Can get the identifier scope from a long identifier usage``() =
+        let source =
+            String.concat "\n" ["namespace Test"
+                                "module TestModule = "
+                                "  let f = 1"
+                                "module TestModule2 ="
+                                "  let g = TestModule.f"]
+        let usageIdentifier = ("TestModule", mkRange "test.fs" (mkPos 5 10) (mkPos 5 20)), ["f", mkRange "test.fs" (mkPos 5 21) (mkPos 5 22)]
+        let expected = "f", mkRange "test.fs" (mkPos 3 6) (mkPos 3 7)
+        let identifierScope = GetIdentifierScope (new Project(source, "test.fs")) usageIdentifier
+        
         Assert.AreEqual(expected, identifierScope.IdentifierDeclaration)
 
 [<TestFixture>]

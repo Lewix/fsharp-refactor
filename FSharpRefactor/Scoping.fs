@@ -3,6 +3,7 @@ module FSharpRefactor.Engine.Scoping
 open Microsoft.FSharp.Compiler.Range
 open FSharpRefactor.Engine.Ast
 open FSharpRefactor.Engine.ScopeAnalysis
+open FSharpRefactor.Engine.RangeAnalysis
 
 let tryFindIdentifierDeclaration (trees : IdentifierScopeTree list) ((name, range) : Identifier) =
     let isDeclaration (n,r) = n = name && r = range
@@ -53,15 +54,19 @@ let FindUnusedName project (tree : Ast.AstNode) =
 
     generateWhileUsed ()
 
-let TryGetIdentifierScope (project:Project) (identifier:Identifier) =
-    let _, range = identifier
+let TryGetIdentifierScope (project:Project) ((i, is):Identifier * Identifier list) =
+    let _, range = i
+    let names = (fst i)::(List.map fst is)
+    let declarationLocation =
+        Ast.TryGetDeclarationLocation project range.FileName names (range.StartLine, range.StartColumn)
     let scopeTrees = makeProjectScopeTrees project (Ast.Parse project range.FileName).Value
-    let identifierDeclaration = tryFindIdentifierDeclaration scopeTrees identifier
-    let identifierScope =
-        Option.bind (tryFindDeclarationScope scopeTrees) identifierDeclaration
-    if Option.isSome identifierScope then Some (new IdentifierScope(identifierDeclaration.Value, identifierScope.Value, project))
-    else None
+    let identifierDeclaration =
+        Option.bind (fun ((line, col), filename) -> TryFindIdentifier project filename (mkPos line col)) declarationLocation
+        |> Option.bind (fst >> tryFindIdentifierDeclaration scopeTrees)
+    identifierDeclaration
+    |> Option.bind (tryFindDeclarationScope scopeTrees)
+    |> Option.map (fun scope -> new IdentifierScope(identifierDeclaration.Value, scope, project))
     
-let GetIdentifierScope (project:Project) (identifier:Identifier) =
+let GetIdentifierScope project identifier =
     TryGetIdentifierScope project identifier
     |> Option.get

@@ -12,6 +12,16 @@ open FSharpRefactor.Refactorings.Rename
 
 [<TestFixture>]
 type RenameAnalysisModule() =
+    let files = ["test.fs"]
+    [<SetUp>]
+    member this.CreateFiles () =
+        List.map (fun (f:string) -> new StreamWriter(f)) files
+        |> List.map (fun (s:StreamWriter) -> s.Close())
+        |> ignore
+    [<TearDown>]
+    member this.DeleteFiles () =
+        List.map File.Delete files
+        |> ignore
 
     [<Test>]
     member this.``Can check arguments individually``() =

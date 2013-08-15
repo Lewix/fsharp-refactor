@@ -84,6 +84,7 @@ let extractTempFunctionTransform (project:Project) (expressionRange : range) inS
 
         let getFreeIdentifierDeclarations (expressionScope:ExpressionScope) =
             expressionScope.FindFreeIdentifiers ()
+            |> List.map (fun i -> i, [])
             |> List.map (TryGetIdentifierScope project)
             |> List.collect Option.toList
 
