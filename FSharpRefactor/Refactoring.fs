@@ -32,7 +32,7 @@ let refactor (refactoring : Refactoring<_,_>) args project =
 
 let RunRefactoring refactoring args project =
     let project, _ = refactor refactoring args project
-    project.CurrentFileContents
+    project
 
 let interleave (r1 : Refactoring<unit,_>) (r2 : Refactoring<unit,_>) =
     let interleavedTransform (project, ()) =

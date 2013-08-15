@@ -73,7 +73,7 @@ type ExtractFunctionTransformModule() =
         Ast.Parse (new Project(source, filename)) filename
 
     let DoExtractFunction source (tree : Ast.AstNode) (inScopeTree : Ast.AstNode) (expressionRange : range) (functionName : string) =
-        RunRefactoring (ExtractFunction inScopeTree expressionRange functionName) () source
+        (RunRefactoring (ExtractFunction inScopeTree expressionRange functionName) () source).CurrentFileContents
         
     let mkRange filename startPos endPos = mkRange (Path.GetFullPath filename) startPos endPos
     let files = ["test.fs"]
@@ -92,21 +92,21 @@ type ExtractFunctionTransformModule() =
     member this.``Can get changes``() =
         let source = "let f a = 1+1"
         let expected = "let f a = let g = (1+1) in g"
-        Assert.AreEqual(expected, Transform (((1,11),(1,14)), "g") (new Project(source, "test.fs")))
+        Assert.AreEqual(expected, (Transform (((1,11),(1,14)), "g") (new Project(source, "test.fs"))).CurrentFileContents)
         
     [<Test>]
     member this.``Can extract an expression into a value, if it needs no arguments``() =
         let source = "1+3+4+4"
         let expected = "let a = (1+3+4+4) in a"
 
-        Assert.AreEqual(expected, Transform (((1,1),(1,8)), "a") (new Project(source, "test.fs")))
+        Assert.AreEqual(expected, (Transform (((1,1),(1,8)), "a") (new Project(source, "test.fs"))).CurrentFileContents)
 
     [<Test>]
     member this.``Can disambiguate between identifiers with the same name``() = 
         let source = "let f a = (let a = 1+a in a+2)"
         let expected = "let f a = let g a = (a+2) in (let a = 1+a in (g a))"
 
-        Assert.AreEqual(expected, Transform (((1,27),(1,30)), "g") (new Project(source, "test.fs")))
+        Assert.AreEqual(expected, (Transform (((1,27),(1,30)), "g") (new Project(source, "test.fs"))).CurrentFileContents)
     
     [<Test>]
     member this.``Can extract an expression into a function around a LetOrUse expression``() =
@@ -136,10 +136,13 @@ type ExtractFunctionTransformModule() =
         let source = "let f a =\n    match a with\n        | Some(x) -> x\n        | None -> 0"
         let expected = "let f a =\n    let g =\n        match a with\n            | Some(x) -> x\n            | None -> 0\n    g"
 
-        Assert.AreEqual(expected, Transform (((2,5),(4,20)), "g") (new Project(source, "test.fs")))
+        Assert.AreEqual(expected, (Transform (((2,5),(4,20)), "g") (new Project(source, "test.fs"))).CurrentFileContents)
 
 [<TestFixture>]
 type CreateFunctionModule() =
+    let RunRefactoring refactoring args project =
+        (RunRefactoring refactoring args project).CurrentFileContents
+
     [<Test>]
     member this.``Can add a function to an expression``() =
         let expected = "let f a b =\n    a+b\n"

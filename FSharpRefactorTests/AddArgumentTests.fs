@@ -17,6 +17,9 @@ type AddArgumentModule() =
         
     let mkRange filename startPos endPos = mkRange (Path.GetFullPath filename) startPos endPos
     let files = ["test.fs"]
+    
+    let RunRefactoring refactoring args project =
+        (RunRefactoring refactoring args project).CurrentFileContents
 
     [<SetUp>]
     member this.CreateFiles () =
@@ -32,7 +35,7 @@ type AddArgumentModule() =
     member this.``Can get changes``() =
         let source = "let f a = 1"
         let expected = "let f b a = 1"
-        Assert.AreEqual(expected, Transform ((1,7), "b", "0") (new Project(source, "test.fs")))
+        Assert.AreEqual(expected, (Transform ((1,7), "b", "0") (new Project(source, "test.fs"))).CurrentFileContents)
 
     [<Test>]
     member this.``Can check arguments separately``() =
@@ -105,7 +108,7 @@ type AddArgumentModule() =
         let bindingRange = mkRange "test.fs" (mkPos 1 5) (mkPos 1 16)
         let expected = "(let f arg a b c = 1 in ((f 0) 1 2 3) + (((f 0) 2) 2) + (1 + (2 + ((f 0) 3 3 4)))) + (f 1)"
 
-        Assert.AreEqual(expected, Transform ((1,6), "arg", "0") (new Project(source, "test.fs")))
+        Assert.AreEqual(expected, (Transform ((1,6), "arg", "0") (new Project(source, "test.fs"))).CurrentFileContents)
 
     [<Test>]
     member this.``Can add an argument to a function, even if it is not being applied``() =
@@ -114,7 +117,7 @@ type AddArgumentModule() =
         let bindingRange = mkRange "test.fs" (mkPos 1 4) (mkPos 1 11)
         let expected = "let f arg a = 1 in let g a = (f \"value\") in g 1 1"
 
-        Assert.AreEqual(expected, Transform ((1,5), "arg", "\"value\"") (new Project(source, "test.fs")))
+        Assert.AreEqual(expected, (Transform ((1,5), "arg", "\"value\"") (new Project(source, "test.fs"))).CurrentFileContents)
 
     [<Test>]
     member this.``Can find a sensible default binding range for a given position``() =
@@ -147,6 +150,6 @@ type AddArgumentModule() =
         let range1 = mkRange "test.fs" (mkPos 1 4) (mkPos 1 15)
         let range2 = mkRange "test.fs" (mkPos 1 8) (mkPos 1 22)
 
-        Assert.AreEqual("let f f a b = a+b", Transform ((1,5), "f", "0") (new Project(source1, "test.fs")))
+        Assert.AreEqual("let f f a b = a+b", (Transform ((1,5), "f", "0") (new Project(source1, "test.fs"))).CurrentFileContents)
         Assert.IsFalse(IsValid (Some (1,5), Some "a", Some "0") (new Project(source1, "test.fs")))
         Assert.IsFalse(IsValid (Some (1,9), Some "f", Some "0") (new Project(source2, "test.fs")))

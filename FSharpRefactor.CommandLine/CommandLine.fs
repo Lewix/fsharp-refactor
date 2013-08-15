@@ -122,7 +122,7 @@ let filenameAndActionFromArguments args =
         | [] -> raise (ArgumentException "Too few arguments")
 
 let refactorWithArguments args =
-    (snd (filenameAndActionFromArguments args)) ()
+    ((snd (filenameAndActionFromArguments args)) ()).CurrentFileContents
 
 let getFilename args =
     let filename, _ = filenameAndActionFromArguments args

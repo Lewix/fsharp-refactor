@@ -59,7 +59,7 @@ type RenameTransformModule() =
         Ast.Parse (new Project(source, filename)) filename
 
     let DoRename source (tree: Ast.AstNode) declarationIdentifier (newName : string) =
-        RunRefactoring (Rename newName) declarationIdentifier source
+        (RunRefactoring (Rename newName) declarationIdentifier source).CurrentFileContents
         
     let mkRange filename startPos endPos = mkRange (Path.GetFullPath filename) startPos endPos
     let files = ["test.fs"]
@@ -78,7 +78,7 @@ type RenameTransformModule() =
     member this.``Can get changes``() =
         let source = "let f x = x+x"
         let expected = "let f y = y+y"
-        Assert.AreEqual(expected, (Transform ((1,7), "y") (new Project(source, "test.fs"))))
+        Assert.AreEqual(expected, (Transform ((1,7), "y") (new Project(source, "test.fs"))).CurrentFileContents)
         
     [<Test>]
     member this.``Can carry out renaming transformation``() =
