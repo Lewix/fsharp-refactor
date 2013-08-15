@@ -3,9 +3,12 @@ namespace FSharpRefactor.Engine
 open System
 open System.IO
 
-type Project(currentFile:string, filesAndContents:(string * string option) array) as self =
+type Project(currentFile:string, filesAndContents:(string * string option) array, updatedFiles:Set<string>) as self =
     let currentFile = Path.GetFullPath currentFile
     let getIndex fileName = Seq.findIndex ((=) fileName) self.Files
+    
+    new(currentFile:string, filesAndContents:(string * string option) array) =
+        Project(currentFile, filesAndContents, Set.empty)
 
     new(source:string, fileName:string) =
         Project(fileName, [|fileName, Some source|])
@@ -14,6 +17,7 @@ type Project(currentFile:string, filesAndContents:(string * string option) array
     member self.CurrentFile with get() = currentFile
     member self.FileContents = Array.map snd filesAndContents
     member self.CurrentFileContents = self.GetContents self.CurrentFile
+    member self.UpdatedFiles = updatedFiles
     
     member self.FilesInScope fileName =
         let fileName = Path.GetFullPath fileName
@@ -28,6 +32,6 @@ type Project(currentFile:string, filesAndContents:(string * string option) array
         let index = getIndex fileName
         let filesAndContents = Array.copy filesAndContents
         Array.set filesAndContents index (fileName, Some contents)
-        new Project(currentFile, filesAndContents)
+        new Project(currentFile, filesAndContents, Set.add fileName updatedFiles)
     member self.UpdateCurrentFileContents contents =
         self.UpdateContents self.CurrentFile contents
