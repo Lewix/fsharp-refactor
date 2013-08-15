@@ -143,6 +143,8 @@ module Ast =
                     | SynModuleDecl.Open(_,_) -> None
                     | SynModuleDecl.NestedModule(_,ds,_,_) -> Some(List.map AstNode.ModuleDeclaration ds)
                     | SynModuleDecl.Types(ts,_) -> Some(List.map AstNode.TypeDefinition ts)
+                    | SynModuleDecl.Attributes(attributes,_) ->
+                        Some (List.map (fun (a:SynAttribute) -> AstNode.Expression a.ArgExpr) attributes)
                     | _ -> raise (new NotImplementedException("Add a new entry to pattern for ModuleDeclaration: " + (string m)))
             | Binding(b) ->
                 match b with
