@@ -23,9 +23,9 @@ let refactor (refactoring : Refactoring<_,_>) args project =
     let isValid = refactoring.analysis (project, args)
     if isValid then
         let project, changes, output = refactoring.transform (project, args)
-        let updatedContents =
-            CodeTransforms.ChangeTextOf project.CurrentFileContents changes
-        project.UpdateCurrentFileContents updatedContents, output
+        let updatedProject =
+            CodeTransforms.PerformChanges project changes
+        updatedProject, output
     else
         let errorMessage = (refactoring.getErrorMessage (project, args)).Value
         raise (RefactoringFailure errorMessage)

@@ -154,6 +154,18 @@ type CodeTransformsModule() =
         let expected = "longIdentifier", mkRange "test.fs" (mkPos 1 17) (mkPos 1 31)
         Assert.AreEqual(expected, CodeTransforms.createIdentifier (1, 17) "longIdentifier" "test.fs")
 
+    [<Test>]
+    member this.``Can carry out changes on multiple files``() =
+        let project = new Project("test1.fs", [|"test1.fs", Some "one"; "test2.fs", Some "two"|])
+        let changes =
+            [mkRange "test1.fs" (mkPos 1 0) (mkPos 1 3), "two";
+             mkRange "test2.fs" (mkPos 1 1) (mkPos 1 3), "hree"]
+        let updatedProject = CodeTransforms.PerformChanges project changes
+        
+        Assert.AreEqual("two", updatedProject.GetContents "test1.fs")
+        Assert.AreEqual("three", updatedProject.GetContents "test2.fs")
+        Assert.AreEqual(List.map Path.GetFullPath ["test1.fs"; "test2.fs"], updatedProject.UpdatedFiles)
+
 
 [<TestFixture>]
 type RangeAnalysisModule() =

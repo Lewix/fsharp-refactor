@@ -2,6 +2,7 @@ namespace FSharpRefactor.Engine.CodeTransforms
 
 open System
 open Microsoft.FSharp.Compiler.Range
+open FSharpRefactor.Engine
 open FSharpRefactor.Engine.Ast
 open FSharpRefactor.Engine.RangeAnalysis
 open FSharpRefactor.Engine.ScopeAnalysis
@@ -74,7 +75,22 @@ module CodeTransforms =
             if range.StartLine = range.EndLine then (1, range.EndColumn-range.StartColumn)
             else (1 + range.EndLine - range.StartLine, range.EndColumn)
         fst (takeAroundPos after endPosInAfter)
+        
+    let PerformChanges project changes =
+        let updateProject (project:Project, changes:(range * string) list) =
+            let filename = (List.head changes |> fst).FileName
+            let updatedSource = ChangeTextOf (project.GetContents filename) changes
+            project.UpdateContents filename updatedSource
 
+        let projectAndChanges (project:Project, changes:(range * string) list) ((range:range, text) as change) =
+            let filename = (List.head changes |> fst).FileName
+            if List.isEmpty changes || (List.head changes |> fst).FileName = range.FileName then project, change::changes
+            else
+                updateProject (project, changes), [change]
+                
+        List.fold projectAndChanges (project, [List.head changes]) (List.tail changes)
+        |> updateProject
+            
     let updateIdentifier ((name, declarationRange) : Identifier) newName =
         let newRange = 
             mkPos (declarationRange.End.Line) (declarationRange.End.Column + (String.length newName) - (String.length name))
