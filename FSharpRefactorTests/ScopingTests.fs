@@ -8,6 +8,7 @@ open Microsoft.FSharp.Compiler.Range
 open FSharpRefactor.Engine.ScopeAnalysis
 open FSharpRefactor.Engine.Ast
 open FSharpRefactor.Engine.Scoping
+open FSharpRefactor.Engine.Projects
 open FSharpRefactor.Engine
 
 [<TestFixture>]
@@ -62,16 +63,16 @@ type IdentifierScopeModule() =
 [<TestFixture>]
 type ScopeAnalysisModule() =
     let parse (source:string) (filename:string) =
-        Ast.Parse (new Project(source, filename)) filename
+        GetParseTree (new Project(source, filename)) filename
 
-    let getTrees source = makeProjectScopeTrees (new Project(source, "test.fs")) (parse source "test.fs").Value
+    let getTrees source = makeProjectScopeTrees (new Project(source, "test.fs")) (parse source "test.fs")
     
     let mkRange filename startPos endPos = mkRange (Path.GetFullPath filename) startPos endPos
 
     [<Test>]
     member this.``Can find an unused name``() =
         let source = "let f a b c = 1\nlet g = 3"
-        let tree = (parse source "test.fs").Value
+        let tree = parse source "test.fs"
         
         Assert.IsFalse(Set.contains (FindUnusedName (new Project(source, "test.fs")) tree) (Set ["f";"a";"b";"c";"g"]))
 
@@ -84,7 +85,7 @@ type ScopeAnalysisModule() =
         let expected2 = Set(["b"])
         let expected3 = Set(["c"; "d"; "f"; "op_Addition"])
         let assertFun (source, expected) =
-            let scope = new ExpressionScope((parse source "test.fs").Value, new Project("test.fs", source))
+            let scope = new ExpressionScope((parse source "test.fs"), new Project("test.fs", source))
             let actual =
                 scope.FindFreeIdentifiers ()
                 |> List.map fst
@@ -119,8 +120,8 @@ type ScopeTreeModule() =
 
     static member getScopeTrees source =
         let parse (source:string) (filename:string) =
-            Ast.Parse (new Project(source, filename)) filename
-        makeProjectScopeTrees (new Project(source, "test.fs")) (parse source "test.fs").Value
+            GetParseTree (new Project(source, filename)) filename
+        makeProjectScopeTrees (new Project(source, "test.fs")) (parse source "test.fs")
         
     [<Test>]
     member this.``Can create a scope tree for a match clause with a when expression``() =
@@ -377,7 +378,7 @@ type ScopeTreeModule() =
         List.map (fun (f:StreamWriter) -> f.Close()) fileWriters |> ignore
 
         let project = new Project("test2.fs", List.zip files [None; None] |> Seq.toArray)
-        let scopeTrees = makeProjectScopeTrees project (Ast.Parse project "test2.fs").Value
+        let scopeTrees = makeProjectScopeTrees project (GetParseTree project "test2.fs")
         
         match scopeTrees with
             | [Declaration(["TopLevelFunction1",_;"TopLevelFunction2",_],[])] -> ()
@@ -401,7 +402,7 @@ type ScopeTreeModule() =
         List.map (fun (f:StreamWriter) -> f.Close()) fileWriters |> ignore
         
         let project = new Project("test2.fs", List.zip files [None; None] |> Seq.toArray)
-        let scopeTrees = makeProjectScopeTrees project (Ast.Parse project "test2.fs").Value
+        let scopeTrees = makeProjectScopeTrees project (GetParseTree project "test2.fs")
         
         match scopeTrees with
             | [Declaration(["g",_],[]);

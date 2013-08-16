@@ -8,8 +8,6 @@ open Microsoft.FSharp.Compiler.SourceCodeServices
 open Microsoft.FSharp.Compiler.Ast
 open Microsoft.FSharp.Compiler.Range
 
-open FSharpRefactor.Engine
-
 module Ast =
     type AstNode =
         | Expression of SynExpr
@@ -31,12 +29,12 @@ module Ast =
             | Some(ParsedInput.ImplFile(f)) -> Some(AstNode.File(f))
             | _ -> raise (new NotImplementedException("Use an impl file instead of a sig file"))
 
-    let getCheckerAndOptions (project:Project) =
+    let getCheckerAndOptions filenames =
         let checker = InteractiveChecker.Create(NotifyFileTypeCheckStateIsDirty(fun _ -> ()))
         let options =
             {
                 ProjectFileName = "test.fsproj"
-                ProjectFileNames = project.Files
+                ProjectFileNames = filenames
                 ProjectOptions = [||]
                 IsIncompleteTypeCheckEnvironment = false
                 UseScriptResolutionRules = false
@@ -46,20 +44,20 @@ module Ast =
         checker, options
     
 
-    let getParseTree project filename = 
-        let checker, options = getCheckerAndOptions project
-        checker.UntypedParse(Path.GetFullPath filename, project.GetContents filename, options).ParseTree
+    let getParseTree filenames filename contents = 
+        let checker, options = getCheckerAndOptions filenames
+        checker.UntypedParse(Path.GetFullPath filename, contents, options).ParseTree
         
-    let Parse project filename = MakeAstNode (getParseTree project filename)
+    let Parse filenames filename contents = MakeAstNode (getParseTree filenames filename contents)
     
-    let tryTypeCheckSource project filename =
+    let tryTypeCheckSource filenames filename contents =
         let filename = Path.GetFullPath filename
-        let checker, options = getCheckerAndOptions project
+        let checker, options = getCheckerAndOptions filenames
         checker.StartBackgroundCompile options
         //FIXME: don't always block here
         checker.WaitForBackgroundCompile()
-        let info = checker.UntypedParse(filename, project.GetContents filename, options)
-        let typeCheckResults = checker.TypeCheckSource(info, filename, 0, project.GetContents filename, options, IsResultObsolete(fun _ -> false), "")
+        let info = checker.UntypedParse(filename, contents, options)
+        let typeCheckResults = checker.TypeCheckSource(info, filename, 0, contents, options, IsResultObsolete(fun _ -> false), "")
         match typeCheckResults with
             | TypeCheckSucceeded results -> Some results
             | _ -> None
@@ -80,9 +78,9 @@ module Ast =
     // the position directly preceding it doesn't contain whitespace
     // For example in "1+<pos>x", getting declaration location at <pos> will not find
     // x's declaration location. col is incremented to avoid this
-    let TryGetDeclarationLocation (project:Project) filename names ((line, col) as position) =
-        let lineStr = (project.GetContents filename).Split('\n').[line-1]
-        let typedInfo = tryTypeCheckSource project filename
+    let TryGetDeclarationLocation filenames filename (contents:string) names ((line, col) as position) =
+        let lineStr = contents.Split('\n').[line-1]
+        let typedInfo = tryTypeCheckSource filenames filename contents
         if Option.isNone typedInfo then None
         else
             let isDefined =

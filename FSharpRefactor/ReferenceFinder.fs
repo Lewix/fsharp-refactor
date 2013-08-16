@@ -3,6 +3,7 @@ module FSharpRefactor.Engine.ReferenceFinder
 open Microsoft.FSharp.Compiler.Range
 open FSharpRefactor.Engine.Ast
 open FSharpRefactor.Engine.ScopeAnalysis
+open FSharpRefactor.Engine.Projects
 
 let rec findPotentialReferences names (tree:IdentifierScopeTree) =
     let relevantName = Seq.last names
@@ -18,14 +19,14 @@ let rec findPotentialReferences names (tree:IdentifierScopeTree) =
 
 let FindReferences (project:Project) names (range:range) =
     let tryGetDeclarationLocation (names, range:range) =
-        Ast.TryGetDeclarationLocation project range.FileName names (range.StartLine, range.StartColumn)
+        TryGetDeclarationLocation project range.FileName names (range.StartLine, range.StartColumn)
     let (_, filename) as declarationLocation =
         let locationIfNotDeclaration = tryGetDeclarationLocation(names, range)
         if Option.isSome locationIfNotDeclaration then locationIfNotDeclaration.Value
         else (range.StartLine, range.StartColumn), range.FileName
     
     project.FilesInScope filename
-    |> Seq.map (Ast.Parse project >> Option.get)
+    |> Seq.map (GetParseTree project)
     |> Seq.collect (makeProjectScopeTrees project)
     |> Seq.collect (findPotentialReferences names)
     //|> Seq.map tryGetDeclarationLocation

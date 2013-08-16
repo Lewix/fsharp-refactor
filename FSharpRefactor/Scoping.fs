@@ -4,6 +4,7 @@ open Microsoft.FSharp.Compiler.Range
 open FSharpRefactor.Engine.Ast
 open FSharpRefactor.Engine.ScopeAnalysis
 open FSharpRefactor.Engine.RangeAnalysis
+open FSharpRefactor.Engine.Projects
 
 let tryFindIdentifierDeclaration (trees : IdentifierScopeTree list) ((name, range) : Identifier) =
     let isDeclaration (n,r) = n = name && r = range
@@ -58,8 +59,8 @@ let TryGetIdentifierScope (project:Project) ((i, is):Identifier * Identifier lis
     let _, range = i
     let names = (fst i)::(List.map fst is)
     let declarationLocation =
-        Ast.TryGetDeclarationLocation project range.FileName names (range.StartLine, range.StartColumn)
-    let scopeTrees = makeProjectScopeTrees project (Ast.Parse project range.FileName).Value
+        TryGetDeclarationLocation project range.FileName names (range.StartLine, range.StartColumn)
+    let scopeTrees = makeProjectScopeTrees project (GetParseTree project range.FileName)
     let identifierDeclaration =
         Option.bind (fun ((line, col), filename) -> TryFindIdentifier project filename (mkPos line col)) declarationLocation
         |> Option.bind (fst >> tryFindIdentifierDeclaration scopeTrees)

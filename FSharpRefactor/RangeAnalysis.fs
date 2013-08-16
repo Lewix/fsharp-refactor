@@ -6,6 +6,7 @@ open Microsoft.FSharp.Compiler.Ast
 open Microsoft.FSharp.Compiler.Range
 open FSharpRefactor.Engine.Ast
 open FSharpRefactor.Engine.ScopeAnalysis
+open FSharpRefactor.Engine.Projects
 
 let CountLines body =
     1+(String.length (String.collect (fun c -> if c = '\n' then "\n" else "") body))
@@ -80,7 +81,7 @@ let TryFindIdentifier project filename (position : pos) =
         let _, range = Seq.last (i::is)
         rangeContainsPos range position && range.End <> position
 
-    (Ast.Parse project filename).Value
+    GetParseTree project filename
     |> (makeProjectScopeTrees project)
     |> ListIdentifiers
     |> List.tryFind containsPos

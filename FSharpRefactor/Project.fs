@@ -2,16 +2,17 @@ namespace FSharpRefactor.Engine
 
 open System
 open System.IO
+open FSharpRefactor.Engine.Ast
 
 type Project(currentFile:string, filesAndContents:(string * string option) array, updatedFiles:Set<string>) as self =
     let currentFile = Path.GetFullPath currentFile
-    let getIndex fileName = Seq.findIndex ((=) fileName) self.Files
+    let getIndex filename = Seq.findIndex ((=) filename) self.Files
     
     new(currentFile:string, filesAndContents:(string * string option) array) =
         Project(currentFile, filesAndContents, Set.empty)
 
-    new(source:string, fileName:string) =
-        Project(fileName, [|fileName, Some source|])
+    new(source:string, filename:string) =
+        Project(filename, [|filename, Some source|])
 
     member self.Files with get() = Array.map (fst >> Path.GetFullPath) filesAndContents
     member self.CurrentFile with get() = currentFile
@@ -19,19 +20,31 @@ type Project(currentFile:string, filesAndContents:(string * string option) array
     member self.CurrentFileContents = self.GetContents self.CurrentFile
     member self.UpdatedFiles = updatedFiles
     
-    member self.FilesInScope fileName =
-        let fileName = Path.GetFullPath fileName
-        Seq.skipWhile ((<>) fileName) self.Files |> Seq.toList
-    member self.GetContents fileName = 
-        let fileName = Path.GetFullPath fileName
-        let index = getIndex fileName
+    member self.FilesInScope filename =
+        let filename = Path.GetFullPath filename
+        Seq.skipWhile ((<>) filename) self.Files |> Seq.toList
+    member self.GetParseTree filename =
+        Ast.Parse self.Files filename (self.GetContents filename)
+        |> Option.get
+    member self.TryGetDeclarationLocation filename names position =
+        Ast.TryGetDeclarationLocation self.Files filename (self.GetContents filename) names position
+    member self.GetContents filename = 
+        let filename = Path.GetFullPath filename
+        let index = getIndex filename
         if Option.isSome self.FileContents.[index] then self.FileContents.[index].Value
-        else File.ReadAllText fileName
-    member self.UpdateContents fileName contents =
-        let fileName = Path.GetFullPath fileName
-        let index = getIndex fileName
+        else File.ReadAllText filename
+    member self.UpdateContents filename contents =
+        let filename = Path.GetFullPath filename
+        let index = getIndex filename
         let filesAndContents = Array.copy filesAndContents
-        Array.set filesAndContents index (fileName, Some contents)
-        new Project(currentFile, filesAndContents, Set.add fileName updatedFiles)
+        Array.set filesAndContents index (filename, Some contents)
+        new Project(currentFile, filesAndContents, Set.add filename updatedFiles)
     member self.UpdateCurrentFileContents contents =
         self.UpdateContents self.CurrentFile contents
+        
+module Projects =
+    let GetParseTree (project:Project) filename =
+        project.GetParseTree filename
+    
+    let TryGetDeclarationLocation (project:Project) filename names position =
+        project.TryGetDeclarationLocation filename names position

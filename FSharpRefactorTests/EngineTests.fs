@@ -10,12 +10,13 @@ open FSharpRefactor.Engine
 open FSharpRefactor.Engine.Ast
 open FSharpRefactor.Engine.CodeTransforms
 open FSharpRefactor.Engine.RangeAnalysis
+open FSharpRefactor.Engine.Projects
 
 
 [<TestFixture>]
 type AstModule() =
     let parse (source:string) (filename:string) =
-        Ast.Parse (new Project(source, filename)) filename
+        GetParseTree (new Project(source, filename)) filename
 
     let files = ["test.fs"]
     [<SetUp>]
@@ -34,13 +35,13 @@ type AstModule() =
         let rootNode = parse source "test.fs"
         let expectNamespace node =
             match node with
-                | Some(Ast.AstNode.File(_)) -> true
+                | Ast.AstNode.File(_) -> true
                 | _ -> false
         Assert.IsTrue(expectNamespace rootNode, "Should get a namespace or module from MakeAstNode")
 
-        let binding (node : Ast.AstNode option) =
-            Ast.GetChildren(List.head(Ast.GetChildren(node.Value).Value))
-        let expectModule (node : Ast.AstNode option) =
+        let binding node =
+            Ast.GetChildren(List.head(Ast.GetChildren(node).Value))
+        let expectModule node =
             match binding node with
                 | Some(Ast.AstNode.ModuleDeclaration(_)::_) -> true
                 | _ -> false
@@ -49,13 +50,13 @@ type AstModule() =
     [<Test>]
     member this.``Can type check the source code in a project file``() =
         let source = "let f a = 1"
-        let typeCheckResults = Ast.tryTypeCheckSource (new Project(source, "test.fs")) "test.fs"
+        let typeCheckResults = Ast.tryTypeCheckSource [|"test.fs"|] "test.fs" source
         Assert.IsTrue(Option.isSome typeCheckResults)
         
     [<Test>]
     member this.``Cannot find the declaration location of an undeclared identifier``() =
         let source = "let a = a"
-        let declaration = Ast.TryGetDeclarationLocation (new Project(source, "test.fs")) "test.fs" ["a"] (1, 8)
+        let declaration = Ast.TryGetDeclarationLocation [|"test.fs"|] "test.fs" source ["a"] (1, 8)
         Assert.IsTrue(Option.isNone declaration)
         
     [<Test>]
@@ -68,7 +69,7 @@ type AstModule() =
                                 "module M2 =";
                                 "  let f x = M1.x*x"]
 
-        let declaration = Ast.TryGetDeclarationLocation (new Project(source, "test.fs")) "test.fs" ["x"] (4, 10)
+        let declaration = Ast.TryGetDeclarationLocation [|"test.fs"|] "test.fs" source ["x"] (4, 10)
         Assert.AreEqual(Some ((3, 6), Path.GetFullPath "test.fs"), declaration)
     
     [<Test>]
@@ -79,13 +80,13 @@ type AstModule() =
                                 "  let f = 1";
                                 "module TestModule2 =";
                                 "  let g = TestModule1.f+2"]
-        let declaration = Ast.TryGetDeclarationLocation (new Project(source, "test.fs")) "test.fs" ["TestModule1";"f"] (5, 10)
+        let declaration = Ast.TryGetDeclarationLocation [|"test.fs"|] "test.fs" source ["TestModule1";"f"] (5, 10)
         Assert.AreEqual(Some ((3, 6), Path.GetFullPath "test.fs"), declaration)
         
 [<TestFixture>]
 type CodeTransformsModule() =
     let parse (source:string) (filename:string) =
-        Ast.Parse (new Project(source, filename)) filename
+        GetParseTree (new Project(source, filename)) filename
 
     [<Test>]
     member this.``Can indent a string``() =
@@ -103,7 +104,7 @@ type CodeTransformsModule() =
     [<Test>]
     member this.``Can change the text corresponding to an ast node``() =
         let source = "let a = 1\n\n"
-        let tree = (parse source "test.fs").Value
+        let tree = parse source "test.fs"
         let a = Ast.GetChildren(Ast.GetChildren(Ast.GetChildren(Ast.GetChildren(tree).Value.Head).Value.Head).Value.Head).Value.Head
         let expected = "let b = 1\n\n"
 
@@ -112,7 +113,7 @@ type CodeTransformsModule() =
     [<Test>]
     member this.``Can change the text for two ast nodes``() =
         let source = "\nlet a = 1\nlet b = 2"
-        let tree = (parse source "test.fs").Value
+        let tree = parse source "test.fs"
         let a = Ast.GetChildren(Ast.GetChildren(Ast.GetChildren(Ast.GetChildren(tree).Value.Head).Value.Head).Value.Head).Value.Head
         let b = Ast.GetChildren(Ast.GetChildren(Ast.GetChildren(Ast.GetChildren(tree).Value.Head).Value.[1]).Value.Head).Value.Head
         let expected = "\nlet b = 1\nlet a2 = 2"
@@ -170,7 +171,7 @@ type CodeTransformsModule() =
 [<TestFixture>]
 type RangeAnalysisModule() =
     let parse (source:string) (filename:string) =
-        Ast.Parse (new Project(source, filename)) filename
+        GetParseTree (new Project(source, filename)) filename
     
     let mkRange filename startPos endPos = mkRange (Path.GetFullPath filename) startPos endPos
 
@@ -205,7 +206,7 @@ type RangeAnalysisModule() =
     [<Test>]
     member this.``Can find the AstNode.Expression corresponding to a range``() =
         let source = "let a = 1+(2+3)+4"
-        let tree = (parse source "test.fs").Value
+        let tree = parse source "test.fs"
         let expressionRange = mkRange "test.fs" (mkPos 1 10) (mkPos 1 15)
         let expression = TryFindExpressionAtRange expressionRange tree
 
@@ -216,7 +217,7 @@ type RangeAnalysisModule() =
     [<Test>]
     member this.``Can find the binding from the binding's range``() =
         let source = "let f a b = a+b"
-        let tree = (parse source "test.fs").Value
+        let tree = parse source "test.fs"
         let bindingRange = mkRange "test.fs" (mkPos 1 4) (mkPos 1 15)
         let binding = FindBindingAtRange bindingRange tree
 

@@ -7,6 +7,7 @@ open FSharpRefactor.Engine.RangeAnalysis
 open FSharpRefactor.Engine.Refactoring
 open FSharpRefactor.Engine.ValidityChecking
 open FSharpRefactor.Engine.Scoping
+open FSharpRefactor.Engine.Projects
 open FSharpRefactor.Engine
 
 //TODO: these probably need to be put in an .fsi file
@@ -77,6 +78,6 @@ let Rename newName : Refactoring<Identifier,unit> =
 
 let Transform ((line:int, col:int), newName:string) (project:Project) =
     let position = mkPos line (col-1)
-    let tree = (Ast.Parse project project.CurrentFile).Value
+    let tree = GetParseTree project project.CurrentFile
     let identifierScope = GetIdentifierScope project (FindIdentifier project project.CurrentFile position)
     RunRefactoring (Rename newName) identifierScope.IdentifierDeclaration project

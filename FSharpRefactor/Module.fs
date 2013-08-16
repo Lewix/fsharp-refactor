@@ -3,6 +3,7 @@ namespace FSharpRefactor.Engine
 open Microsoft.FSharp.Compiler.Ast
 open Microsoft.FSharp.Compiler.Range
 open FSharpRefactor.Engine.Ast
+open FSharpRefactor.Engine.Projects
 
 type Module =
     {
@@ -95,7 +96,7 @@ module Modules =
             | Ast.Children cs -> List.collect getDeclaredModules cs
             | _ -> []
         
-        Seq.map (Ast.Parse project >> Option.get) project.Files
+        Seq.map (GetParseTree project) project.Files
         |> Seq.collect getDeclaredModules
         
     let rec tryGetModuleDeclaredAt (modules:seq<Module>) (((line, col), filename) as location) =
@@ -114,5 +115,5 @@ module Modules =
         let names = List.map (fun (i:Ident) -> i.idText) moduleIdentifier
         let range = (List.head moduleIdentifier).idRange
         let declarationLocation =
-            Ast.TryGetDeclarationLocation project range.FileName names (range.StartLine, range.StartColumn)
+            TryGetDeclarationLocation project range.FileName names (range.StartLine, range.StartColumn)
         Option.bind (tryGetModuleDeclaredAt modules) declarationLocation
