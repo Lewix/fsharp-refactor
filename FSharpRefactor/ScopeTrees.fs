@@ -122,10 +122,8 @@ let rec makeScopeTreesWithChildren (project:Project) modules childrenScopeTrees 
                 if Option.isNone selfId then idsDeclaredInPatterns
                 else (selfId.Value.idText, selfId.Value.idRange)::idsDeclaredInPatterns
             [Declaration(idsInScopeInCtor, childrenScopeTrees)]
-        | Ast.AstNode.ModuleDeclaration(SynModuleDecl.Open(LongIdentWithDots(i::is,_), r)) ->
-            //TODO: proper name resolution
-            let fullName = i.idText, List.map (fun (i:Ident) -> i.idText) is
-            let openedModule = Seq.tryFind (fun (m:Module) -> m.fullName = fullName) modules
+        | Ast.AstNode.ModuleDeclaration(SynModuleDecl.Open(LongIdentWithDots(mi,_), r)) ->
+            let openedModule = TryGetOpenedModule project modules mi
             let declarations = if Option.isSome openedModule then openedModule.Value.declarations else []
             [Declaration(declarations,childrenScopeTrees)]
         | Ast.AstNode.ModuleDeclaration(SynModuleDecl.Let(false,bs,_)) ->

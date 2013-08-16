@@ -10,6 +10,7 @@ type Module =
         declarations : (string * range) list
         nestedModules : Module list
         filename : string
+        range : range
     }
     
 module Modules =
@@ -62,7 +63,8 @@ module Modules =
                         fullName = nameFromLongIdent ident;
                         declarations = [];
                         nestedModules = [];
-                        filename = range.FileName
+                        filename = range.FileName;
+                        range = range
                     }, (Ast.GetChildren node).Value)
             | _ -> None
             
@@ -95,3 +97,22 @@ module Modules =
         
         Seq.map (Ast.Parse project >> Option.get) project.Files
         |> Seq.collect getDeclaredModules
+        
+    let rec tryGetModuleDeclaredAt (modules:seq<Module>) (((line, col), filename) as location) =
+        let moduleContainsLocation (m:Module) =
+            m.range.FileName = filename && rangeContainsPos m.range (mkPos line col)
+        let declarationAroundLocation =
+            Seq.tryFind moduleContainsLocation modules
+        if Option.isNone declarationAroundLocation then None
+        else
+            let nestedDeclaration =
+                tryGetModuleDeclaredAt declarationAroundLocation.Value.nestedModules location
+            if Option.isSome nestedDeclaration then nestedDeclaration
+            else declarationAroundLocation
+
+    let TryGetOpenedModule project modules (moduleIdentifier:LongIdent) =
+        let names = List.map (fun (i:Ident) -> i.idText) moduleIdentifier
+        let range = (List.head moduleIdentifier).idRange
+        let declarationLocation =
+            Ast.TryGetDeclarationLocation project range.FileName names (range.StartLine, range.StartColumn)
+        Option.bind (tryGetModuleDeclaredAt modules) declarationLocation

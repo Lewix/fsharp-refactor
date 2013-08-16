@@ -60,7 +60,8 @@ type ModuleScopeTreeModule() =
                 fullName = "Test", ["M1"];
                 declarations = ["D1", mkRange filename (mkPos 3 6) (mkPos 3 8); "D2", mkRange filename (mkPos 4 6) (mkPos 4 8)];
                 nestedModules = [];
-                filename = filename
+                filename = filename;
+                range = mkRange filename (mkPos 2 0) (mkPos 4 12)
             };
             {
                 fullName = "Test", ["M2"];
@@ -70,9 +71,11 @@ type ModuleScopeTreeModule() =
                         fullName = "Test", ["M2";"M3"];
                         declarations = ["D4", mkRange filename (mkPos 8 8) (mkPos 8 10)];
                         nestedModules = [];
-                        filename = filename
+                        filename = filename;
+                        range = mkRange filename (mkPos 7 2) (mkPos 8 14)
                     }];
-                filename = filename
+                filename = filename;
+                range = mkRange filename (mkPos 5 0) (mkPos 8 14)
             }]
         
         Assert.AreEqual(expected, modules, sprintf "%A" modules)
@@ -89,19 +92,22 @@ type ModuleScopeTreeModule() =
                 declarations = ["TopLevelFunction1", mkRange fullFilenames.[0] (mkPos 3 6) (mkPos 3 23);
                                 "TopLevelFunction2", mkRange fullFilenames.[0] (mkPos 4 6) (mkPos 4 23)];
                 nestedModules = [];
-                filename = fullFilenames.[0]
+                filename = fullFilenames.[0];
+                range = mkRange fullFilenames.[0] (mkPos 2 0) (mkPos 4 51)
             };
             {
                 fullName = "Test", ["TestModule2"];
                 declarations = ["TopLevelFunction1", mkRange fullFilenames.[0] (mkPos 6 6) (mkPos 6 23)];
                 nestedModules = [];
-                filename = fullFilenames.[0]
+                filename = fullFilenames.[0];
+                range = mkRange fullFilenames.[0] (mkPos 5 0) (mkPos 6 29)
             };
             {
                 fullName = "Test", ["TestModule3"];
                 declarations = ["TopLevelFunction3", mkRange fullFilenames.[1] (mkPos 4 7) (mkPos 4 24)];
                 nestedModules = [];
-                filename = fullFilenames.[1]
+                filename = fullFilenames.[1];
+                range = mkRange fullFilenames.[1] (mkPos 2 0) (mkPos 6 49)
             }]
         
         Assert.AreEqual(expected, modules, sprintf "%A" modules)
