@@ -78,6 +78,5 @@ let Rename newName : Refactoring<Identifier,unit> =
 
 let Transform ((line:int, col:int), newName:string) (project:Project) =
     let position = mkPos line (col-1)
-    let tree = GetParseTree project project.CurrentFile
     let identifierScope = GetIdentifierScope project (FindIdentifier project project.CurrentFile position)
     RunRefactoring (Rename newName) identifierScope.IdentifierDeclaration project
