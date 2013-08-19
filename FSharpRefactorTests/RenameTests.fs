@@ -136,3 +136,22 @@ type RenameTransformModule() =
         let declarationRange = mkRange "test.fs" (mkPos 1 17) (mkPos 1 18)
 
         Assert.AreEqual(expected, DoRename (new Project(source, "test.fs")) (parse source "test.fs") ("b", declarationRange) "c")
+
+    [<Test>]
+    member this.``Can rename a module declaration``() =
+        let files =
+            ["test1.fs"; "test2.fs"]
+        let project = new Project("test2.fs", List.zip files [None; None] |> Seq.toArray)
+        let files = List.map (fun (f:string) -> new StreamWriter(f)) files
+        
+        fprintfn files.[0] "module Test"
+        fprintfn files.[0] "let declaration = 1"
+        fprintfn files.[1] "module Test2"
+        fprintfn files.[1] "open Test"
+        fprintfn files.[1] "let declaration2 = declaration+1"
+        
+        List.map (fun (f:StreamWriter) -> f.Close()) files |> ignore
+        
+        let updatedProject = Transform ((3, 20), "d") project
+        Assert.AreEqual("module Test\nlet d = 1\n", updatedProject.GetContents "test1.fs")
+        Assert.AreEqual("module Test2\nopen Test\nlet declaration2 = d+1\n", updatedProject.GetContents "test2.fs")

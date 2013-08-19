@@ -29,7 +29,6 @@ let FindReferences (project:Project) names (range:range) =
     |> Seq.map (GetParseTree project)
     |> Seq.collect (makeProjectScopeTrees project)
     |> Seq.collect (findPotentialReferences names)
-    //|> Seq.map tryGetDeclarationLocation
     |> Seq.filter (tryGetDeclarationLocation >> (=) (Some declarationLocation))
     
 let FindDeclarationReferences (project:Project) (name, range) =
@@ -37,3 +36,18 @@ let FindDeclarationReferences (project:Project) (name, range) =
         Seq.find ((=) name) names, range
     FindReferences project [name] range
     |> Seq.map getRelevantName
+    
+let FindDeclarationReferencesInFile identifierScope (name, range) =
+    let rangeOfIdent (name : string) (identifiers : Identifier list) =
+        let identifier = List.tryFind (fun (n,_) -> n = name) identifiers
+        if Option.isNone identifier then None else Some(snd identifier.Value)
+    let isNestedDeclaration idents =
+        List.exists (fun (n,r) -> n = name && not (rangeContainsRange r range)) idents
+    
+    let rec findReferencesInTree tree =
+        match tree with
+            | Usage((n,r),_) when n = name -> [r]
+            | Declaration(is, ts) when not (isNestedDeclaration is) ->
+                List.concat (Seq.map findReferencesInTree ts)
+            | _ -> []
+    findReferencesInTree identifierScope
