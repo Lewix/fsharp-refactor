@@ -50,13 +50,16 @@ type AstModule() =
     [<Test>]
     member this.``Can type check the source code in a project file``() =
         let source = "let f a = 1"
-        let typeCheckResults = Ast.tryTypeCheckSource [|"test.fs"|] "test.fs" source
+        let untypedInfo = Ast.ParseSource [|"test.fs"|] "test.fs" source
+        let typeCheckResults = Ast.TryTypeCheckSource untypedInfo [|"test.fs"|] "test.fs" source
         Assert.IsTrue(Option.isSome typeCheckResults)
         
     [<Test>]
     member this.``Cannot find the declaration location of an undeclared identifier``() =
         let source = "let a = a"
-        let declaration = Ast.TryGetDeclarationLocation [|"test.fs"|] "test.fs" source ["a"] (1, 8)
+        let untypedInfo = Ast.ParseSource [|"test.fs"|] "test.fs" source
+        let typedInfo = Ast.TryTypeCheckSource untypedInfo [|"test.fs"|] "test.fs" source
+        let declaration = Ast.TryGetDeclarationLocation typedInfo "test.fs" source ["a"] (1, 8)
         Assert.IsTrue(Option.isNone declaration)
         
     [<Test>]
@@ -68,9 +71,19 @@ type AstModule() =
                                 "  let y = x+1";
                                 "module M2 =";
                                 "  let f x = M1.x*x"]
-
-        let declaration = Ast.TryGetDeclarationLocation [|"test.fs"|] "test.fs" source ["x"] (4, 10)
+        let untypedInfo = Ast.ParseSource [|"test.fs"|] "test.fs" source
+        let typedInfo = Ast.TryTypeCheckSource untypedInfo [|"test.fs"|] "test.fs" source
+        let declaration = Ast.TryGetDeclarationLocation typedInfo "test.fs" source ["x"] (4, 10)
         Assert.AreEqual(Some ((3, 6), Path.GetFullPath "test.fs"), declaration)
+    
+    [<Test>]
+    member this.``Can fail``() =
+        let source = File.ReadAllText "/mnt/media/git/university/personalproj/fsharp-refactor/FSharpRefactor/Project.fs"
+        let untypedInfo = Ast.ParseSource [|"test.fs"|] "test.fs" source
+        let typedInfo = Ast.TryTypeCheckSource untypedInfo [|"test.fs"|] "test.fs" source
+        let declaration = Ast.TryGetDeclarationLocation typedInfo "test.fs" source ["filename"] (78, 40)
+        Assert.Fail(sprintf "%A" declaration)
+
     
     [<Test>]
     member this.``Can find declarations across modules``() =
@@ -80,7 +93,9 @@ type AstModule() =
                                 "  let f = 1";
                                 "module TestModule2 =";
                                 "  let g = TestModule1.f+2"]
-        let declaration = Ast.TryGetDeclarationLocation [|"test.fs"|] "test.fs" source ["TestModule1";"f"] (5, 10)
+        let untypedInfo = Ast.ParseSource [|"test.fs"|] "test.fs" source
+        let typedInfo = Ast.TryTypeCheckSource untypedInfo [|"test.fs"|] "test.fs" source
+        let declaration = Ast.TryGetDeclarationLocation typedInfo "test.fs" source ["TestModule1";"f"] (5, 10)
         Assert.AreEqual(Some ((3, 6), Path.GetFullPath "test.fs"), declaration)
         
 [<TestFixture>]

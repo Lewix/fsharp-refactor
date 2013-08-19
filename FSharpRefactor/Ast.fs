@@ -26,7 +26,7 @@ module Ast =
 
     let MakeAstNode (tree : ParsedInput option) =
         match tree with
-            | Some(ParsedInput.ImplFile(f)) -> Some(AstNode.File(f))
+            | Some(ParsedInput.ImplFile(f)) -> AstNode.File(f)
             | _ -> raise (new NotImplementedException("Use an impl file instead of a sig file"))
 
     let getCheckerAndOptions filenames =
@@ -43,24 +43,25 @@ module Ast =
             }
         checker, options
     
+    let ParseSource filenames filename contents =
+        let checker, options = getCheckerAndOptions filenames
+        checker.UntypedParse(Path.GetFullPath filename, contents, options)
 
-    let getParseTree filenames filename contents = 
-        let checker, options = getCheckerAndOptions filenames
-        checker.UntypedParse(Path.GetFullPath filename, contents, options).ParseTree
-        
-    let Parse filenames filename contents = MakeAstNode (getParseTree filenames filename contents)
-    
-    let tryTypeCheckSource filenames filename contents =
+    let ParseSourceWithChecker (checker:InteractiveChecker) options filenames filename contents = 
+        checker.UntypedParse(Path.GetFullPath filename, contents, options)
+            
+    let TryTypeCheckSourceWithChecker (checker:InteractiveChecker) options untypedInfo filenames filename contents =
         let filename = Path.GetFullPath filename
-        let checker, options = getCheckerAndOptions filenames
-        checker.StartBackgroundCompile options
-        //FIXME: don't always block here
         checker.WaitForBackgroundCompile()
-        let info = checker.UntypedParse(filename, contents, options)
-        let typeCheckResults = checker.TypeCheckSource(info, filename, 0, contents, options, IsResultObsolete(fun _ -> false), "")
+        let typeCheckResults = checker.TypeCheckSource(untypedInfo, filename, 0, contents, options, IsResultObsolete(fun _ -> false), "")
         match typeCheckResults with
             | TypeCheckSucceeded results -> Some results
             | _ -> None
+    
+    let TryTypeCheckSource untypedInfo filenames filename contents =
+        let checker, options = getCheckerAndOptions filenames
+        checker.StartBackgroundCompile options
+        TryTypeCheckSourceWithChecker checker options untypedInfo filenames filename contents        
     
     let notDefinedIdentifierRanges (typedInfo:TypeCheckResults) =
         let rangeIfNotDeclared (error:ErrorInfo) =
@@ -78,9 +79,8 @@ module Ast =
     // the position directly preceding it doesn't contain whitespace
     // For example in "1+<pos>x", getting declaration location at <pos> will not find
     // x's declaration location. col is incremented to avoid this
-    let TryGetDeclarationLocation filenames filename (contents:string) names ((line, col) as position) =
+    let TryGetDeclarationLocation typedInfo filename (contents:string) names ((line, col) as position) =
         let lineStr = contents.Split('\n').[line-1]
-        let typedInfo = tryTypeCheckSource filenames filename contents
         if Option.isNone typedInfo then None
         else
             let isDefined =
@@ -89,7 +89,8 @@ module Ast =
             let declarationLocation =
                 typedInfo.Value.GetDeclarationLocation((line-1, col+1), lineStr, names |> Seq.toList, 188, true)
             match declarationLocation with
-                | DeclFound((line, col), filename) when isDefined -> Some ((line+1, col), filename)
+                | DeclFound((line, col), filename) when isDefined ->
+                    Some ((line+1, col), filename)
                 | _ -> None
 
     // Active patterns to make dealing with the syntax tree more convenient
