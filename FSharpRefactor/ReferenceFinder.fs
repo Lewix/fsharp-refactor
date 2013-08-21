@@ -53,11 +53,13 @@ let FindReferences (project:Project) names (range:range) =
     |> Seq.collect (findPotentialReferences names)
     |> Seq.filter (tryGetDeclarationLocation >> (=) (Some declarationLocation))
     
-let FindDeclarationReferences (project:Project) (name, range) =
+let FindDeclarationReferencesInProject (project:Project) (name, range) =
     let getRelevantName (names, range) =
         Seq.find ((=) name) names, range
     FindReferences project [name] range
     |> Seq.map getRelevantName
+    |> Seq.map snd
+    |> Seq.toList
     
 let FindDeclarationReferencesInFile identifierScope (name, range) =
     let rangeOfIdent (name : string) (identifiers : Identifier list) =
@@ -73,3 +75,8 @@ let FindDeclarationReferencesInFile identifierScope (name, range) =
                 List.concat (Seq.map findReferencesInTree ts)
             | _ -> []
     findReferencesInTree identifierScope
+
+let FindDeclarationReferences project identifierScope identifierDeclaration =
+    let isLocalIdentifier = not (declarationEscapesFile project identifierDeclaration)
+    if isLocalIdentifier then FindDeclarationReferencesInFile identifierScope identifierDeclaration
+    else FindDeclarationReferencesInProject project identifierDeclaration

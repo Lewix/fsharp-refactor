@@ -284,10 +284,9 @@ type ReferenceFinderModule() =
                                 "let y = 2*x+x";
                                 "let g x = x"]
         let references =
-            ReferenceFinder.FindDeclarationReferences (new Project(source, "test.fs")) ("x", mkRange filename (mkPos 2 4) (mkPos 2 5))
-            |> Seq.toList
+            ReferenceFinder.FindDeclarationReferencesInProject (new Project(source, "test.fs")) ("x", mkRange filename (mkPos 2 4) (mkPos 2 5))
         let expected =
-            ["x", mkRange filename (mkPos 3 10) (mkPos 3 11);
-             "x", mkRange filename (mkPos 3 12) (mkPos 3 13)]
+            [mkRange filename (mkPos 3 10) (mkPos 3 11);
+             mkRange filename (mkPos 3 12) (mkPos 3 13)]
         
         Assert.AreEqual(expected, references, sprintf "%A" references)
