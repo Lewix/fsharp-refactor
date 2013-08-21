@@ -9,6 +9,7 @@ open FSharpRefactor.Engine.ScopeAnalysis
 open FSharpRefactor.Engine.Ast
 open FSharpRefactor.Engine.Scoping
 open FSharpRefactor.Engine.Projects
+open FSharpRefactor.Engine.ReferenceFinder
 open FSharpRefactor.Engine
 
 [<TestFixture>]
@@ -85,7 +86,7 @@ type ScopeAnalysisModule() =
         let expected2 = Set(["b"])
         let expected3 = Set(["c"; "d"; "f"; "op_Addition"])
         let assertFun (source, expected) =
-            let scope = new ExpressionScope((parse source "test.fs"), new Project("test.fs", source))
+            let scope = new ExpressionScope((parse source "test.fs"), new Project(source, "test.fs"))
             let actual =
                 scope.FindFreeIdentifiers ()
                 |> List.map fst
@@ -112,6 +113,17 @@ type ScopeAnalysisModule() =
         let trees = getTrees source
 
         Assert.AreEqual(expected, tryFindIdentifierDeclaration trees usageIdentifier)
+        
+    [<Test>]
+    member this.``Can determine whether a declaration is accessible outside the file it's declared in``() =
+        let source = "module Test\nlet f a = let x = 2 in x\nlet x = 3"
+        let project = new Project(source, "test.fs")
+        let filename = Path.GetFullPath "test.fs"
+        
+        Assert.IsTrue(declarationEscapesFile project ("f", mkRange filename (mkPos 2 4) (mkPos 2 5)))
+        Assert.IsFalse(declarationEscapesFile project ("a", mkRange filename (mkPos 2 6) (mkPos 2 7)))
+        Assert.IsFalse(declarationEscapesFile project ("x", mkRange filename (mkPos 2 14) (mkPos 2 15)))
+        Assert.IsTrue(declarationEscapesFile project ("x", mkRange filename (mkPos 3 4) (mkPos 3 5)))
 
 [<TestFixture>]
 type ScopeTreeModule() =

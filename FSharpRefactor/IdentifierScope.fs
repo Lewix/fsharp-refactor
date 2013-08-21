@@ -70,7 +70,7 @@ and IdentifierScope (identifier:Identifier, identifierScope:IdentifierScopeTree,
     member self.IsDeclaredInBinding identifierName =
         List.exists ((=) identifierName) self.NamesDeclaredInBinding
     member self.FindReferences () =
-        let isLocalIdentifier = false
+        let isLocalIdentifier = not (ReferenceFinder.declarationEscapesFile project self.IdentifierDeclaration)
         let referenceRanges =
             if isLocalIdentifier then
                 ReferenceFinder.FindDeclarationReferencesInFile identifierScope self.IdentifierDeclaration

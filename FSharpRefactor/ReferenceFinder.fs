@@ -1,9 +1,31 @@
 module FSharpRefactor.Engine.ReferenceFinder
 
 open Microsoft.FSharp.Compiler.Range
+open Microsoft.FSharp.Compiler.Ast
 open FSharpRefactor.Engine.Ast
 open FSharpRefactor.Engine.ScopeAnalysis
 open FSharpRefactor.Engine.Projects
+open FSharpRefactor.Engine.Modules
+
+let declarationEscapesFile (project:Project) ((name, declarationRange):Identifier) =
+    let tree = project.GetParseTree declarationRange.FileName
+    
+    let declaredInBinding binding =
+        let ident = declarationFromBinding binding
+        Some (name, declarationRange) = ident
+    
+    let declaredInBindings = (List.map declaredInBinding) >> (List.fold (||) false)
+    
+    let rec declarationEscapesFileInTree tree =
+        match tree with
+            | Ast.AstNode.ModuleDeclaration(SynModuleDecl.Let(_, bs, _)) when declaredInBindings bs -> true
+            | Ast.Children cs ->
+                List.map declarationEscapesFileInTree cs
+                |> List.fold (||) false
+            | _ -> false
+            
+    declarationEscapesFileInTree tree
+                
 
 let rec findPotentialReferences names (tree:IdentifierScopeTree) =
     let relevantName = Seq.last names
