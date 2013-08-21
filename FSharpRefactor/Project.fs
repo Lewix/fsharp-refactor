@@ -94,7 +94,10 @@ and Project(currentFile:string, filesAndContents:(string * string option) array,
         let filename = Path.GetFullPath filename
         let index = getIndex filename
         if Option.isSome self.FileContents.[index] then self.FileContents.[index].Value
-        else File.ReadAllText filename
+        else
+            let contents = File.ReadAllText filename
+            Array.set filesAndContents index (filename, Some contents)
+            contents
     member self.UpdateContents filename contents =
         let filename = Path.GetFullPath filename
         let index = getIndex filename
