@@ -139,6 +139,7 @@ type RenameTransformModule() =
 
     [<Test>]
     member this.``Can rename a module declaration``() =
+        let newLine = System.Environment.NewLine
         let files =
             ["test1.fs"; "test2.fs"]
         let project = new Project("test2.fs", List.zip files [None; None] |> Seq.toArray)
@@ -153,5 +154,5 @@ type RenameTransformModule() =
         List.map (fun (f:StreamWriter) -> f.Close()) files |> ignore
         
         let updatedProject = Transform ((3, 20), "d") project
-        Assert.AreEqual("module Test\nlet d = 1\n", updatedProject.GetContents "test1.fs")
-        Assert.AreEqual("module Test2\nopen Test\nlet declaration2 = d+1\n", updatedProject.GetContents "test2.fs")
+        Assert.AreEqual(sprintf "module Test%slet d = 1%s" newLine newLine, updatedProject.GetContents "test1.fs")
+        Assert.AreEqual(sprintf "module Test2%sopen Test%slet declaration2 = d+1%s" newLine newLine newLine, updatedProject.GetContents "test2.fs")
