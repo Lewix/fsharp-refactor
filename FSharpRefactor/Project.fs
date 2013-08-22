@@ -13,7 +13,7 @@ type TypedInfo =
     { typedInfo : TypeCheckResults option
       contents : string }
 
-type ParseInfoCache(project:Project) as self =
+type ParseInfoCache(project:Project, initialLazyTypedInfos) as self =
     let checker, options = Ast.getCheckerAndOptions project.Files
     let lazyUntypedInfos = new Dictionary<string,Lazy<UntypedInfo>>()
     let lazyTypedInfos = new Dictionary<string,Lazy<TypedInfo>>()
@@ -40,6 +40,9 @@ type ParseInfoCache(project:Project) as self =
         Seq.map getLazyTypedInfo project.Files
         |> Seq.zip project.Files
         |> Seq.iter (fun (k,v) -> lazyTypedInfos.Add(k,v))
+        
+        Seq.zip project.Files initialLazyTypedInfos
+        |> Seq.iter (fun (k,v) -> if Option.isSome v then lazyTypedInfos.[k] <- v.Value)
     
     member private self.UntypedInfoAndContents filename =
         let untypedInfo = (lazyUntypedInfos.[filename]).Force()
@@ -47,7 +50,7 @@ type ParseInfoCache(project:Project) as self =
         else
             checker.StartBackgroundCompile options
             let newLazyUntypedInfo = getLazyUntypedInfo filename
-            lazyUntypedInfos.[filename] = newLazyUntypedInfo |> ignore
+            lazyUntypedInfos.[filename] <- newLazyUntypedInfo
             newLazyUntypedInfo.Force()
 
     member self.UntypedInfo filename =
@@ -58,18 +61,17 @@ type ParseInfoCache(project:Project) as self =
         if typedInfo.contents = project.GetContents filename then typedInfo.typedInfo
         else
             let newLazyTypedInfo = getLazyTypedInfo filename
-            lazyTypedInfos.[filename] = newLazyTypedInfo |> ignore
+            lazyTypedInfos.[filename] <- newLazyTypedInfo
             newLazyTypedInfo.Force().typedInfo
             
         
-and Project(currentFile:string, filesAndContents:(string * string option) array, updatedFiles:Set<string>) as self =
+and Project(currentFile:string, filesAndContents:(string * string option) array, updatedFiles:Set<string>, lazyTypedInfos:Lazy<TypedInfo> option array) as self =
     let currentFile = Path.GetFullPath currentFile
     let getIndex filename = Seq.findIndex ((=) filename) self.Files
-    let parseInfoCache = lazy (new ParseInfoCache(self))
+    let parseInfoCache = lazy (new ParseInfoCache(self, lazyTypedInfos))
 
     new(currentFile:string, filesAndContents:(string * string option) array) =
-        Project(currentFile, filesAndContents, Set.empty)
-
+        Project(currentFile, filesAndContents, Set.empty, Array.map (fun _ -> None) filesAndContents)
     new(source:string, filename:string) =
         Project(filename, [|filename, Some source|])
         
@@ -103,7 +105,7 @@ and Project(currentFile:string, filesAndContents:(string * string option) array,
         let index = getIndex filename
         let filesAndContents = Array.copy filesAndContents
         Array.set filesAndContents index (filename, Some contents)
-        new Project(currentFile, filesAndContents, Set.add filename updatedFiles)
+        new Project(currentFile, filesAndContents, Set.add filename updatedFiles, Array.map (fun _ -> None) filesAndContents)
     member self.UpdateCurrentFileContents contents =
         self.UpdateContents self.CurrentFile contents
         
