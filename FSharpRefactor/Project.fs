@@ -6,11 +6,14 @@ open System.Collections.Generic
 open Microsoft.FSharp.Compiler.SourceCodeServices
 open FSharpRefactor.Engine.Ast
 
+type ITypedInfo =
+    abstract member GetDeclarationLocation : (int*int) * (seq<string>) -> ((int*int) * string) option
+
 type UntypedInfo =
     { untypedInfo : UntypedParseInfo
       contents : string }
 type TypedInfo =
-    { typedInfo : TypeCheckResults option
+    { typedInfo : ITypedInfo
       contents : string }
 
 type ParseInfoCache(project:Project, initialLazyTypedInfos) as self =
@@ -27,7 +30,11 @@ type ParseInfoCache(project:Project, initialLazyTypedInfos) as self =
     let getLazyTypedInfo filename =
         lazy
             let untypedInfo = self.UntypedInfoAndContents filename
-            { typedInfo =  Ast.TryTypeCheckSourceWithChecker checker options untypedInfo.untypedInfo project.Files filename untypedInfo.contents
+            let typedInfo =
+                Some (Ast.TryTypeCheckSourceWithChecker checker options untypedInfo.untypedInfo project.Files filename untypedInfo.contents)
+            let iTypedInfo =
+                { new ITypedInfo with member self.GetDeclarationLocation(position, names) = Ast.TryGetDeclarationLocation typedInfo filename untypedInfo.contents names position }
+            { typedInfo = iTypedInfo
               contents = untypedInfo.contents }
 
     do
@@ -91,7 +98,7 @@ and Project(currentFile:string, filesAndContents:(string * string option) array,
     member self.TryGetDeclarationLocation filename names position =
         let filename = Path.GetFullPath filename
         let typedInfo = parseInfoCache.Force().TypedInfo filename
-        Ast.TryGetDeclarationLocation typedInfo filename (self.GetContents filename) names position
+        typedInfo.GetDeclarationLocation (position, names)
     member self.GetContents filename = 
         let filename = Path.GetFullPath filename
         let index = getIndex filename

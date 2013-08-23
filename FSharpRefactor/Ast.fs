@@ -54,9 +54,11 @@ module Ast =
         let filename = Path.GetFullPath filename
         checker.WaitForBackgroundCompile()
         let typeCheckResults = checker.TypeCheckSource(untypedInfo, filename, 0, contents, options, IsResultObsolete(fun _ -> false), "")
-        match typeCheckResults with
-            | TypeCheckSucceeded results -> Some results
-            | _ -> None
+        let results =
+            match typeCheckResults with
+                | TypeCheckSucceeded results -> Some results
+                | _ -> None
+        results.Value
     
     let TryTypeCheckSource untypedInfo filenames filename contents =
         let checker, options = getCheckerAndOptions filenames
