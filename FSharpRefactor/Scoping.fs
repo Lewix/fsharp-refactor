@@ -56,7 +56,7 @@ let FindUnusedName project (tree : Ast.AstNode) =
     generateWhileUsed ()
 
 let TryGetIdentifierScope (project:Project) ((i, is):Identifier * Identifier list) =
-    let _, range = i
+    let range = snd (Seq.last (i::is))
     let names = (fst i)::(List.map fst is)
     let declarationLocation =
         TryGetDeclarationLocation project range.FileName names (range.StartLine, range.StartColumn)
