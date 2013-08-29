@@ -137,13 +137,15 @@ module Ast =
                 match m with
                     | SynModuleDecl.Let(_,bs,_) -> Some(List.map AstNode.Binding bs)
                     | SynModuleDecl.DoExpr(_,e,_) -> Some([AstNode.Expression e])
+                    | SynModuleDecl.NamespaceFragment(n) -> Some [ModuleOrNamespace n]
                     | SynModuleDecl.Exception(_,_)
+                    | SynModuleDecl.HashDirective(_,_)
                     | SynModuleDecl.Open(_,_) -> None
                     | SynModuleDecl.NestedModule(_,ds,_,_) -> Some(List.map AstNode.ModuleDeclaration ds)
                     | SynModuleDecl.Types(ts,_) -> Some(List.map AstNode.TypeDefinition ts)
                     | SynModuleDecl.Attributes(attributes,_) ->
                         Some (List.map (fun (a:SynAttribute) -> AstNode.Expression a.ArgExpr) attributes)
-                    | _ -> raise (new NotImplementedException("Add a new entry to pattern for ModuleDeclaration: " + (string m)))
+                    | SynModuleDecl.ModuleAbbrev(_,_,_) -> raise (new NotImplementedException("Module abbreviations not implemented"))
             | Binding(b) ->
                 match b with
                     | SynBinding.Binding(_,_,_,_,_,_,_,p,_,e,_,_) -> Some([AstNode.Pattern p; AstNode.Expression e])
