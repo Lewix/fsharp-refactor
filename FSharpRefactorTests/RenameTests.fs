@@ -26,13 +26,13 @@ type RenameAnalysisModule() =
 
     [<Test>]
     member this.``Can check arguments individually``() =
-        Assert.IsTrue(IsValid (Some(1,5), None) (new Project("let f a = 1", "test.fs")), "Valid position")
-        Assert.IsFalse(IsValid (Some(1,1), None) (new Project("let f a = 1", "test.fs")), "Invalid position")
-        Assert.IsTrue(IsValid (Some(1,7), Some "c") (new Project("let f a b = 1", "test.fs")), "Valid position and name")
-        Assert.IsFalse(IsValid (Some(1,7), Some "b") (new Project("let f a b = 1", "test.fs")), "Invalid position and name")
-        Assert.IsFalse(IsValid (Some(1,1), Some "a") (new Project("let f a b = 1", "test.fs")), "Invalid position and name")
-        Assert.IsTrue(IsValid (Some(1,7), Some "a") (new Project("let f a b = 1", "test.fs")), "Pointless rename")
-        Assert.IsTrue(IsValid (None, Some "b") (new Project("let f a b = 1", "test.fs")), "Valid name")
+        Assert.IsTrue(IsValid (Some(1,5), None) (new Project("let f a = 1", "test.fs")) "test.fs", "Valid position")
+        Assert.IsFalse(IsValid (Some(1,1), None) (new Project("let f a = 1", "test.fs")) "test.fs", "Invalid position")
+        Assert.IsTrue(IsValid (Some(1,7), Some "c") (new Project("let f a b = 1", "test.fs")) "test.fs", "Valid position and name")
+        Assert.IsFalse(IsValid (Some(1,7), Some "b") (new Project("let f a b = 1", "test.fs")) "test.fs", "Invalid position and name")
+        Assert.IsFalse(IsValid (Some(1,1), Some "a") (new Project("let f a b = 1", "test.fs")) "test.fs", "Invalid position and name")
+        Assert.IsTrue(IsValid (Some(1,7), Some "a") (new Project("let f a b = 1", "test.fs")) "test.fs", "Pointless rename")
+        Assert.IsTrue(IsValid (None, Some "b") (new Project("let f a b = 1", "test.fs")) "test.fs", "Valid name")
 
         //TODO: invalid name
 
@@ -41,9 +41,9 @@ type RenameAnalysisModule() =
         let goodSource = "let a = 1 in a"
         let badSource = "let a = 1 in b"
 
-        Assert.AreEqual(true,IsValid (Some (1,5), Some "b") (new Project(goodSource, "test.fs")),
+        Assert.AreEqual(true,IsValid (Some (1,5), Some "b") (new Project(goodSource, "test.fs")) "test.fs",
                         "Should be able to rename a to b")
-        Assert.AreEqual(Some("b is free in the scope of a"),GetErrorMessage (Some (1,5), Some "b") (new Project(badSource, "test.fs")),
+        Assert.AreEqual(Some("b is free in the scope of a"),GetErrorMessage (Some (1,5), Some "b") (new Project(badSource, "test.fs")) "test.fs",
                         "Shouldn't be able to rename a to b")
 
     [<Test>]
@@ -51,10 +51,10 @@ type RenameAnalysisModule() =
         let goodSource = "let a = 1 in let b = 2 in b"
         let badSource = "let a = 1 in let b = 2 in a"
  
-        Assert.AreEqual(true,IsValid (Some (1,5), Some "b") (new Project(goodSource, "test.fs")),
+        Assert.AreEqual(true,IsValid (Some (1,5), Some "b") (new Project(goodSource, "test.fs")) "test.fs",
                         "Should be able to rename a to b")
         Assert.AreEqual(Some("a is free in the scope of a b defined in its scope"),
-                        GetErrorMessage (Some (1,5), Some "b") (new Project(badSource, "test.fs")),
+                        GetErrorMessage (Some (1,5), Some "b") (new Project(badSource, "test.fs")) "test.fs",
                         "Shouldn't be able to rename a to b")
 
     [<Test>]
@@ -62,7 +62,7 @@ type RenameAnalysisModule() =
         let source = "let f a b c = 1"
 
         Assert.AreEqual(Some("b is already declared in that pattern"),
-                        GetErrorMessage (Some (1,7), Some "b") (new Project(source, "test.fs")))
+                        GetErrorMessage (Some (1,7), Some "b") (new Project(source, "test.fs")) "test.fs")
 
 [<TestFixture>]
 type RenameTransformModule() =
@@ -70,7 +70,7 @@ type RenameTransformModule() =
         GetParseTree (new Project(source, filename)) filename
 
     let DoRename source (tree: Ast.AstNode) declarationIdentifier (newName : string) =
-        (RunRefactoring (Rename newName) declarationIdentifier source).CurrentFileContents
+        (RunRefactoring (Rename newName) declarationIdentifier source "test.fs").GetContents "test.fs"
         
     let mkRange filename startPos endPos = mkRange (Path.GetFullPath filename) startPos endPos
     let files = ["test.fs"]
@@ -89,7 +89,7 @@ type RenameTransformModule() =
     member this.``Can get changes``() =
         let source = "let f x = x+x"
         let expected = "let f y = y+y"
-        Assert.AreEqual(expected, (Transform ((1,7), "y") (new Project(source, "test.fs"))).CurrentFileContents)
+        Assert.AreEqual(expected, (Transform ((1,7), "y") (new Project(source, "test.fs")) "test.fs").GetContents "test.fs")
         
     [<Test>]
     member this.``Can carry out renaming transformation``() =
@@ -142,7 +142,7 @@ type RenameTransformModule() =
         let newLine = System.Environment.NewLine
         let files =
             ["test1.fs"; "test2.fs"]
-        let project = new Project("test2.fs", List.zip files [None; None] |> Seq.toArray)
+        let project = new Project(List.zip files [None; None] |> Seq.toArray)
         let files = List.map (fun (f:string) -> new StreamWriter(f)) files
         
         fprintfn files.[0] "module Test"
@@ -153,6 +153,6 @@ type RenameTransformModule() =
         
         List.map (fun (f:StreamWriter) -> f.Close()) files |> ignore
         
-        let updatedProject = Transform ((3, 20), "d") project
+        let updatedProject = Transform ((3, 20), "d") project "test2.fs"
         Assert.AreEqual(sprintf "module Test%slet d = 1%s" newLine newLine, updatedProject.GetContents "test1.fs")
         Assert.AreEqual(sprintf "module Test2%sopen Test%slet declaration2 = d+1%s" newLine newLine newLine, updatedProject.GetContents "test2.fs")

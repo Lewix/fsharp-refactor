@@ -1,5 +1,6 @@
 module FSharpRefactor.Refactorings.Rename
 
+open System.IO
 open Microsoft.FSharp.Compiler.Range
 open FSharpRefactor.Engine.Ast
 open FSharpRefactor.Engine.ScopeAnalysis
@@ -11,10 +12,11 @@ open FSharpRefactor.Engine.Projects
 open FSharpRefactor.Engine
 
 //TODO: these probably need to be put in an .fsi file
-let GetErrorMessage (position:(int*int) option, newName:string option) (project:Project) =
+let GetErrorMessage (position:(int*int) option, newName:string option) (project:Project) (filename:string) =
+    let filename = Path.GetFullPath filename
     let pos = PosFromPositionOption position
     let identifier =
-        lazy Option.bind (TryFindIdentifier project project.CurrentFile) pos
+        lazy Option.bind (TryFindIdentifier project filename) pos
     let identifierScope =
         lazy Option.bind (fun (longIdentifier:Identifier * Identifier list) -> (TryGetIdentifierScope project longIdentifier)) (identifier.Force())
 
@@ -55,28 +57,30 @@ let GetErrorMessage (position:(int*int) option, newName:string option) (project:
     |> Andalso (IsSuccessful checkPositionAndName (PairOptions (position, newName)))
     |> fun (l:Lazy<_>) -> l.Force()
 
-let IsValid (position:(int*int) option, newName:string option) project =
-    GetErrorMessage (position, newName) project
+let IsValid (position:(int*int) option, newName:string option) project filename =
+    let filename = Path.GetFullPath filename
+    GetErrorMessage (position, newName) project filename
     |> Option.isNone
 
 let Rename newName : Refactoring<Identifier,unit> =
-    let analysis (project:Project, identifier:Identifier) =
+    let analysis (project:Project, filename, identifier:Identifier) =
         let identifierScope = GetIdentifierScope project (identifier, [])
-        IsValid (Some (identifierScope.DeclarationRange.StartLine, identifierScope.DeclarationRange.StartColumn+1), Some newName) project
+        IsValid (Some (identifierScope.DeclarationRange.StartLine, identifierScope.DeclarationRange.StartColumn+1), Some newName) project filename
 
-    let transform (project:Project, identifier:Identifier) =
+    let transform (project:Project, filename, identifier:Identifier) =
         let identifierScope = GetIdentifierScope project (identifier, [])
         let changes =
             identifierScope.FindReferences ()
             |> List.map (fun r -> (r,newName))
         project, changes, ()
 
-    let getErrorMessage (project:Project, identifier:Identifier) =
+    let getErrorMessage (project:Project, filename, identifier:Identifier) =
         let identifierScope = GetIdentifierScope project (identifier, [])
-        GetErrorMessage (Some (identifierScope.DeclarationRange.StartLine, identifierScope.DeclarationRange.StartColumn+1), Some newName) project
+        GetErrorMessage (Some (identifierScope.DeclarationRange.StartLine, identifierScope.DeclarationRange.StartColumn+1), Some newName) project filename
     { analysis = analysis; transform = transform; getErrorMessage = getErrorMessage }
 
-let Transform ((line:int, col:int), newName:string) (project:Project) =
+let Transform ((line:int, col:int), newName:string) (project:Project) filename =
+    let filename = Path.GetFullPath filename
     let position = mkPos line (col-1)
-    let identifierScope = GetIdentifierScope project (FindIdentifier project project.CurrentFile position)
-    RunRefactoring (Rename newName) identifierScope.IdentifierDeclaration project
+    let identifierScope = GetIdentifierScope project (FindIdentifier project filename position)
+    RunRefactoring (Rename newName) identifierScope.IdentifierDeclaration project filename

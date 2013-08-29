@@ -72,20 +72,17 @@ type ParseInfoCache(project:Project, initialLazyTypedInfos) as self =
             newLazyTypedInfo.Force().typedInfo
             
         
-and Project(currentFile:string, filesAndContents:(string * string option) array, updatedFiles:Set<string>, lazyTypedInfos:Lazy<TypedInfo> option array) as self =
-    let currentFile = Path.GetFullPath currentFile
+and Project(filesAndContents:(string * string option) array, updatedFiles:Set<string>, lazyTypedInfos:Lazy<TypedInfo> option array) as self =
     let getIndex filename = Seq.findIndex ((=) filename) self.Files
     let parseInfoCache = lazy (new ParseInfoCache(self, lazyTypedInfos))
 
-    new(currentFile:string, filesAndContents:(string * string option) array) =
-        Project(currentFile, filesAndContents, Set.empty, Array.map (fun _ -> None) filesAndContents)
+    new(filesAndContents:(string * string option) array) =
+        Project(filesAndContents, Set.empty, Array.map (fun _ -> None) filesAndContents)
     new(source:string, filename:string) =
-        Project(filename, [|filename, Some source|])
+        Project([|filename, Some source|])
         
     member self.Files with get() = Array.map (fst >> Path.GetFullPath) filesAndContents
-    member self.CurrentFile with get() = currentFile
     member self.FileContents = Array.map snd filesAndContents
-    member self.CurrentFileContents = self.GetContents self.CurrentFile
     member self.UpdatedFiles = updatedFiles
     
     member self.FilesInScope filename =
@@ -99,11 +96,12 @@ and Project(currentFile:string, filesAndContents:(string * string option) array,
         let filename = Path.GetFullPath filename
         let typedInfo = parseInfoCache.Force().TypedInfo filename
         typedInfo.GetDeclarationLocation (position, names)
-    member self.GetContents filename = 
+    member self.GetContents filename =
         let filename = Path.GetFullPath filename
         let index = getIndex filename
         if Option.isSome self.FileContents.[index] then self.FileContents.[index].Value
         else
+            printfn "Reading contents from filesystem"
             let contents = File.ReadAllText filename
             Array.set filesAndContents index (filename, Some contents)
             contents
@@ -112,9 +110,7 @@ and Project(currentFile:string, filesAndContents:(string * string option) array,
         let index = getIndex filename
         let filesAndContents = Array.copy filesAndContents
         Array.set filesAndContents index (filename, Some contents)
-        new Project(currentFile, filesAndContents, Set.add filename updatedFiles, Array.map (fun _ -> None) filesAndContents)
-    member self.UpdateCurrentFileContents contents =
-        self.UpdateContents self.CurrentFile contents
+        new Project(filesAndContents, Set.add filename updatedFiles, Array.map (fun _ -> None) filesAndContents)
         
 module Projects =
     let GetParseTree (project:Project) filename =

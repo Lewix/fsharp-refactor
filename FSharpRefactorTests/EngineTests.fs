@@ -172,7 +172,7 @@ type CodeTransformsModule() =
 
     [<Test>]
     member this.``Can carry out changes on multiple files``() =
-        let project = new Project("test1.fs", [|"test1.fs", Some "one"; "test2.fs", Some "two"|])
+        let project = new Project([|"test1.fs", Some "one"; "test2.fs", Some "two"|])
         let changes =
             [mkRange "test1.fs" (mkPos 1 0) (mkPos 1 3), "two";
              mkRange "test2.fs" (mkPos 1 1) (mkPos 1 3), "hree"]

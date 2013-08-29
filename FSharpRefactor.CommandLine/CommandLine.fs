@@ -37,29 +37,29 @@ let getProject filename =
 
 let Rename filename position newName =
     let project = getProject filename
-    if Rename.IsValid (Some position, Some newName) project then
-        Rename.Transform (position, newName) project
+    if Rename.IsValid (Some position, Some newName) project "test.fs" then
+        Rename.Transform (position, newName) project "test.fs"
     else
         let errorMessage =
-            (Rename.GetErrorMessage (Some position, Some newName) project).Value
+            (Rename.GetErrorMessage (Some position, Some newName) project "test.fs").Value
         raise (RefactoringFailure errorMessage)
 
 let ExtractFunction filename range functionName =
     let project = getProject filename
-    if ExtractFunction.IsValid (Some range, Some functionName) project then
-        ExtractFunction.Transform (range, functionName) project
+    if ExtractFunction.IsValid (Some range, Some functionName) project "test.fs" then
+        ExtractFunction.Transform (range, functionName) project "test.fs"
     else
         let errorMessage =
-            (ExtractFunction.GetErrorMessage (Some range, Some functionName) project).Value
+            (ExtractFunction.GetErrorMessage (Some range, Some functionName) project "test.fs").Value
         raise (RefactoringFailure errorMessage)
 
 let AddArgument filename position argumentName defaultValue =
     let project = getProject filename
-    if AddArgument.IsValid (Some position, Some argumentName, Some defaultValue) project then
-        AddArgument.Transform (position, argumentName, defaultValue) project
+    if AddArgument.IsValid (Some position, Some argumentName, Some defaultValue) project "test.fs" then
+        AddArgument.Transform (position, argumentName, defaultValue) project "test.fs"
     else
         let errorMessage =
-            (AddArgument.GetErrorMessage (Some position, Some argumentName, Some defaultValue) project).Value
+            (AddArgument.GetErrorMessage (Some position, Some argumentName, Some defaultValue) project "test.fs").Value
         raise (RefactoringFailure errorMessage)
 
 let printUsage () =
@@ -122,7 +122,7 @@ let filenameAndActionFromArguments args =
         | [] -> raise (ArgumentException "Too few arguments")
 
 let refactorWithArguments args =
-    ((snd (filenameAndActionFromArguments args)) ()).CurrentFileContents
+    ((snd (filenameAndActionFromArguments args)) ()).GetContents "test.fs"
 
 let getFilename args =
     let filename, _ = filenameAndActionFromArguments args

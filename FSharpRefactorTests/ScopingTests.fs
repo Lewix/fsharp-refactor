@@ -389,12 +389,12 @@ type ScopeTreeModule() =
         List.map (fun (f:StreamWriter) -> f.Flush()) fileWriters |> ignore
         List.map (fun (f:StreamWriter) -> f.Close()) fileWriters |> ignore
 
-        let project = new Project("test2.fs", List.zip files [None; None] |> Seq.toArray)
+        let project = new Project(List.zip files [None; None] |> Seq.toArray)
         let scopeTrees = makeProjectScopeTrees project (GetParseTree project "test2.fs")
         
         match scopeTrees with
             | [Declaration(["TopLevelFunction1",_;"TopLevelFunction2",_],[])] -> ()
-            | _ -> Assert.Fail(incorrectScopeTrees project.CurrentFileContents scopeTrees)
+            | _ -> Assert.Fail(incorrectScopeTrees (project.GetContents "test2.fs") scopeTrees)
     
     [<Test>]
     member this.``Can create a scope tree for a module with various idents in open statements``() =
@@ -413,11 +413,11 @@ type ScopeTreeModule() =
         List.map (fun (f:StreamWriter) -> f.Flush()) fileWriters |> ignore
         List.map (fun (f:StreamWriter) -> f.Close()) fileWriters |> ignore
         
-        let project = new Project("test2.fs", List.zip files [None; None] |> Seq.toArray)
+        let project = new Project(List.zip files [None; None] |> Seq.toArray)
         let scopeTrees = makeProjectScopeTrees project (GetParseTree project "test2.fs")
         
         match scopeTrees with
             | [Declaration(["g",_],[]);
                Declaration(["f",_],
                 [Declaration(["g",_],[])])] -> ()
-            | _ -> Assert.Fail(incorrectScopeTrees project.CurrentFileContents scopeTrees)
+            | _ -> Assert.Fail(incorrectScopeTrees (project.GetContents "test2.fs") scopeTrees)

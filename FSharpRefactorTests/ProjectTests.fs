@@ -84,7 +84,7 @@ type ModuleScopeTreeModule() =
     member this.``Can get a list of modules from an entire project``() =
         let files = [files.[0]; files.[1]]
         let fullFilenames = List.map Path.GetFullPath files
-        let project = new Project(files.[0], List.zip files [None; None] |> List.toArray)
+        let project = new Project(List.zip files [None; None] |> List.toArray)
         let modules = Modules.GetModules project
         let expected =
             [{
@@ -111,3 +111,15 @@ type ModuleScopeTreeModule() =
             }]
         
         Assert.AreEqual(expected, modules, sprintf "%A" modules)
+        
+    [<Test>]
+    member this.``Can avoid reparsing files which have not changed``() =
+        let source =
+            String.concat "\n" ["namespace Test"
+                                "module TestModule ="
+                                "  let f = 1"
+                                "module TestModule2 ="
+                                "  let g = TestModule.f+1"]
+        let project = new Project(source, "test.fs")
+        project.GetParseTree "test.fs" |> ignore
+        project.GetParseTree "test.fs" |> ignore
