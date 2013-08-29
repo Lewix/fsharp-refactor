@@ -111,15 +111,24 @@ module Ast =
                 match p with
                     | SynPat.Or(p1,p2,_) -> Some [Pattern p1; Pattern p2]
                     | SynPat.Named(p2,_,_,_,_) -> Some [Pattern(p2)]
+                    | SynPat.Null(_)
+                    | SynPat.IsInst(_,_)
+                    | SynPat.Const(_,_)
+                    | SynPat.DeprecatedCharRange(_,_,_)
+                    | SynPat.InstanceMember(_,_,_,_,_)
                     | SynPat.Wild(_) -> None
                     | SynPat.LongIdent(LongIdentWithDots(is,_),_,_,ps,_,_) -> Some(List.append (List.map AstNode.Ident is) (List.map AstNode.Pattern ps))
                     | SynPat.Paren(p,_) -> Some([AstNode.Pattern p])
                     | SynPat.Tuple(ps,_) -> Some(List.map AstNode.Pattern ps)
-                    | SynPat.Const(_,_) -> None
+                    | SynPat.Attrib(p,_,_)
+                    | SynPat.FromParseError(p,_)
                     | SynPat.Typed(p,_,_) -> Some([AstNode.Pattern p])
+                    | SynPat.Ands(ps,_)
                     | SynPat.ArrayOrList(_,ps,_) -> Some(List.map AstNode.Pattern ps)
-                    | SynPat.IsInst(_,_) -> None
-                    | _ -> raise (new NotImplementedException("Add a new entry to pattern for Pattern: " + (string p)))
+                    | SynPat.Record(ips,_) ->
+                        Some (List.map (snd >> Pattern) ips)
+                    | SynPat.OptionalVal(_,_) -> raise (new NotImplementedException("Implement OptionalVal pattern"))
+                    | SynPat.QuoteExpr(_,_) -> raise (new NotImplementedException("Implement QuoteExpr pattern"))
             | SimplePattern(p) ->
                 match p with
                     | SynSimplePat.Id(i,_,_,_,_,_) -> Some([AstNode.Ident i])
