@@ -113,7 +113,7 @@ module Modules =
 
     let TryGetOpenedModule project modules (moduleIdentifier:LongIdent) =
         let names = List.map (fun (i:Ident) -> i.idText) moduleIdentifier
-        let range = (List.head moduleIdentifier).idRange
+        let range = (Seq.last moduleIdentifier).idRange
         let declarationLocation =
             TryGetDeclarationLocation project range.FileName names (range.StartLine, range.StartColumn)
         Option.bind (tryGetModuleDeclaredAt modules) declarationLocation
