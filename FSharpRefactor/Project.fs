@@ -101,7 +101,6 @@ and Project(filesAndContents:(string * string option) array, updatedFiles:Set<st
         let index = getIndex filename
         if Option.isSome self.FileContents.[index] then self.FileContents.[index].Value
         else
-            printfn "Reading contents from filesystem"
             let contents = File.ReadAllText filename
             Array.set filesAndContents index (filename, Some contents)
             contents
