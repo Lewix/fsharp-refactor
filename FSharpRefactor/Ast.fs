@@ -104,13 +104,6 @@ module Ast =
         match expression with
             | SynModuleOrNamespace (_,_,e1,_,_,_,_) -> Some(e1)
 
-        
-    let (|SynExprChildren|_|) (expression : SynExpr) =
-        match expression with
-            | SynExpr.Paren(e1,_,_,_) -> Some([e1])
-            | SynExpr.Quote(e1,_,e2,_,_) -> Some([e1;e2])
-            | _ -> raise (new NotImplementedException("Add a new entry to the active pattern for SynExpr children:" + (string expression)))
-
     let (|Children|_|) (node : AstNode) =
         match node with
             | File(ParsedImplFileInput(_,_,_,_,_,ns,_)) -> Some(List.map AstNode.ModuleOrNamespace ns)
@@ -162,6 +155,8 @@ module Ast =
                     | SynExpr.TypeApp(e,_,_,_,_,_,_)
                     | SynExpr.Upcast(e,_,_)
                     | SynExpr.Downcast(e,_,_)
+                    | SynExpr.InferredUpcast(e,_)
+                    | SynExpr.InferredDowncast(e,_)
                     | SynExpr.YieldOrReturn(_,e,_)
                     | SynExpr.YieldOrReturnFrom(_,e,_)
                     | SynExpr.Paren(e,_,_,_)
@@ -170,7 +165,11 @@ module Ast =
                     | SynExpr.DotGet(e,_,_,_)
                     | SynExpr.Assert(e,_)
                     | SynExpr.Do(e,_)
+                    | SynExpr.DoBang(e,_)
                     | SynExpr.Lazy(e,_)
+                    | SynExpr.TypeTest(e,_,_)
+                    | SynExpr.AddressOf(_,e,_,_)
+                    | SynExpr.TraitCall(_,_,e,_)
                     | SynExpr.CompExpr(_,_,e,_) -> Some([AstNode.Expression e])
                     | SynExpr.ArrayOrList(_,es,_)
                     | SynExpr.Tuple(es,_,_) -> Some(List.map AstNode.Expression es)
@@ -181,25 +180,52 @@ module Ast =
                             |> List.concat
                             |> List.map AstNode.Expression
                         if List.isEmpty expressions then None else Some expressions
+                    | SynExpr.DotNamedIndexedPropertySet(e1,_,e2,e3,_) -> Some [Expression e1; Expression e2; Expression e3]
+                    | SynExpr.Quote(e1,_,e2,_,_)
+                    | SynExpr.JoinIn(e1,_,e2,_)
+                    | SynExpr.NamedIndexedPropertySet(_,e1,e2,_)
+                    | SynExpr.DotSet(e1,_,e2,_) -> Some [Expression e1; Expression e2]
+                    | SynExpr.DotIndexedSet(e1,es,e2,_,_,_) -> Some((Expression e1)::(Expression e2)::(List.map Expression es))
                     | SynExpr.DotIndexedGet(e,es,_,_) -> Some((Expression e)::(List.map Expression es))
+                    | SynExpr.LetOrUseBang(_,_,_,p,e1,e2,_) -> Some [Pattern p; Expression e1; Expression e2]
                     | SynExpr.LetOrUse(_,_,bs,e,_) ->  Some(List.append (List.map AstNode.Binding bs) [AstNode.Expression e])
                     | SynExpr.MatchLambda(_,_,cs,_,_) -> Some(List.map AstNode.MatchClause cs)
                     | SynExpr.Match(_,e,cs,_,_) -> Some((AstNode.Expression e)::(List.map AstNode.MatchClause cs))
-                    | SynExpr.Null(_) -> None
-                    | SynExpr.Const(_,_) -> None
+                    | SynExpr.Null(_)
+                    | SynExpr.Const(_,_)
+                    | SynExpr.ImplicitZero(_)
                     | SynExpr.Ident _ -> None
                     | SynExpr.App(_,_,e1,e2,_) -> Some([AstNode.Expression e1;AstNode.Expression e2])
-                    | SynExpr.ArbitraryAfterError(_,_) -> None
                     | SynExpr.LongIdent(_,LongIdentWithDots(is,_),_,__) -> Some (List.map AstNode.Ident is)
                     | SynExpr.Lambda(_,_,p,e,_) -> Some([AstNode.Expression e;AstNode.SimplePatterns p])
                     | SynExpr.Sequential(_,_,e1,e2,_)
+                    | SynExpr.While(_,e1,e2,_)
+                    | SynExpr.TryFinally(e1,e2,_,_,_)
                     | SynExpr.IfThenElse(e1,e2,None,_,_,_,_) -> Some([AstNode.Expression e1; AstNode.Expression e2])
                     | SynExpr.IfThenElse(e1,e2,Some(e3),_,_,_,_) -> Some([AstNode.Expression e1; AstNode
 .Expression e2; AstNode.Expression e3])
                     | SynExpr.ForEach(_,_,_,p,e1,e2,_) -> Some([AstNode.Expression e1; AstNode.Expression e2; AstNode.Pattern p])
                     | SynExpr.TryWith(e,_,cs,_,_,_,_) -> Some((AstNode.Expression e)::(List.map AstNode.MatchClause cs))
+                    | SynExpr.ObjExpr(_,ei,bs,is,_,_) ->
+                        let e =
+                            Option.map (fst >> Expression) ei
+                            |> Option.toList
+                        let interfaceBindings (SynInterfaceImpl.InterfaceImpl(_,bs,_)) =
+                            List.map Binding bs
+                        Some (e @ (List.collect interfaceBindings is) @ (List.map Binding bs))
+
+                    | SynExpr.ArbitraryAfterError(_,_) -> None
+                    | SynExpr.DiscardAfterMissingQualificationAfterDot(e,_)
                     | SynExpr.FromParseError(e,_) -> Some([AstNode.Expression e])
-                    | _ -> raise (new NotImplementedException("Add a new entry to pattern for Expression: " + (string e)))
+                    
+                    | SynExpr.LibraryOnlyILAssembly(_,_,_,_,_)
+                    | SynExpr.LibraryOnlyStaticOptimization(_,_,_,_)
+                    | SynExpr.LibraryOnlyUnionCaseFieldGet(_,_,_,_)
+                    | SynExpr.LibraryOnlyUnionCaseFieldSet(_,_,_,_,_) -> None
+                    
+                    | SynExpr.For(_,_,_,_,_,_,_) ->
+                        //TODO: For loops
+                        raise (new NotImplementedException("For loop no implemented"))
             | Ident(i) -> None
             | MatchClause(Clause(p,we,e,_,_)) ->
                 if Option.isSome we
