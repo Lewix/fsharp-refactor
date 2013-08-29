@@ -1,6 +1,7 @@
 module FSharpRefactor.Refactorings.Rename
 
 open System.IO
+open System.Text.RegularExpressions
 open Microsoft.FSharp.Compiler.Range
 open FSharpRefactor.Engine.Ast
 open FSharpRefactor.Engine.ScopeAnalysis
@@ -29,8 +30,28 @@ let GetErrorMessage (position:(int*int) option, newName:string option) (project:
             | _ -> None
 
     let checkName newName =
-        //TODO: check newName is a valid name
-        None
+        let letter = "\p{Lu}\p{Ll}\p{Lt}\p{Lm}\p{Lo}\p{Nl}"
+        let digit = "\p{Nd}"
+        let connectingChar = "\p{Pc}"
+        let combiningChar = "\p{Mn}\p{Mc}"
+        let formattingChar = "\p{Cf}"
+        let startChar = sprintf "[_%s]" letter
+        let identChar = sprintf "['%s%s%s%s%s]" letter digit connectingChar combiningChar formattingChar
+        let ident = sprintf "%s%s*" startChar identChar
+        
+        let isValidShortIdent =
+            let identMatch = Regex.Match(newName, ident)
+            String.length newName = identMatch.Length
+        let isValidLongIdent =
+            if String.length newName > 4 then
+                newName.StartsWith "``"
+                |> (&&) (newName.EndsWith "``")
+                |> (&&) (not (newName.[2..(String.length newName)-3].Contains "``"))
+            else false
+            
+        match isValidShortIdent, isValidLongIdent with
+            | false, false -> Some "The given name is not a valid identifier"
+            | _ -> None
 
     let checkPositionAndName (position, newName) =
         let oldName = identifierScope.Force().Value.IdentifierName

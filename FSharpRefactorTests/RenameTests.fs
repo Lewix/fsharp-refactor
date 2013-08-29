@@ -28,13 +28,19 @@ type RenameAnalysisModule() =
     member this.``Can check arguments individually``() =
         Assert.IsTrue(IsValid (Some(1,5), None) (new Project("let f a = 1", "test.fs")) "test.fs", "Valid position")
         Assert.IsFalse(IsValid (Some(1,1), None) (new Project("let f a = 1", "test.fs")) "test.fs", "Invalid position")
+        
         Assert.IsTrue(IsValid (Some(1,7), Some "c") (new Project("let f a b = 1", "test.fs")) "test.fs", "Valid position and name")
         Assert.IsFalse(IsValid (Some(1,7), Some "b") (new Project("let f a b = 1", "test.fs")) "test.fs", "Invalid position and name")
         Assert.IsFalse(IsValid (Some(1,1), Some "a") (new Project("let f a b = 1", "test.fs")) "test.fs", "Invalid position and name")
         Assert.IsTrue(IsValid (Some(1,7), Some "a") (new Project("let f a b = 1", "test.fs")) "test.fs", "Pointless rename")
-        Assert.IsTrue(IsValid (None, Some "b") (new Project("let f a b = 1", "test.fs")) "test.fs", "Valid name")
-
-        //TODO: invalid name
+        
+        Assert.IsTrue(IsValid (None, Some "_name'") (new Project("let f a b = 1", "test.fs")) "test.fs", "Valid name")
+        Assert.IsTrue(IsValid (None, Some "fáæŋɃ'﹎") (new Project("let f a b = 1", "test.fs")) "test.fs", "Valid unicode name")
+        Assert.IsFalse(IsValid (None, Some "﹎name") (new Project("let f a b = 1", "test.fs")) "test.fs", "Invalid unicode name")
+        Assert.IsFalse(IsValid(None, Some "1name") (new Project("let f a b = 1", "test.fs")) "test.fs", "Invalid name")
+        Assert.IsFalse(IsValid(None, Some "nam-e") (new Project("let f a b = 1", "test.fs")) "test.fs", "Another invalid name")
+        Assert.IsTrue(IsValid(None, Some "``1 long name with spaces-```") (new Project("let f a b = 1", "test.fs")) "test.fs", "Valid long name")
+        Assert.IsFalse(IsValid(None, Some "``long `` name ``") (new Project("let f a b = 1", "test.fs")) "test.fs", "Invalid long name")
 
     [<Test>]
     member this.``Simple renaming analysis is correct``() =
