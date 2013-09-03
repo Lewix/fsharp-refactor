@@ -38,7 +38,8 @@ let GetErrorMessage (position:(int*int) option, newName:string option) (project:
         let startChar = sprintf "[_%s]" letter
         let identChar = sprintf "['%s%s%s%s%s]" letter digit connectingChar combiningChar formattingChar
         let ident = sprintf "%s%s*" startChar identChar
-        
+
+        let nameIsGiven = String.length newName <> 0        
         let isValidShortIdent =
             let identMatch = Regex.Match(newName, ident)
             String.length newName = identMatch.Length
@@ -49,8 +50,9 @@ let GetErrorMessage (position:(int*int) option, newName:string option) (project:
                 |> (&&) (not (newName.[2..(String.length newName)-3].Contains "``"))
             else false
             
-        match isValidShortIdent, isValidLongIdent with
-            | false, false -> Some "The given name is not a valid identifier"
+        match nameIsGiven, isValidShortIdent, isValidLongIdent with
+            | false, _, _ -> Some "No name has been given"
+            | _, false, false -> Some "The given name is not a valid identifier"
             | _ -> None
 
     let checkPositionAndName (position, newName) =

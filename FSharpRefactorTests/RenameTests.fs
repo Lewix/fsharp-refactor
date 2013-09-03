@@ -41,6 +41,7 @@ type RenameAnalysisModule() =
         Assert.IsFalse(IsValid(None, Some "nam-e") (new Project("let f a b = 1", "test.fs")) "test.fs", "Another invalid name")
         Assert.IsTrue(IsValid(None, Some "``1 long name with spaces-```") (new Project("let f a b = 1", "test.fs")) "test.fs", "Valid long name")
         Assert.IsFalse(IsValid(None, Some "``long `` name ``") (new Project("let f a b = 1", "test.fs")) "test.fs", "Invalid long name")
+        Assert.IsFalse(IsValid(None, Some "") (new Project("let f a b = 1", "test.fs")) "test.fs", "Empty name")
 
     [<Test>]
     member this.``Simple renaming analysis is correct``() =
