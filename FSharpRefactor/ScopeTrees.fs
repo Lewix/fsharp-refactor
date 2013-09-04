@@ -146,6 +146,15 @@ let rec makeScopeTreesWithChildren (project:Project) modules childrenScopeTrees 
             let idsDeclaredInPatterns = declarationsFromSimplePatterns simplePatterns
             [Declaration(idsDeclaredInPatterns,
                          makeScopeTreesWithChildren childrenScopeTrees (Ast.AstNode.Expression e))]
+        | Ast.AstNode.Expression(SynExpr.ForEach(_,_,_,p,e1,e2,_)) ->
+            let collectionScopeTrees = makeScopeTreesWithChildren [] (Ast.AstNode.Expression e1)
+            let bodyScopeTrees = makeScopeTreesWithChildren childrenScopeTrees (Ast.AstNode.Expression e2)
+            Declaration(declarationsFromMatchPattern p, bodyScopeTrees)::collectionScopeTrees
+        | Ast.AstNode.Expression(SynExpr.For(_,i,e1,_,e2,e3,_)) ->
+            let startScopeTrees = makeScopeTreesWithChildren [] (Ast.AstNode.Expression e1)
+            let finishScopeTrees = makeScopeTreesWithChildren [] (Ast.AstNode.Expression e2)
+            let bodyScopeTrees = makeScopeTreesWithChildren childrenScopeTrees (Ast.AstNode.Expression e3)
+            Declaration([i.idText, i.idRange], bodyScopeTrees)::(startScopeTrees @ finishScopeTrees)
         | Ast.AstNode.MatchClause(Clause(p,we,e,_,_)) ->
             let children =
                 List.concat [childrenScopeTrees;

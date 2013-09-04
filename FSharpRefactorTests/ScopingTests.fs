@@ -421,3 +421,19 @@ type ScopeTreeModule() =
                Declaration(["f",_],
                 [Declaration(["g",_],[])])] -> ()
             | _ -> Assert.Fail(incorrectScopeTrees (project.GetContents "test2.fs") scopeTrees)
+            
+    [<Test>]
+    member this.``Can create a scope tree for a for-in loop``() =
+        let source = "for a,b in pairs do\n  printfn \"%A\" a"
+        let scopeTrees = ScopeTreeModule.getScopeTrees source
+        match scopeTrees with
+            | [Declaration(["a",_;"b",_],[Usage(("printfn",_),[]); Usage(("a",_),[])]); Usage(("pairs",_),[])] -> ()
+            | _ -> Assert.Fail(incorrectScopeTrees source scopeTrees)
+            
+    [<Test>]
+    member this.``Can create s scope tree for a for-to loop``() =
+        let source = "for i = a to b do\n  printfn \"%A\" i"
+        let scopeTrees = ScopeTreeModule.getScopeTrees source
+        match scopeTrees with
+            | [Declaration(["i",_],[Usage(("printfn",_),[]); Usage(("i",_),[])]); Usage(("a",_),[]); Usage(("b",_),[])] -> ()
+            | _ -> Assert.Fail(incorrectScopeTrees source scopeTrees)

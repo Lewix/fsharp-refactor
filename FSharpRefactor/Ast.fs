@@ -215,7 +215,6 @@ module Ast =
                     | SynExpr.IfThenElse(e1,e2,None,_,_,_,_) -> Some([AstNode.Expression e1; AstNode.Expression e2])
                     | SynExpr.IfThenElse(e1,e2,Some(e3),_,_,_,_) -> Some([AstNode.Expression e1; AstNode
 .Expression e2; AstNode.Expression e3])
-                    | SynExpr.ForEach(_,_,_,p,e1,e2,_) -> Some([AstNode.Expression e1; AstNode.Expression e2; AstNode.Pattern p])
                     | SynExpr.TryWith(e,_,cs,_,_,_,_) -> Some((AstNode.Expression e)::(List.map AstNode.MatchClause cs))
                     | SynExpr.ObjExpr(_,ei,bs,is,_,_) ->
                         let e =
@@ -234,9 +233,8 @@ module Ast =
                     | SynExpr.LibraryOnlyUnionCaseFieldGet(_,_,_,_)
                     | SynExpr.LibraryOnlyUnionCaseFieldSet(_,_,_,_,_) -> None
                     
-                    | SynExpr.For(_,_,_,_,_,_,_) ->
-                        //TODO: For loops
-                        raise (new NotImplementedException("For loop no implemented"))
+                    | SynExpr.ForEach(_,_,_,p,e1,e2,_) -> Some([AstNode.Expression e1; AstNode.Expression e2; AstNode.Pattern p])
+                    | SynExpr.For(_,i,e1,_,e2,e3,_) -> Some([Ident i; Expression e1; Expression e2; Expression e3])
             | Ident(i) -> None
             | MatchClause(Clause(p,we,e,_,_)) ->
                 if Option.isSome we
