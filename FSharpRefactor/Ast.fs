@@ -154,7 +154,7 @@ module Ast =
                     | SynModuleDecl.Types(ts,_) -> Some(List.map AstNode.TypeDefinition ts)
                     | SynModuleDecl.Attributes(attributes,_) ->
                         Some (List.map (fun (a:SynAttribute) -> AstNode.Expression a.ArgExpr) attributes)
-                    | SynModuleDecl.ModuleAbbrev(_,_,_) -> raise (new NotImplementedException("Module abbreviations not implemented"))
+                    | SynModuleDecl.ModuleAbbrev(_,_,_) -> None //TODO: module abbreviations
             | Binding(b) ->
                 match b with
                     | SynBinding.Binding(_,_,_,_,_,_,_,p,_,e,_,_) -> Some([AstNode.Pattern p; AstNode.Expression e])
