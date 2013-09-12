@@ -105,5 +105,5 @@ let Rename newName : Refactoring<Identifier,unit> =
 let Transform ((line:int, col:int), newName:string) (project:Project) filename =
     let filename = Path.GetFullPath filename
     let position = mkPos line (col-1)
-    let identifierScope = GetIdentifierScope project (FindIdentifier project filename position)
-    RunRefactoring (Rename newName) identifierScope.IdentifierDeclaration project filename
+    let _, declarationRange as identifierDeclaration = (GetIdentifierScope project (FindIdentifier project filename position)).IdentifierDeclaration
+    RunRefactoring (Rename newName) identifierDeclaration project declarationRange.FileName

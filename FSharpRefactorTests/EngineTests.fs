@@ -203,7 +203,7 @@ type RangeAnalysisModule() =
 
     [<Test>]
     member this.``Can find identifier at position``() =
-        let filename = "test.fs"
+        let filename = Path.GetFullPath "test.fs"
         let source = "let functio a b c = a+b+c in functio 1 2 3"
         let aDeclarationRange = mkRange "test.fs" (mkPos 1 12) (mkPos 1 13)
         let fDeclarationRange = mkRange "test.fs" (mkPos 1 4) (mkPos 1 11)
@@ -214,9 +214,9 @@ type RangeAnalysisModule() =
     [<Test>]
     member this.``Can find identifier position when identifiers are just next to each other``() =
         let source = "a+b"
-        let range = mkRange "test.fs" (mkPos 1 2) (mkPos 1 3)
+        let range = mkRange (Path.GetFullPath "test.fs") (mkPos 1 2) (mkPos 1 3)
 
-        Assert.AreEqual(Some(("b", range), List<string*range>.Empty), TryFindIdentifier (new Project(source, "test.fs")) "test.fs" range.Start)
+        Assert.AreEqual(Some(("b", range), List<string*range>.Empty), TryFindIdentifier (new Project(source, "test.fs")) (Path.GetFullPath "test.fs") range.Start)
     
     [<Test>]
     member this.``Can find the AstNode.Expression corresponding to a range``() =

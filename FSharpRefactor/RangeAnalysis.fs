@@ -79,7 +79,7 @@ let TryFindIdentifier project filename (position : pos) =
         // Identifiers' ranges extend past the end of the text
         // so avoid range.End for cases like b in a+b
         let _, range = Seq.last (i::is)
-        rangeContainsPos range position && range.End <> position
+        rangeContainsPos range position && range.End <> position && range.FileName = filename
 
     GetParseTree project filename
     |> (makeProjectScopeTrees project)
