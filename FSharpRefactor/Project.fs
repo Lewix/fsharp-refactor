@@ -111,6 +111,11 @@ and Project(filesAndContents:(string * string option) array, updatedFiles:Set<st
         Array.set filesAndContents index (filename, Some contents)
         new Project(filesAndContents, Set.add filename updatedFiles, Array.map (fun _ -> None) filesAndContents)
         
+    member self.PopulateCache filename =
+        let filename = Path.GetFullPath filename
+        if Seq.exists ((=) filename) self.Files then
+            ignore (parseInfoCache.Force().TypedInfo filename)
+        
 module Projects =
     let GetParseTree (project:Project) filename =
         project.GetParseTree filename
