@@ -10,6 +10,7 @@ TAGS
 *.userprefs
 TestResult.xml
 FSharp.Refactor.Tests.dll.VisualState.xml
+FSharpRefactorTests/bin
 INSTALL
 Makefile
 Makefile.in
