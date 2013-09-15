@@ -33,9 +33,9 @@ supply the functions:
   * `:FSharpAddArgument`
 
 `rename`
-------
+--------
 
-`fsharp-refactor` currently allows renaming of identifier bound in any of the following code constructs:
+`fsharp-refactor` currently allows renaming of identifiers bound in any of the following code constructs:
 
   * Let statements
   * Lambda abstractions
@@ -63,16 +63,16 @@ Command-line utility
 
 1. Clone the repository
   
-    git clone https://github.com/Lewix/fsharp-refactor.git
+       git clone https://github.com/Lewix/fsharp-refactor.git
 
 2. Run `autogen.sh` to generate and run the `configure` script and generate the makefile
 
-    ./autogen.sh
+       ./autogen.sh
 
 3. Make and install the program
 
-    make
-    make install
+       make
+       make install
 
 The program can then be run from the command-line as
 `fsharp-refactor`.
