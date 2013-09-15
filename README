@@ -1,15 +1,17 @@
 F# Refactor
 ===========
 
-This is a refactoring library for F#. It currently provides the following
-refactorings:
+This is a refactoring library for F#. It currently provides the
+following refactorings:
 
   * Rename
   * Extract an expression into a function
   * Add an argument to a function
 
-It can be used either via a command-line interface or using the Vim bindings
-(hopefully support for more editors will follow).
+It can be used either via a command-line interface or using the Vim
+bindings. The `Rename` refactoring is also included in the
+[`fsharpbinding` add-in for
+MonoDevelop](https://github.com/mono-soc-2013/fsharpbinding/tree/fsharp-refactor).
 
 Calling it from the command-line is done like so:
 
@@ -30,23 +32,54 @@ supply the functions:
   * `:FSharpExtractFunction`
   * `:FSharpAddArgument`
 
+`rename`
+------
+
+`fsharp-refactor` currently allows renaming of identifier bound in any of the following code constructs:
+
+  * Let statements
+  * Lambda abstractions
+  * Patterns (for example in match statements or `for ... in` loops)
+  * `for ... to` loops
+
+It does not yet allow renaming of types, namespaces or modules. If
+the renaming is done via the MonoDevelop add-in, the identifier will
+be renamed throughout the containing project (but, as of yet, not the
+entire solution).
+
+`extract-function` and `add-argument`
+-------------------------------------
+
+These two refactorings are still under development, but you can try
+them out using the command-line utility (or, if you're adventurous,
+in the MonoDevelop plugin by compiling it yourself after removing the
+appropriate comment in the .addin.xml file).
+
 Installation
 ============
 
-In order to use the tool you will need to compile a modified version of the F#
-compiler (using the `compiler.patch` patch), and place it in `libs`. You can
-then build the library using `make`.
+Command-line utility
+--------------------
 
-(I haven't tried this on any computer other than my own, running Mono on
-ArchLinux)
+1. Clone the repository
+  
+    git clone https://github.com/Lewix/fsharp-refactor.git
 
-Future Work
-===========
+2. Run `autogen.sh` to generate and run the `configure` script and generate the makefile
 
-This is by no means a finished product, work remaining to be done includes:
+    ./autogen.sh
 
-  * Testing on different machines
-  * Support for other editors
-  * Some fixes to the refactorings
-  * Make it run faster on Vim, possibly by not starting everything up every time
-  * ...
+3. Make and install the program
+
+    make
+    make install
+
+The program can then be run from the command-line as
+`fsharp-refactor`.
+
+MonoDevelop add-in
+------------------
+
+Clone, and build the appropriate branch of
+[`fsharpbinding`](https://github.com/mono-soc-2013/fsharpbinding/tree/fsharp-refactor)
+and install the resulting .mpack file.
