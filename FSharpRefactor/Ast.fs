@@ -44,16 +44,13 @@ module Ast =
         checker, options
     
     let ParseSource filenames filename contents =
-        printfn "PARSING %A" filename
         let checker, options = getCheckerAndOptions filenames
         checker.UntypedParse(Path.GetFullPath filename, contents, options)
 
     let ParseSourceWithChecker (checker:InteractiveChecker) options filenames filename contents = 
-        printfn "PARSING %A" filename
         checker.UntypedParse(Path.GetFullPath filename, contents, options)
             
     let TryTypeCheckSourceWithChecker (checker:InteractiveChecker) options untypedInfo filenames filename contents =
-        printfn "TYPE CHECKING %A" filename
         let filename = Path.GetFullPath filename
         checker.WaitForBackgroundCompile()
         let typeCheckResults = checker.TypeCheckSource(untypedInfo, filename, 0, contents, options, IsResultObsolete(fun _ -> false), "")
@@ -64,7 +61,6 @@ module Ast =
         results.Value
     
     let TryTypeCheckSource untypedInfo filenames filename contents =
-        printfn "TYPE CHECKING %A" filename
         let checker, options = getCheckerAndOptions filenames
         checker.StartBackgroundCompile options
         TryTypeCheckSourceWithChecker checker options untypedInfo filenames filename contents        
