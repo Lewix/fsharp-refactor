@@ -114,7 +114,10 @@ and Project(filesAndContents:(string * string option) array, updatedFiles:Set<st
     member self.PopulateCache filename =
         let filename = Path.GetFullPath filename
         if Seq.exists ((=) filename) self.Files then
-            ignore (parseInfoCache.Force().TypedInfo filename)
+            ignore (parseInfoCache.Force().UntypedInfo filename)
+            
+    member self.StartBackgroundCompile () = ignore (parseInfoCache.Force())
+        
         
 module Projects =
     let GetParseTree (project:Project) filename =
