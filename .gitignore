@@ -23,7 +23,6 @@ config.sub
 configure
 install-sh
 missing
-AssemblyInfo.fs
 test-driver
 bin/fsharp-refactor
 test-results
