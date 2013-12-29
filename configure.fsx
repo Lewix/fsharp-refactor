@@ -11,7 +11,7 @@ let FileReplace (file, outFile, toReplace:string, replacement:string) =
 
 let isWindows = (Path.DirectorySeparatorChar = '\\')
 
-let prefix = "/Users/lewis"
+let prefix = "/usr/local/bin"
 let mono = "/usr/bin/mono"
 let version = "0.1.0.0"
 
@@ -28,3 +28,6 @@ if not isWindows then
   let replacements = ["@prefix@", prefix; "@MONO@", mono]
   for toReplace, replacement in replacements do
     FileReplace("bin/fsharp-refactor.in", "bin/fsharp-refactor", toReplace, replacement)
+
+  // Update prefix in Makefile
+  FileReplace("Makefile.in", "Makefile", "@prefix@", prefix)

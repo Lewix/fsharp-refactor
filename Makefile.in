@@ -1,3 +1,5 @@
+PREFIX=@prefix@
+
 DEPS=lib/FSharp.Compiler.Editor.dll \
      lib/Options.dll
 
@@ -39,7 +41,6 @@ bin/FSharpRefactorTests.dll: $(TESTS) FSharpRefactorTests/FSharpRefactorTests.fs
 	xbuild FSharpRefactorTests/FSharpRefactorTests.fsproj
 	cp FSharpRefactorTests/bin/Debug/FSharpRefactorTests.dll bin
 
-
 unit-tests: bin/FSharpRefactorTests.dll
 	mono /usr/lib/nunit/nunit-console.exe -noresult bin/FSharpRefactorTests.dll
 
@@ -48,5 +49,12 @@ cli-tests: bin/FSharpRefactor.dll bin/FSharpRefactor.CommandLine.exe FSharpRefac
 
 tests: unit-tests cli-tests
 
-#TODO: install
-#TODO: clean
+clean: FSharpRefactor/FSharpRefactor.fsproj FSharpRefactor.CommandLine/FSharpRefactor.CommandLine.fsproj FSharpRefactorTests/FSharpRefactorTests.fsproj
+	xbuild /target:clean FSharpRefactor/FSharpRefactor.fsproj
+	xbuild /target:clean FSharpRefactor.CommandLine/FSharpRefactor.CommandLine.fsproj
+	xbuild /target:clean FSharpRefactorTests/FSharpRefactorTests.fsproj
+
+install: $(DEPS) bin/FSharpRefactor.dll bin/FSharprefactor.CommandLine.exe bin/fsharp-refactor
+	-mkdir $(PREFIX)/fsharp-refactor
+	cp $(DEPS) bin/FSharpRefactor.dll bin/FSharprefactor.CommandLine.exe bin/fsharp-refactor $(PREFIX)/fsharp-refactor
+	chmod +x $(PREFIX)/fsharp-refactor
