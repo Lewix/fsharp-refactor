@@ -55,6 +55,8 @@ clean: FSharpRefactor/FSharpRefactor.fsproj FSharpRefactor.CommandLine/FSharpRef
 	xbuild /target:clean FSharpRefactorTests/FSharpRefactorTests.fsproj
 
 install: $(DEPS) bin/FSharpRefactor.dll bin/FSharprefactor.CommandLine.exe bin/fsharp-refactor
-	-mkdir $(PREFIX)/fsharp-refactor
-	cp $(DEPS) bin/FSharpRefactor.dll bin/FSharprefactor.CommandLine.exe bin/fsharp-refactor $(PREFIX)/fsharp-refactor
-	chmod +x $(PREFIX)/fsharp-refactor
+	sed "s|@install_prefix@|$(PREFIX)|" bin/fsharp-refactor > bin/fsharp-refactor.local
+	mv bin/fsharp-refactor.local $(PREFIX)/bin/fsharp-refactor
+	-mkdir $(PREFIX)/lib/fsharp-refactor
+	cp $(DEPS) bin/FSharpRefactor.dll bin/FSharprefactor.CommandLine.exe $(PREFIX)/lib/fsharp-refactor
+	chmod +x $(PREFIX)/bin/fsharp-refactor
